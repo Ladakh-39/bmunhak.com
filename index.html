@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bmunhak.com</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bm-header: #7a90b8;
+      --bm-bg: #d7d7da;
+      --bm-text: #33506a;
+    }
+    body {
+      margin: 0;
+      font-family: "SUIT Variable", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      background: var(--bm-bg);
+      color: #1f2937;
+    }
+    .shell {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <header class="border-b border-slate-400 bg-[var(--bm-header)] text-white">
+    <div class="shell">
+      <div class="flex h-16 items-center gap-4">
+        <a href="/index.html" class="text-[50px] leading-none font-black tracking-tight text-[var(--bm-text)]">bmunhak</a>
+
+        <nav class="hidden md:flex flex-1 items-center justify-center gap-8 text-[30px] leading-none font-semibold whitespace-nowrap">
+          <a href="#" class="hover:underline">공지사항</a>
+          <a href="#" class="hover:underline">가입인사</a>
+          <a href="#" class="hover:underline">자유게시판</a>
+          <a href="#" class="hover:underline">질문</a>
+          <a href="/grader.html" class="hover:underline">채점하기</a>
+          <a href="#" class="hover:underline">My Page</a>
+        </nav>
+
+        <div class="hidden md:flex items-center justify-end gap-4 text-lg font-semibold whitespace-nowrap">
+          <a href="#" class="hover:underline">회원가입</a>
+          <a href="#" class="hover:underline">로그인</a>
+        </div>
+
+        <button id="btnMobileMenu" class="md:hidden rounded px-3 py-2 text-2xl" type="button" aria-label="menu">☰</button>
+      </div>
+
+      <div id="mobileMenu" class="md:hidden hidden pb-3">
+        <div class="grid gap-1 text-xl font-semibold">
+          <a href="#" class="rounded px-2 py-1 hover:bg-white/10">공지사항</a>
+          <a href="#" class="rounded px-2 py-1 hover:bg-white/10">가입인사</a>
+          <a href="#" class="rounded px-2 py-1 hover:bg-white/10">자유게시판</a>
+          <a href="#" class="rounded px-2 py-1 hover:bg-white/10">질문</a>
+          <a href="/grader.html" class="rounded px-2 py-1 hover:bg-white/10">채점하기</a>
+          <a href="#" class="rounded px-2 py-1 hover:bg-white/10">My Page</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="py-3">
+    <section class="shell border border-slate-300 bg-[#efefef] pt-3">
+      <div class="border-y border-slate-300 bg-white">
+        <img src="/image/bmunhak.png" alt="bmunhak 대문" class="block h-[290px] w-full object-cover md:h-[520px]" />
+      </div>
+    </section>
+  </main>
+
+  <footer class="mt-0 border-t border-slate-300 bg-[var(--bm-bg)] py-8">
+    <div class="shell text-center text-[58px] leading-none font-semibold tracking-tight text-[var(--bm-text)] md:text-[64px]">
+      bmunhak.com
+    </div>
+  </footer>
+
+  <script>
+    const btnMobileMenu = document.getElementById("btnMobileMenu");
+    const mobileMenu = document.getElementById("mobileMenu");
+    btnMobileMenu?.addEventListener("click", () => {
+      mobileMenu.classList.toggle("hidden");
+    });
+  </script>
+</body>
+</html>

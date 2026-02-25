@@ -1,0 +1,13 @@
+Supabase DB
+
+const SUPABASE_URL = '여기에 붙여넣기';
+
+https://btguehiiatjyfgjpluel.supabase.co
+
+const SUPABASE_ANON_KEY = '여기에 붙여넣기';
+
+sb_publishable_ZNhBd9CuZp8AD73IBAyTOw_fxhIu1Jn
+
+
+C:\Users\Ladakh\AppData\Local\Google\Chrome\User Data\Default
+C:\Users\Ladakh\AppData\Local\Google\Chrome\User Data\Default
