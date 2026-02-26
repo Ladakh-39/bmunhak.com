@@ -106,9 +106,18 @@
         <div>
           <label for="sectionSelect" class="block text-xs font-black text-slate-400 mb-1 ml-1">영역</label>
           <select id="sectionSelect" class="w-full p-3 rounded-2xl border-2 border-slate-200 bg-slate-50 font-black">
+            <option value="all">전체</option>
             <option value="both">언어이해+추리논증</option>
             <option value="lang">언어이해</option>
             <option value="logic">추리논증</option>
+            <option value="humanities">마더텅 인문</option>
+            <option value="social">마더텅 사회</option>
+            <option value="science">마더텅 과학</option>
+            <option value="tech">마더텅 기술</option>
+            <option value="art">마더텅 예술</option>
+            <option value="mixed">마더텅 복합</option>
+            <option value="mock1">마더텅 미니모의 1회</option>
+            <option value="mock2">마더텅 미니모의 2회</option>
           </select>
         </div>
         <div class="flex items-end">
@@ -190,7 +199,7 @@
     const $ = (id) => document.getElementById(id);
     const qs = new URLSearchParams(location.search);
     const yearFromQs = String(qs.get("year") || "");
-    const sectionFromQs = String(qs.get("section") || "both");
+    const sectionFromQs = String(qs.get("section") || "all");
     const YEARS = (() => {
       const arr = ["2009_pre"];
       for (let y = 2010; y <= 2026; y += 1) arr.push(String(y));
@@ -207,9 +216,18 @@
       if (section === "logic") return "추리논증";
       if (section === "lang") return "언어이해";
       if (section === "both") return "언어+추리";
+      if (section === "humanities") return "마더텅 인문";
+      if (section === "social") return "마더텅 사회";
+      if (section === "science") return "마더텅 과학";
+      if (section === "tech") return "마더텅 기술";
+      if (section === "art") return "마더텅 예술";
+      if (section === "mixed") return "마더텅 복합";
+      if (section === "mock1") return "마더텅 미니모의 1회";
+      if (section === "mock2") return "마더텅 미니모의 2회";
       return "-";
     }
     function formLabel(form) {
+      if (form === "na" || form == null || form === "") return "-";
       return form === "even" ? "짝수형" : "홀수형";
     }
     function fmtDate(ts) {
@@ -260,10 +278,21 @@
     function fillYearOptions() {
       $("yearSelect").innerHTML = YEARS.map((y) => `<option value="${y}">${y === "2009_pre" ? "2009 예비" : y}</option>`).join("");
       $("yearSelect").value = YEARS.includes(yearFromQs) ? yearFromQs : "2026";
-      $("sectionSelect").value =
-        (sectionFromQs === "lang" || sectionFromQs === "logic" || sectionFromQs === "both")
-          ? sectionFromQs
-          : "both";
+      const allowedSections = new Set([
+        "all",
+        "both",
+        "lang",
+        "logic",
+        "humanities",
+        "social",
+        "science",
+        "tech",
+        "art",
+        "mixed",
+        "mock1",
+        "mock2"
+      ]);
+      $("sectionSelect").value = allowedSections.has(sectionFromQs) ? sectionFromQs : "all";
     }
 
     function renderPager() {
@@ -335,6 +364,7 @@
       const from = (state.page - 1) * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
       const applySectionFilter = (query) => {
+        if (section === "all") return query;
         if (section === "both") return query.in("section", ["lang", "logic"]);
         return query.eq("section", section);
       };
@@ -432,6 +462,7 @@
       if (!(row instanceof HTMLElement)) return;
       const y = row.dataset.year || $("yearSelect").value;
       const s = row.dataset.section || $("sectionSelect").value;
+      if (!(s === "lang" || s === "logic" || s === "both")) return;
       location.href = `/accumulated.html?year=${encodeURIComponent(y)}&section=${encodeURIComponent(s)}`;
     });
 
