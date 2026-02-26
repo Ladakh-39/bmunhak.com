@@ -591,14 +591,6 @@
         '        <div id="inviteHint" class="text-[11px] font-bold text-slate-500 mt-1"></div>' +
         '      </div>' +
         '      <div>' +
-        '        <label class="block text-xs font-black text-slate-400 mb-1 ml-1">닉네임</label>' +
-        '        <div class="flex gap-2">' +
-        '          <input id="signupNickname" type="text" class="flex-1 w-full p-4 text-base font-black border-2 border-slate-200 rounded-none bg-slate-50 outline-none" placeholder="2~12자 (한/영/숫자/_/공백)" autocomplete="off" />' +
-        '          <button id="btnCheckNickname" type="button" class="px-4 py-3 rounded-none font-black bg-slate-900 text-white hover:bg-black">중복확인</button>' +
-        '        </div>' +
-        '        <div id="nickHint" class="text-[11px] font-bold text-slate-500 mt-1"></div>' +
-        '      </div>' +
-        '      <div>' +
         '        <label class="block text-xs font-black text-slate-400 mb-1 ml-1">비밀번호 만들기</label>' +
         '        <input id="signupPassword" type="password" class="w-full p-4 text-base font-black border-2 border-slate-200 rounded-none bg-slate-50 outline-none" autocomplete="new-password" disabled />' +
         '      </div>' +
@@ -606,6 +598,14 @@
         '        <label class="block text-xs font-black text-slate-400 mb-1 ml-1">비밀번호 확인</label>' +
         '        <input id="signupPassword2" type="password" class="w-full p-4 text-base font-black border-2 border-slate-200 rounded-none bg-slate-50 outline-none" autocomplete="new-password" disabled />' +
         '        <div id="pwHint" class="text-[11px] font-bold text-slate-500 mt-1"></div>' +
+        '      </div>' +
+        '      <div>' +
+        '        <label class="block text-xs font-black text-slate-400 mb-1 ml-1">닉네임</label>' +
+        '        <div class="flex gap-2">' +
+        '          <input id="signupNickname" type="text" class="flex-1 w-full p-4 text-base font-black border-2 border-slate-200 rounded-none bg-slate-50 outline-none" placeholder="2~12자 (한/영/숫자/_/공백)" autocomplete="off" />' +
+        '          <button id="btnCheckNickname" type="button" class="px-4 py-3 rounded-none font-black bg-slate-900 text-white hover:bg-black">중복확인</button>' +
+        '        </div>' +
+        '        <div id="nickHint" class="text-[11px] font-bold text-slate-500 mt-1"></div>' +
         '      </div>' +
         '      <button id="btnDoSignup" type="submit" class="mt-2 px-4 py-3 rounded-none font-black bg-slate-900 text-white hover:bg-black" disabled>회원가입</button>' +
         '      <div id="signupMsg" class="text-xs font-bold text-slate-500"></div>' +
