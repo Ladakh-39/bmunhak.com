@@ -1230,16 +1230,16 @@
       '      <input id="authPassword" type="password" autocomplete="current-password" class="w-full border border-slate-300 px-3 py-2 text-sm font-semibold" placeholder="********" />' +
       '      <div id="authSignupOnly" class="hidden">' +
       '        <div class="h-3"></div>' +
+      '        <label class="block text-xs font-black text-slate-600 mb-1">비밀번호 확인</label>' +
+      '        <input id="authPasswordConfirm" type="password" autocomplete="new-password" class="w-full border border-slate-300 px-3 py-2 text-sm font-semibold" placeholder="********" />' +
+      '        <div id="passwordPolicyHint" class="mt-2 text-[11px] font-bold text-slate-500">비밀번호 8~64자 / 영문 대문자+소문자+숫자 필수 / 특수문자 !@#$%^&*()_+=;:[]{} 사용 가능</div>' +
+      '        <div class="h-3"></div>' +
       '        <label class="block text-xs font-black text-slate-600 mb-1">닉네임</label>' +
       '        <div class="flex gap-2">' +
       '          <input id="authNickname" type="text" maxlength="12" class="flex-1 border border-slate-300 px-3 py-2 text-sm font-semibold" placeholder="닉네임 입력" />' +
       '          <button id="checkNicknameBtn" type="button" class="border border-slate-300 bg-white px-3 py-2 text-xs font-black hover:bg-slate-50">중복확인</button>' +
       '        </div>' +
       '        <div id="nicknameStatus" class="mt-2 text-[11px] font-bold text-slate-500">닉네임 2~12자 (한/영/숫자/공백/_/-)</div>' +
-      '        <div class="h-3"></div>' +
-      '        <label class="block text-xs font-black text-slate-600 mb-1">비밀번호 확인</label>' +
-      '        <input id="authPasswordConfirm" type="password" autocomplete="new-password" class="w-full border border-slate-300 px-3 py-2 text-sm font-semibold" placeholder="********" />' +
-      '        <div id="passwordPolicyHint" class="mt-2 text-[11px] font-bold text-slate-500">비밀번호 8~64자 / 영문 대문자+소문자+숫자 필수 / 특수문자 !@#$%^&*()_+=;:[]{} 사용 가능</div>' +
       '      </div>' +
       '      <div id="authHint" class="mt-2 text-[11px] font-bold text-slate-500">로그인 정보를 입력하세요.</div>' +
       '      <div id="authError" class="mt-2 hidden text-[11px] font-black text-red-600"></div>' +
