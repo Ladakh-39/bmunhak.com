@@ -1,0 +1,2177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>게시판 | jungdap.com</title>
+  <link rel="icon" href="/favicon.ico" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.css" rel="stylesheet" />
+  <style>
+    :root {
+      --jd-header: #7092BE;
+      --jd-thread-bg: #99D9EA;
+      --jd-action-blue: #5467AC;
+    }
+    body {
+      font-family: "SUIT Variable", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      background: #ededed;
+      color: #111827;
+    }
+    .hc-shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+    .mono { font-variant-numeric: tabular-nums; }
+    .prefix-tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 92px;
+      height: 26px;
+      flex: 0 0 92px;
+      border-radius: 999px;
+      padding: 0;
+      font-size: 11px;
+      font-weight: 900;
+      border: 1px solid transparent;
+      line-height: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: -0.02em;
+    }
+    .prefix-notice { background: #f4dbe4; border-color: #e5c3d0; color: #7a304f; }
+    .prefix-study  { background: #f5e8d8; border-color: #e4cfb4; color: #7a5127; }
+    .prefix-review { background: #ece9d6; border-color: #d8d4b4; color: #6f6a29; }
+    .prefix-info   { background: #dceaf2; border-color: #c3dce8; color: #2c5f79; }
+    .prefix-qna    { background: #e8def3; border-color: #d4c3e8; color: #5e3f7d; }
+    .prefix-free   { background: #e3edf2; border-color: #c4d6e0; color: #35566a; }
+    .prefix-etc    { background: #ebebeb; border-color: #d8d8d8; color: #5f5f5f; }
+    .comment-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      height: 22px;
+      padding: 0 7px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      border: 1px solid #a7a7a7;
+      background: #B8B8B8;
+      color: #ffffff;
+      flex: 0 0 auto;
+    }
+    .comment-badge.high { background: #9BD6C2; border-color: #87c3af; color: #ffffff; }
+    .comment-plus {
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1;
+      margin-left: 2px;
+    }
+    .comment-plus.red { color: #ef4444; }
+    .comment-plus.orange { color: #f59e0b; }
+    .comment-plus.blue { color: #3b82f6; }
+    .footer-logo {
+      height: 86px;
+      width: auto;
+      display: block;
+    }
+    .pager-btn {
+      min-width: 42px;
+      height: 36px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: #1f2937;
+      font-weight: 800;
+      font-size: 14px;
+    }
+    .pager-btn.active {
+      background: #e2e8f0;
+      border-color: #94a3b8;
+      color: #111827;
+    }
+    #roomFloatingWriteBtn {
+      display: none !important;
+    }
+    body.room-mode #roomFloatingWriteBtn,
+    body.room-mode .roomFloatingWriteBtn {
+      display: none !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <header class="border-b border-slate-400 bg-[#7092BE] text-white overflow-hidden">
+    <div class="hc-shell">
+      <div class="flex h-16 items-center gap-4 overflow-hidden">
+        <div class="flex items-center min-w-[160px]">
+          <a href="/" class="block">
+            <span class="block text-[34px] leading-none font-black tracking-tight text-white">bmunhak</span>
+          </a>
+        </div>
+
+        <nav class="hidden md:flex flex-1 items-center justify-center gap-5 text-[18px] leading-none min-w-0 flex-nowrap whitespace-nowrap">
+          <span class="room-secret-slot inline-flex items-center justify-center w-[104px] whitespace-nowrap">
+            <a id="room-of-requirement" href="/board.html?b=room" class="leading-none transition-colors whitespace-nowrap">필요의 방</a>
+          </span>
+          <a href="/board.html?b=notice" class="leading-none hover:underline whitespace-nowrap">공지사항</a>
+          <a href="/board.html?b=intro" class="leading-none hover:underline whitespace-nowrap">가입인사</a>
+          <a href="/board.html?b=free" class="leading-none hover:underline whitespace-nowrap">자유게시판</a>
+          <a href="/board.html?b=qna" class="leading-none hover:underline whitespace-nowrap">질문</a>
+          <a href="/grader.html" class="leading-none hover:underline whitespace-nowrap">채점하기</a>
+          <a href="/my.html" class="leading-none hover:underline whitespace-nowrap">My Page</a>
+        </nav>
+
+        <div class="hidden md:flex items-center justify-end gap-3 min-w-[140px] text-sm font-semibold">
+          <button id="btnSignupTop" type="button" class="hover:underline">회원가입</button>
+          <button id="btnLoginTop" type="button" class="hover:underline">로그인</button>
+          <span id="welcomeText" class="hidden text-sm font-bold"></span>
+          <button id="btnLogoutTop" type="button" class="hidden hover:underline">로그아웃</button>
+        </div>
+
+        <button id="btnMobileMenu" class="md:hidden px-3 py-2 rounded-lg hover:bg-white/10" type="button" aria-label="menu">
+          ☰
+        </button>
+      </div>
+
+      <div id="mobileMenu" class="md:hidden hidden pb-3">
+        <div class="flex flex-col gap-2 text-base font-bold">
+          <a id="room-of-requirement-mobile" href="/board.html?b=room" class="hidden px-3 py-2 rounded-lg transition-colors">필요의 방</a>
+          <a href="/board.html?b=notice" class="px-3 py-2 rounded-lg hover:bg-white/10">공지사항</a>
+          <a href="/board.html?b=intro" class="px-3 py-2 rounded-lg hover:bg-white/10">가입인사</a>
+          <a href="/board.html?b=free" class="px-3 py-2 rounded-lg hover:bg-white/10">자유게시판</a>
+          <a href="/board.html?b=qna" class="px-3 py-2 rounded-lg hover:bg-white/10">질문</a>
+          <a href="/grader.html" class="px-3 py-2 rounded-lg hover:bg-white/10">채점하기</a>
+          <a href="/my.html" class="px-3 py-2 rounded-lg hover:bg-white/10">My Page</a>
+
+          <div class="flex items-center gap-3 px-3 pt-2">
+            <button id="btnSignupMobile" class="hover:underline" type="button">회원가입</button>
+            <button id="btnLoginMobile" class="hover:underline" type="button">로그인</button>
+            <button id="btnLogoutMobile" class="hidden hover:underline" type="button">로그아웃</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="hc-shell py-6">
+    <div id="authGateNotice" class="hidden bg-white border border-slate-300 mb-5 p-4">
+      <div class="text-sm font-black text-slate-800">필요의 방은 로그인 및 승인된 계정만 열람할 수 있습니다.</div>
+      <div class="mt-2 text-xs font-bold text-slate-500">로그인 후에도 접근이 안 되면 운영자가 승인(room_access_grants)을 추가해야 합니다.</div>
+      <div class="mt-3 flex items-center gap-2">
+        <button id="authGateLoginBtn" class="px-4 py-2 border border-slate-300 bg-slate-900 text-white text-sm font-black hover:bg-black">로그인</button>
+        <button id="authGateSignupBtn" class="px-4 py-2 border border-slate-300 bg-white text-sm font-black hover:bg-slate-100">회원가입</button>
+      </div>
+    </div>
+
+    <section id="boardGuideSection" class="bg-white border border-slate-300 mb-5">
+      <div class="px-4 py-3 border-b border-slate-300 bg-slate-100">
+        <h1 id="boardTitlePrimary" class="text-[26px] leading-[1.05] font-extrabold tracking-tight">게시판</h1>
+      </div>
+      <ul id="boardDesc" class="px-4 py-3 space-y-1 text-[15px] font-bold text-slate-600"></ul>
+    </section>
+
+    <section id="boardTableSection" class="bg-white border border-slate-300">
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-[15px]">
+          <thead class="bg-slate-100 border-b border-slate-300 text-slate-600">
+            <tr class="font-black">
+              <th class="px-3 py-2 text-left w-[96px]">번호</th>
+              <th class="px-3 py-2 text-left">제목</th>
+              <th class="px-3 py-2 text-left w-[140px]">이름</th>
+              <th class="px-3 py-2 text-left w-[100px]">날짜</th>
+              <th class="px-3 py-2 text-right w-[90px]">조회</th>
+              <th class="px-3 py-2 text-right w-[90px]">추천</th>
+            </tr>
+          </thead>
+          <tbody id="postTbody" class="divide-y divide-slate-200"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="boardBottomSection" class="mt-4">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div class="space-y-1 text-[15px] font-bold">
+          <a href="#" id="recent2hLink" class="text-slate-700 hover:underline">+ 최근 2시간내에 달린 댓글</a>
+          <a href="#" id="recent4hLink" class="text-slate-700 hover:underline">+ 최근 4시간내에 달린 댓글</a>
+        </div>
+        <div class="flex items-center gap-3">
+          <label id="adminHiddenWrap" class="hidden inline-flex items-center gap-1 text-xs font-black text-slate-600">
+            <input id="chkIncludeHidden" type="checkbox" class="size-4" />
+            숨김글 포함
+          </label>
+          <a id="btnWrite" href="/write.html?b=free" class="hidden px-6 py-2 bg-[#5467AC] text-white text-lg font-black hover:brightness-110">글쓰기</a>
+        </div>
+      </div>
+      <div class="mt-4 flex items-center justify-center gap-1" id="pager"></div>
+      <div id="resultHint" class="mt-2 text-center text-xs font-black text-slate-500">로딩 중...</div>
+    </section>
+
+    <section id="boardSearchSection" class="mt-6 bg-white border border-slate-300 p-4">
+      <div class="flex flex-wrap items-center gap-4 text-sm font-black mb-3">
+        <label class="inline-flex items-center gap-1"><input id="chkComment" type="checkbox" class="size-4" />댓글</label>
+        <label class="inline-flex items-center gap-1"><input id="chkAuthor" type="checkbox" class="size-4" />이름</label>
+        <label class="inline-flex items-center gap-1"><input id="chkTitle" type="checkbox" class="size-4" checked />제목</label>
+        <label class="inline-flex items-center gap-1"><input id="chkBody" type="checkbox" class="size-4" checked />내용</label>
+        <label class="inline-flex items-center gap-1"><input id="chkId" type="checkbox" class="size-4" />글번호</label>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-[180px_1fr_120px] gap-2">
+        <select id="sortSelect" class="w-full border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-black">
+          <option value="id_desc">최신순</option>
+          <option value="views_desc">조회</option>
+          <option value="likes_desc">추천</option>
+          <option value="comments_desc">댓글</option>
+          <option value="active_desc">활동</option>
+        </select>
+        <input id="searchKeyword" name="board-search-keyword" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" class="w-full border border-slate-300 px-3 py-2 text-sm font-bold" placeholder="검색어" />
+        <button id="btnSearch" class="w-full bg-slate-800 text-white text-sm font-black hover:bg-black">검색</button>
+      </div>
+    </section>
+
+    <section id="roomThreadArea" class="hidden bg-[#99D9EA] border border-[#8ec5d5] px-3 py-5 md:px-6 md:py-6">
+      <div class="mx-auto max-w-3xl">
+        <div class="mb-4 text-[#2b4e6f]">
+          <p class="text-[26px] leading-[1.05] font-extrabold">'필요의 방'에 오신 것을 환영합니다.</p>
+          <p class="mt-1 text-base leading-[1.6] font-bold">여기는 수험생들의 쉼터이자 일상을 나누는 자유로운 공간입니다.</p>
+        </div>
+
+        <article id="roomComposer" class="border border-slate-300 bg-white p-3">
+          <div class="flex items-center justify-between text-sm font-black text-slate-500 mb-2">
+            <span id="roomComposerTodayCount">오늘 0/5</span>
+            <span id="roomComposerLength" class="mono text-[#5467AC]">0/500</span>
+          </div>
+          <textarea id="roomComposerBody" maxlength="500" rows="4" class="w-full border border-slate-200 px-3 py-2 text-base font-bold" placeholder="무슨 생각을 하고 계신가요?"></textarea>
+          <div class="mt-2 flex flex-wrap items-center gap-2">
+            <label class="inline-flex items-center gap-2 border border-slate-300 bg-white px-3 py-2 text-sm font-black cursor-pointer hover:bg-slate-50">
+              <input id="roomComposerFiles" type="file" multiple accept="image/*" class="hidden" />
+              📷 사진
+            </label>
+            <span class="text-xs font-bold text-slate-500">사진 최대 5장 / 파일당 13MB</span>
+          </div>
+          <div id="roomComposerFilesText" class="mt-2 text-xs font-bold text-slate-500">선택된 파일 없음</div>
+          <div class="mt-3 flex items-center justify-end">
+            <button id="roomComposeBtn" class="px-5 py-2 bg-[#5467AC] text-white text-lg font-black hover:brightness-110">쓰기</button>
+          </div>
+        </article>
+
+        <section id="roomThreadList" class="mt-4 grid gap-4"></section>
+      </div>
+    </section>
+  </main>
+
+  <footer class="mt-8 border-t border-slate-300 bg-[#efefef] py-8">
+    <div class="hc-shell">
+      <div class="grid grid-cols-1 md:grid-cols-3 items-end gap-6 text-sm font-bold text-slate-600">
+        <div class="flex items-center justify-center md:justify-start gap-4 md:self-end">
+          <button id="btnContactOpen" class="hover:underline">문의</button>
+          <a href="/terms.html" class="hover:underline">이용약관</a>
+          <a href="/privacy.html" class="hover:underline">개인정보처리방침</a>
+        </div>
+        <div class="flex justify-center md:self-end">
+          <a href="/" class="block">
+            <span class="block text-[44px] leading-none font-black tracking-tight text-slate-700">bmunhak.com</span>
+          </a>
+        </div>
+        <div class="flex items-center justify-center md:justify-end gap-3 md:self-end">
+          <img src="/assets/kakao-qr.png" alt="kakao qr" class="h-14 w-14 border border-slate-300 bg-white p-1" />
+          <button id="btnCopyKakaoLink" class="px-3 py-1 border border-slate-300 bg-white hover:bg-slate-100">링크복사</button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <div id="contactModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 p-4 z-[60]">
+    <div class="w-full max-w-lg bg-white border border-slate-300 p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-black text-slate-900">문의하기</h3>
+        <button id="btnCloseContact" class="px-3 py-1 border border-slate-300 hover:bg-slate-100">닫기</button>
+      </div>
+      <div class="grid gap-4">
+        <p class="text-sm font-bold text-slate-600">아래 QR 또는 링크 복사로 오픈채팅에 접속해 주세요.</p>
+        <div class="flex flex-col sm:flex-row items-center gap-4">
+          <img src="/assets/kakao-qr.png" alt="kakao qr large" class="h-44 w-44 border border-slate-300 bg-white p-2" />
+          <div class="grid gap-2 w-full">
+            <button id="btnCopyKakaoLink2" class="px-3 py-2 border border-slate-300 bg-white font-black hover:bg-slate-100">링크 복사</button>
+            <div class="text-xs font-bold text-slate-500 break-all" id="kakaoLinkPreview"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="copyToast" class="fixed hidden items-center justify-center bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-900 text-white text-sm font-black z-[70]">복사됨</div>
+
+  <script src="/app.js"></script>
+  <script>
+    window.__bmunhakInlineAuthHandled = true;
+    const APP = window.JungdapApp;
+    const sbClient = APP.getSb();
+
+    const $ = (id) => document.getElementById(id);
+    const qs = new URLSearchParams(location.search);
+    const rawSection = String(qs.get("b") || qs.get("board") || "free").toLowerCase();
+    const sectionSlug = APP.parseSectionSlug(rawSection, "free");
+    const isRoomMode = sectionSlug === "room";
+    document.body.classList.toggle("room-mode", isRoomMode);
+    const FILE_BUCKET = "board-uploads";
+    const MAX_FILE_SIZE = 13 * 1024 * 1024;
+    const MAX_COMMENT_RENDER_DEPTH = 12;
+
+    const STUDY_REGION_PREFIXES = [
+      "강원", "경기북부", "경기남부", "경남", "경북", "광주", "대구", "대전", "부산",
+      "서울동북", "서울서북", "서울동남", "서울서남", "서울도심", "세종", "울산", "인천",
+      "전남", "전북", "제주", "충남", "충북"
+    ];
+
+    const PREFIX_STYLE_MAP = {
+      "공지": "prefix-notice",
+      "notice": "prefix-notice",
+      "자유": "prefix-free",
+      "질문": "prefix-qna",
+      "정보": "prefix-info",
+      "기타": "prefix-etc",
+      "해설": "prefix-info",
+      "토론": "prefix-free",
+      "자료": "prefix-info",
+      "시험후기": "prefix-review",
+      "review": "prefix-review",
+      "스터디 모집": "prefix-study",
+      "study": "prefix-study"
+    };
+    STUDY_REGION_PREFIXES.forEach((region) => {
+      PREFIX_STYLE_MAP[region] = "prefix-study";
+    });
+
+    const state = {
+      page: 1,
+      pageSize: 20,
+      groupSize: 5,
+      totalPages: 1,
+      totalCount: 0,
+      idsFilter: null,
+      authorDisplayAvailable: true,
+      boardSeqAvailable: true,
+      prefixAvailable: true,
+      profileMap: new Map(),
+      latestCommentAtByPost: new Map(),
+      roomAvatarPathAvailable: true,
+      roomCommentParentAvailable: true,
+      roomCommentImageAvailable: true,
+      roomCommentLikeCountAvailable: true,
+      roomCommentSoftDeleteAvailable: true,
+      roomAvatarPathMap: new Map(),
+      roomAvatarUrlMap: new Map(),
+      roomCommentLikesReady: null,
+      roomCommentLikesByPost: new Map(),
+      roomCommentLikedByMe: new Set(),
+      roomComposerSelectedFiles: [],
+      roomComposerFileNotice: "",
+      noticeRows: [],
+      isAdmin: false,
+      includeHidden: false,
+      roomDailyLimit: 5,
+      roomTodayCount: 0
+    };
+
+    const ROOM_COMMENT_LIKES_CAPABILITY_KEY = "room_comment_likes_capability_v1";
+    const ROOM_COMMENT_SOFT_DELETE_CAPABILITY_KEY = "room_comment_soft_delete_capability_v1";
+    const ROOM_COMMENT_PARENT_CAPABILITY_KEY = "room_comment_parent_capability_v1";
+    const ROOM_COMMENT_PARENT_LOG_ONCE_KEY = "room_comment_parent_missing_logged_v1";
+
+    let currentUser = null;
+    let __roomWriteObserverStarted = false;
+    let roomWriteAuditLogged = false;
+    let freeWriteAuditLogged = false;
+
+    function isRoomBoard() {
+      try {
+        const usp = new URLSearchParams(location.search);
+        return String(usp.get("b") || "").toLowerCase() === "room";
+      } catch (_e) {
+        return false;
+      }
+    }
+
+    function getRoomComposerRoot() {
+      return document.getElementById("roomComposer")
+        || document.getElementById("roomComposerCard")
+        || document.getElementById("roomThreadComposer")
+        || document.getElementById("roomCompose")
+        || null;
+    }
+
+    function scrubRoomFloatingWrite() {
+      if (!isRoomBoard()) return;
+      document.getElementById("roomFloatingWriteBtn")?.remove();
+
+      const composerRoot = getRoomComposerRoot();
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+      document.querySelectorAll("button").forEach((btn) => {
+        const text = String(btn.textContent || "").trim();
+        if (text !== "쓰기") return;
+        if (composerRoot && composerRoot.contains(btn)) return;
+
+        const style = window.getComputedStyle(btn);
+        const rect = btn.getBoundingClientRect();
+        const isFixed = style.position === "fixed";
+        const isRightPinned = viewportWidth > 0 && rect.right >= (viewportWidth - 8) && rect.width > 0 && rect.height > 0;
+        const isKnownFloating = btn.id === "roomFloatingWriteBtn" || btn.classList.contains("roomFloatingWriteBtn");
+        if (isFixed || isRightPinned || isKnownFloating) {
+          btn.remove();
+        }
+      });
+    }
+
+    function auditRoomWriteButtonsOnce() {
+      if (!isRoomMode || roomWriteAuditLogged) return;
+      const host = String(location.hostname || "").toLowerCase();
+      if (host !== "localhost" && host !== "127.0.0.1") return;
+      roomWriteAuditLogged = true;
+      const composerRoot = getRoomComposerRoot();
+      const items = Array.from(document.querySelectorAll("button"))
+        .filter((btn) => String(btn.textContent || "").trim() === "쓰기")
+        .map((btn) => {
+          const style = window.getComputedStyle(btn);
+          const rect = btn.getBoundingClientRect();
+          return {
+            id: btn.id || null,
+            className: btn.className || "",
+            position: style.position,
+            right: Math.round(rect.right),
+            bottom: Math.round(rect.bottom),
+            insideComposer: Boolean(composerRoot && composerRoot.contains(btn)),
+          };
+        });
+      console.log("ROOM_WRITE_BUTTON_AUDIT", {
+        total: items.length,
+        items,
+      });
+    }
+
+    function auditFreeWriteOnce() {
+      if (isRoomMode || freeWriteAuditLogged) return;
+      const host = String(location.hostname || "").toLowerCase();
+      if (host !== "localhost" && host !== "127.0.0.1") return;
+      freeWriteAuditLogged = true;
+      console.log(`FREE_BTNWRITE_PRESENT=${Boolean(document.getElementById("btnWrite"))}`);
+    }
+
+    function startRoomWriteObserver() {
+      if (!isRoomBoard() || __roomWriteObserverStarted) return;
+      __roomWriteObserverStarted = true;
+      scrubRoomFloatingWrite();
+      auditRoomWriteButtonsOnce();
+
+      const obs = new MutationObserver(() => {
+        scrubRoomFloatingWrite();
+      });
+      obs.observe(document.body, { childList: true, subtree: true });
+      window.addEventListener("scroll", scrubRoomFloatingWrite, { passive: true });
+      window.addEventListener("resize", scrubRoomFloatingWrite);
+    }
+
+    function esc(v) {
+      return APP.escapeHtml(v);
+    }
+
+    function sortSpec() {
+      const sort = $("sortSelect").value;
+      if (sort === "active_desc") return { col: "active_at", asc: false };
+      if (sort === "views_desc") return { col: "view_count", asc: false };
+      if (sort === "likes_desc") return { col: "like_count", asc: false };
+      if (sort === "comments_desc") return { col: "comment_count", asc: false };
+      return { col: "id", asc: false };
+    }
+
+    function prefixClass(prefix) {
+      const key = String(prefix || "").trim();
+      const compact = key.replace(/\s+/g, "");
+      return PREFIX_STYLE_MAP[key] || PREFIX_STYLE_MAP[compact] || "prefix-etc";
+    }
+
+    function prefixLabel(prefix) {
+      const p = String(prefix || "").trim();
+      if (!p) return "";
+      if (p === "notice") return "공지";
+      if (p === "study" || p.replace(/\s+/g, "") === "스터디 모집".replace(/\s+/g, "")) return "스터디 모집";
+      if (p === "review") return "시험후기";
+      return p;
+    }
+
+    async function getMyDisplayName() {
+      if (!currentUser) return "";
+      const { data } = await sbClient.from("profiles").select("nickname").eq("user_id", currentUser.id).maybeSingle();
+      const nick = String(data?.nickname || "").trim();
+      if (nick) return nick;
+      const local = String(currentUser.email || "").split("@")[0];
+      return local || String(currentUser.id || "").slice(0, 8);
+    }
+
+    function authorLabel(row) {
+      const nick = state.profileMap.get(row.author_id);
+      if (nick) return nick;
+      const display = String(row.author_display || "").trim();
+      if (display) return display;
+      const id = String(row.author_id || "");
+      return id ? id.slice(0, 8) : "-";
+    }
+
+    function isMissingAuthorDisplayError(error) {
+      return APP.isMissingColumnError(error, "author_display");
+    }
+
+    function isMissingPrefixError(error) {
+      return APP.isMissingColumnError(error, "prefix");
+    }
+
+    function isMissingBoardSeqError(error) {
+      return APP.isMissingColumnError(error, "board_seq");
+    }
+
+    function isMissingParentIdError(error) {
+      return APP.isMissingColumnError(error, "parent_id");
+    }
+
+    function isMissingImagePathError(error) {
+      return APP.isMissingColumnError(error, "image_path");
+    }
+
+    function isMissingLikeCountError(error) {
+      return APP.isMissingColumnError(error, "like_count");
+    }
+
+    function isMissingAvatarPathError(error) {
+      return APP.isMissingColumnError(error, "avatar_path");
+    }
+
+    function isRoomAccessDeniedError(error) {
+      const msg = String(error?.message || "").toLowerCase();
+      return msg.includes("room_access_denied") || msg.includes("permission denied") || msg.includes("42501");
+    }
+
+    function isMissingRelationError(error, relationName) {
+      const msg = String(error?.message || "").toLowerCase();
+      const details = String(error?.details || "").toLowerCase();
+      const rel = String(relationName || "").toLowerCase();
+      if (!rel) return false;
+      const missingHint = (msg + " " + details);
+      return missingHint.includes(rel) && (
+        missingHint.includes("does not exist")
+        || missingHint.includes("could not find")
+        || missingHint.includes("not found")
+        || missingHint.includes("schema cache")
+      );
+    }
+
+    function isMissingRoomThreadsRpcError(error) {
+      const msg = String(error?.message || "").toLowerCase();
+      return msg.includes("get_room_threads_secure") && (msg.includes("does not exist") || msg.includes("schema cache"));
+    }
+
+    function isRoomDailyLimitError(error) {
+      const msg = String(error?.message || "").toLowerCase();
+      return msg.includes("room_daily_limit_exceeded")
+        || msg.includes("daily limit")
+        || msg.includes("하루 5개")
+        || msg.includes("하루 5 개");
+    }
+
+    function getKstDayRangeIso(now = new Date()) {
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Seoul",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).formatToParts(now);
+      const partMap = {};
+      parts.forEach((part) => {
+        if (part.type !== "literal") partMap[part.type] = part.value;
+      });
+      const year = Number(partMap.year || 0);
+      const month = Number(partMap.month || 0);
+      const day = Number(partMap.day || 0);
+      if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day) || year < 1 || month < 1 || day < 1) {
+        const fallbackStart = new Date();
+        fallbackStart.setHours(0, 0, 0, 0);
+        return {
+          startIso: fallbackStart.toISOString(),
+          endIso: new Date(fallbackStart.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+        };
+      }
+      const startUtcMs = Date.UTC(year, month - 1, day, 0, 0, 0, 0) - (9 * 60 * 60 * 1000);
+      return {
+        startIso: new Date(startUtcMs).toISOString(),
+        endIso: new Date(startUtcMs + (24 * 60 * 60 * 1000)).toISOString(),
+      };
+    }
+
+    function setRoomComposerQuotaMeta() {
+      const limit = Math.max(1, Number(state.roomDailyLimit || 5));
+      const todayCount = Math.max(0, Number(state.roomTodayCount || 0));
+      const safeCount = Math.min(todayCount, limit);
+      if ($("roomComposerTodayCount")) {
+        $("roomComposerTodayCount").textContent = `오늘 ${safeCount}/${limit}`;
+      }
+      const blocked = todayCount >= limit;
+      const composeBtn = $("roomComposeBtn");
+      if (composeBtn) {
+        composeBtn.disabled = blocked;
+        composeBtn.classList.toggle("opacity-60", blocked);
+        composeBtn.classList.toggle("cursor-not-allowed", blocked);
+        composeBtn.title = blocked ? "필요의 방은 하루 5개까지만 작성할 수 있습니다." : "";
+      }
+    }
+
+    function readCapabilityCache(key) {
+      try {
+        return String(localStorage.getItem(key) || "");
+      } catch (_e) {
+        return "";
+      }
+    }
+
+    function writeCapabilityCache(key, value) {
+      try {
+        localStorage.setItem(key, String(value || ""));
+      } catch (_e) {
+        // ignore
+      }
+    }
+
+    function logRoomParentFallbackOnce() {
+      let alreadyLogged = false;
+      try {
+        alreadyLogged = sessionStorage.getItem(ROOM_COMMENT_PARENT_LOG_ONCE_KEY) === "1";
+      } catch (_e) {
+        alreadyLogged = false;
+      }
+      if (alreadyLogged) return;
+      try {
+        sessionStorage.setItem(ROOM_COMMENT_PARENT_LOG_ONCE_KEY, "1");
+      } catch (_e) {
+        // ignore
+      }
+      console.warn("room comments threading disabled: board_comments.parent_id missing (fallback to flat comments)");
+    }
+
+    function roomComposerFileKey(file) {
+      const name = String(file?.name || "");
+      const size = Number(file?.size || 0);
+      const modified = Number(file?.lastModified || 0);
+      return `${name}::${size}::${modified}`;
+    }
+
+    function appendRoomComposerFiles(nextFiles) {
+      const existing = Array.from(state.roomComposerSelectedFiles || []);
+      const incoming = Array.from(nextFiles || []);
+      const merged = [];
+      const seen = new Set();
+      let duplicateCount = 0;
+
+      [...existing, ...incoming].forEach((file) => {
+        if (!(file instanceof File)) return;
+        const key = roomComposerFileKey(file);
+        if (seen.has(key)) {
+          duplicateCount += 1;
+          return;
+        }
+        seen.add(key);
+        merged.push(file);
+      });
+
+      const droppedCount = Math.max(0, merged.length - 5);
+      state.roomComposerSelectedFiles = merged.slice(0, 5);
+      const notes = [];
+      if (duplicateCount > 0) notes.push(`중복 ${duplicateCount}개 제외`);
+      if (droppedCount > 0) notes.push(`최대 5장 제한으로 ${droppedCount}개 제외`);
+      state.roomComposerFileNotice = notes.join(" / ");
+    }
+
+    function resetRoomComposerFiles() {
+      state.roomComposerSelectedFiles = [];
+      state.roomComposerFileNotice = "";
+      if ($("roomComposerFiles")) $("roomComposerFiles").value = "";
+    }
+
+    async function refreshRoomTodayCount() {
+      if (!currentUser) {
+        state.roomTodayCount = 0;
+        setRoomComposerQuotaMeta();
+        return;
+      }
+      const dayRange = getKstDayRangeIso();
+      const { count, error } = await sbClient
+        .from("board_posts_active")
+        .select("id", { count: "exact", head: true })
+        .eq("section_slug", "room")
+        .eq("author_id", currentUser.id)
+        .gte("created_at", dayRange.startIso)
+        .lt("created_at", dayRange.endIso);
+      if (error) {
+        console.warn("room today count check failed:", error.message || error);
+        state.roomTodayCount = 0;
+      } else {
+        state.roomTodayCount = Number(count || 0);
+      }
+      setRoomComposerQuotaMeta();
+    }
+
+    function mapRoomCreateError(error) {
+      if (isRoomDailyLimitError(error)) return "필요의 방은 하루 5개까지만 작성할 수 있습니다.";
+      if (isRoomAccessDeniedError(error)) return "필요의 방 작성 권한이 없습니다.";
+      return String(error?.message || "").trim() || "글 작성 실패";
+    }
+
+    async function detectBoardAdmin() {
+      if (!currentUser) return false;
+      const { data, error } = await sbClient.rpc("is_board_admin", { p_uid: currentUser.id });
+      if (error) return false;
+      return Boolean(data);
+    }
+
+    function applySectionFilter(query) {
+      if (sectionSlug === "notice") {
+        if (state.prefixAvailable) return query.or("section_slug.eq.notice,prefix.eq.공지,prefix.eq.notice");
+        return query.eq("section_slug", "notice");
+      }
+      return query.eq("section_slug", sectionSlug);
+    }
+
+    function applyVisibleFilter(query) {
+      return query;
+    }
+
+    function applyNoticeFilter(query) {
+      if (state.prefixAvailable) return query.or("section_slug.eq.notice,prefix.eq.공지,prefix.eq.notice");
+      return query.eq("section_slug", "notice");
+    }
+
+    async function loadProfileMap(rows) {
+      const ids = [...new Set((rows || []).map((r) => r.author_id).filter(Boolean))];
+      state.profileMap = await APP.getNicknameMap(ids);
+    }
+
+    function checkedTargets() {
+      return {
+        comment: $("chkComment").checked,
+        author: $("chkAuthor").checked,
+        title: $("chkTitle").checked,
+        body: $("chkBody").checked,
+        id: $("chkId").checked
+      };
+    }
+
+    async function fetchPostIdsByLike(field, keyword) {
+      if (field === "author_display" && !state.authorDisplayAvailable) return [];
+      let query = sbClient
+        .from("board_posts_active")
+        .select("id")
+        .eq("is_deleted", false)
+        .ilike(field, `%${keyword}%`)
+        .limit(500);
+      query = applySectionFilter(query);
+      const { data, error } = await query;
+      if (error) {
+        if (field === "author_display" && isMissingAuthorDisplayError(error)) {
+          state.authorDisplayAvailable = false;
+          return [];
+        }
+        throw error;
+      }
+      return (data || []).map((row) => row.id);
+    }
+
+    async function fetchPostIdsFromComments(keyword) {
+      const { data, error } = await sbClient
+        .from("board_comments")
+        .select("post_id")
+        .eq("is_deleted", false)
+        .ilike("body", `%${keyword}%`)
+        .limit(500);
+      if (error) throw error;
+      const ids = [...new Set((data || []).map((row) => row.post_id).filter(Boolean))];
+      if (!ids.length) return [];
+      let postsQuery = sbClient.from("board_posts_active").select("id").eq("is_deleted", false).in("id", ids).limit(500);
+      postsQuery = applySectionFilter(postsQuery);
+      const { data: posts, error: postsError } = await postsQuery;
+      if (postsError) throw postsError;
+      return (posts || []).map((row) => row.id);
+    }
+
+    async function buildSearchIds() {
+      const keyword = String($("searchKeyword").value || "").trim();
+      if (!keyword) return { ids: null };
+      const targets = checkedTargets();
+      if (!targets.comment && !targets.author && !targets.title && !targets.body && !targets.id) {
+        return { error: "검색 대상을 선택하세요." };
+      }
+      const ids = new Set();
+      try {
+        if (targets.id) {
+          const n = Number(keyword);
+          if (Number.isFinite(n)) {
+            let query = sbClient.from("board_posts_active").select("id").eq("is_deleted", false).eq("id", n).limit(1);
+            query = applySectionFilter(query);
+            const { data, error } = await query;
+            if (error) throw error;
+            (data || []).forEach((row) => ids.add(row.id));
+          }
+        }
+        if (targets.title) (await fetchPostIdsByLike("title", keyword)).forEach((id) => ids.add(id));
+        if (targets.body) (await fetchPostIdsByLike("body", keyword)).forEach((id) => ids.add(id));
+        if (targets.author) {
+          (await fetchPostIdsByLike("author_display", keyword)).forEach((id) => ids.add(id));
+          const { data: matchedProfiles } = await sbClient.from("profiles").select("user_id").ilike("nickname", `%${keyword}%`).limit(300);
+          const profileIds = (matchedProfiles || []).map((row) => row.user_id).filter(Boolean);
+          if (profileIds.length) {
+            let query = sbClient
+              .from("board_posts_active")
+              .select("id")
+              .eq("is_deleted", false)
+              .in("author_id", profileIds)
+              .limit(500);
+            query = applySectionFilter(query);
+            const { data: byNick } = await query;
+            (byNick || []).forEach((row) => ids.add(row.id));
+          }
+        }
+        if (targets.comment) (await fetchPostIdsFromComments(keyword)).forEach((id) => ids.add(id));
+      } catch (error) {
+        return { error: error.message || "검색 중 오류가 발생했습니다." };
+      }
+      return { ids: [...ids].slice(0, 500) };
+    }
+
+    async function loadLatestCommentActivity(postIds) {
+      const ids = [...new Set((postIds || []).map((v) => Number(v)).filter((v) => Number.isFinite(v) && v > 0))];
+      state.latestCommentAtByPost = new Map();
+      if (!ids.length) return;
+
+      const { data, error } = await sbClient
+        .from("board_comments")
+        .select("post_id,created_at")
+        .in("post_id", ids)
+        .eq("is_deleted", false)
+        .order("created_at", { ascending: false })
+        .limit(Math.max(300, ids.length * 30));
+      if (error) return;
+
+      for (const row of (data || [])) {
+        const pid = Number(row.post_id || 0);
+        if (!Number.isFinite(pid) || pid < 1 || state.latestCommentAtByPost.has(pid)) continue;
+        state.latestCommentAtByPost.set(pid, row.created_at || null);
+      }
+    }
+
+    function toggleRoomModeLayout(enabled) {
+      $("boardGuideSection").classList.toggle("hidden", enabled);
+      $("boardTableSection").classList.toggle("hidden", enabled);
+      $("boardBottomSection").classList.toggle("hidden", enabled);
+      $("boardSearchSection").classList.toggle("hidden", enabled);
+      $("roomThreadArea").classList.toggle("hidden", !enabled);
+      if (enabled) scrubRoomFloatingWrite();
+    }
+
+    function scrubBoardUI() {
+      const tbody = $("postTbody");
+      if (tbody) tbody.innerHTML = "";
+      const pager = $("pager");
+      if (pager) pager.innerHTML = "";
+      const hint = $("resultHint");
+      if (hint) hint.textContent = "";
+
+      toggleRoomModeLayout(false);
+      $("roomThreadArea")?.classList.add("hidden");
+      if ($("roomThreadList")) $("roomThreadList").innerHTML = "";
+      if ($("roomComposerBody")) $("roomComposerBody").value = "";
+      resetRoomComposerFiles();
+      state.roomTodayCount = 0;
+      setRoomComposerMeta();
+    }
+
+    function showAuthGateBoard() {
+      scrubBoardUI();
+      $("authGateNotice")?.classList.remove("hidden");
+      APP.openAuth("login");
+    }
+
+    function setRoomComposerMeta() {
+      const body = String($("roomComposerBody").value || "");
+      const files = Array.from(state.roomComposerSelectedFiles || []);
+      $("roomComposerLength").textContent = `${body.length}/500`;
+      setRoomComposerQuotaMeta();
+      const fileCountText = `사진 ${files.length}/5`;
+      const notice = String(state.roomComposerFileNotice || "").trim();
+      if (!files.length) {
+        $("roomComposerFilesText").textContent = `${fileCountText}${notice ? ` · ${notice}` : ""} · 선택된 파일 없음`;
+      } else {
+        $("roomComposerFilesText").textContent = `${fileCountText}${notice ? ` · ${notice}` : ""} · ${files.map((file) => `${file.name} (${APP.formatFileSize(file.size)})`).join(", ")}`;
+      }
+    }
+
+    function buildRoomCommentBody(rawBody, parentId, imagePath) {
+      const tokens = [];
+      if (Number.isFinite(Number(parentId)) && Number(parentId) > 0) tokens.push(`[[reply:${Number(parentId)}]]`);
+      if (imagePath) tokens.push(`[[img:${String(imagePath)}]]`);
+      const bodyText = String(rawBody || "").trim();
+      return `${tokens.join(" ")}${tokens.length ? " " : ""}${bodyText}`.trim();
+    }
+
+    function parseRoomCommentMeta(row) {
+      let body = String(row?.body || "");
+      let parentId = Number(row?.parent_id || 0);
+      const parentEnabled = Boolean(state.roomCommentParentAvailable);
+      parentId = Number.isFinite(parentId) && parentId > 0 ? parentId : null;
+      let imagePath = String(row?.image_path || "").trim();
+
+      for (;;) {
+        let matched = false;
+        const replyMatch = body.match(/^\s*\[\[reply:(\d+)\]\]\s*/i);
+        if (replyMatch) {
+          if (parentEnabled && !parentId) {
+            const pid = Number(replyMatch[1]);
+            parentId = Number.isFinite(pid) && pid > 0 ? pid : null;
+          }
+          body = body.slice(replyMatch[0].length);
+          matched = true;
+        }
+        const imageMatch = body.match(/^\s*\[\[img:([^\]]+)\]\]\s*/i);
+        if (imageMatch) {
+          if (!imagePath) imagePath = imageMatch[1];
+          body = body.slice(imageMatch[0].length);
+          matched = true;
+        }
+        if (!matched) break;
+      }
+
+      if (!parentEnabled) parentId = null;
+      return { body: body.trim(), parentId, imagePath };
+    }
+
+    async function validateRoomReplyTarget(parentId, expectedPostId) {
+      const pid = Number(parentId || 0);
+      if (!Number.isFinite(pid) || pid < 1) return { ok: true, parentId: null };
+
+      let { data, error } = await sbClient
+        .from("board_comments")
+        .select("id,post_id,is_deleted")
+        .eq("id", pid)
+        .maybeSingle();
+
+      if (error && APP.isMissingColumnError(error, "is_deleted")) {
+        ({ data, error } = await sbClient
+          .from("board_comments")
+          .select("id,post_id")
+          .eq("id", pid)
+          .maybeSingle());
+      }
+
+      if (error) return { ok: false, message: error.message || "답글 대상을 확인할 수 없습니다." };
+      if (!data) return { ok: false, message: "유효하지 않은 답글 대상입니다." };
+
+      const parentPostId = Number(data.post_id || 0);
+      if (!Number.isFinite(parentPostId) || parentPostId !== Number(expectedPostId)) {
+        return { ok: false, message: "다른 게시글의 댓글에는 답글을 달 수 없습니다." };
+      }
+      if (data.is_deleted === true) return { ok: false, message: "삭제된 댓글에는 답글을 달 수 없습니다." };
+
+      return { ok: true, parentId: pid };
+    }
+
+    function roomCommentLikeStorageKey(commentId) {
+      return `room_comment_like_${currentUser?.id || "guest"}_${commentId}`;
+    }
+
+    function isRoomCommentLikedLocally(commentId) {
+      if (!currentUser) return false;
+      return localStorage.getItem(roomCommentLikeStorageKey(commentId)) === "1";
+    }
+
+    function setRoomCommentLikedLocally(commentId, liked) {
+      if (!currentUser) return;
+      if (liked) localStorage.setItem(roomCommentLikeStorageKey(commentId), "1");
+      else localStorage.removeItem(roomCommentLikeStorageKey(commentId));
+    }
+
+    async function ensureRoomCommentLikesTableReady() {
+      if (state.roomCommentLikesReady !== null) return state.roomCommentLikesReady;
+      const cached = readCapabilityCache(ROOM_COMMENT_LIKES_CAPABILITY_KEY);
+      if (cached === "missing") {
+        state.roomCommentLikesReady = false;
+        return false;
+      }
+      if (cached === "ready") {
+        state.roomCommentLikesReady = true;
+        return true;
+      }
+      const { error } = await sbClient.from("board_comment_likes").select("id").limit(1);
+      if (!error) {
+        state.roomCommentLikesReady = true;
+        writeCapabilityCache(ROOM_COMMENT_LIKES_CAPABILITY_KEY, "ready");
+        return true;
+      }
+      if (isMissingRelationError(error, "board_comment_likes")) {
+        writeCapabilityCache(ROOM_COMMENT_LIKES_CAPABILITY_KEY, "missing");
+      }
+      state.roomCommentLikesReady = false;
+      return state.roomCommentLikesReady;
+    }
+
+    async function loadRoomProfiles(userIds) {
+      state.profileMap = new Map();
+      state.roomAvatarPathMap = new Map();
+      state.roomAvatarUrlMap = new Map();
+      const ids = [...new Set((userIds || []).filter(Boolean))];
+      if (!ids.length) return;
+
+      const buildCols = () => {
+        const cols = ["user_id", "nickname"];
+        if (state.roomAvatarPathAvailable) cols.push("avatar_path");
+        return cols.join(",");
+      };
+
+      let { data, error } = await sbClient.from("profiles").select(buildCols()).in("user_id", ids);
+      if (error && state.roomAvatarPathAvailable && isMissingAvatarPathError(error)) {
+        state.roomAvatarPathAvailable = false;
+        ({ data, error } = await sbClient.from("profiles").select(buildCols()).in("user_id", ids));
+      }
+      if (error) return;
+
+      (data || []).forEach((row) => {
+        const uid = row?.user_id;
+        if (!uid) return;
+        const nick = String(row.nickname || "").trim();
+        if (nick) state.profileMap.set(uid, nick);
+        const avatarPath = String(row.avatar_path || "").trim();
+        if (avatarPath) state.roomAvatarPathMap.set(uid, avatarPath);
+      });
+
+      const paths = [...new Set([...state.roomAvatarPathMap.values()])];
+      const pairs = await Promise.all(paths.map(async (path) => {
+        const url = await APP.resolveAvatarUrl(path);
+        return [path, url];
+      }));
+      for (const [path, url] of pairs) {
+        if (url) state.roomAvatarUrlMap.set(path, url);
+      }
+    }
+
+    function roomAuthorLabel(authorId, authorDisplay) {
+      const nick = state.profileMap.get(authorId);
+      if (nick) return nick;
+      const display = String(authorDisplay || "").trim();
+      if (display) return display;
+      const raw = String(authorId || "");
+      return raw ? raw.slice(0, 8) : "익명";
+    }
+
+    function roomAvatarUrl(authorId) {
+      const path = state.roomAvatarPathMap.get(authorId);
+      if (!path) return "";
+      return state.roomAvatarUrlMap.get(path) || "";
+    }
+
+    async function loadRoomPostFiles(postIds) {
+      const grouped = new Map();
+      const ids = [...new Set((postIds || []).map((v) => Number(v)).filter((v) => Number.isFinite(v) && v > 0))];
+      if (!ids.length) return grouped;
+
+      const { data, error } = await sbClient
+        .from("board_post_files")
+        .select("post_id,storage_path,filename,size_bytes,mime")
+        .in("post_id", ids)
+        .order("id", { ascending: true });
+      if (error) return grouped;
+
+      const files = data || [];
+      const uniquePaths = [...new Set(files.map((file) => String(file.storage_path || "").trim()).filter(Boolean))];
+      const resolvedPaths = await Promise.all(uniquePaths.map(async (path) => {
+        const url = await APP.resolveBoardUploadUrl(path);
+        return [path, url];
+      }));
+      const pathUrlMap = new Map(resolvedPaths.filter(([, url]) => Boolean(url)));
+
+      for (const file of files) {
+        const pid = Number(file.post_id || 0);
+        if (!grouped.has(pid)) grouped.set(pid, []);
+        grouped.get(pid).push({
+          storage_path: file.storage_path,
+          filename: file.filename,
+          size_bytes: file.size_bytes,
+          mime: file.mime,
+          url: pathUrlMap.get(String(file.storage_path || "").trim()) || ""
+        });
+      }
+      return grouped;
+    }
+
+    async function loadRoomComments(postIds) {
+      const ids = [...new Set((postIds || []).map((v) => Number(v)).filter((v) => Number.isFinite(v) && v > 0))];
+      const grouped = new Map();
+      if (!ids.length) return grouped;
+      if (state.roomCommentSoftDeleteAvailable && readCapabilityCache(ROOM_COMMENT_SOFT_DELETE_CAPABILITY_KEY) === "missing") {
+        state.roomCommentSoftDeleteAvailable = false;
+      }
+      if (state.roomCommentParentAvailable && readCapabilityCache(ROOM_COMMENT_PARENT_CAPABILITY_KEY) === "missing") {
+        state.roomCommentParentAvailable = false;
+      }
+
+      const buildCols = () => {
+        const cols = ["id", "post_id", "author_id", "body", "created_at"];
+        if (state.roomCommentSoftDeleteAvailable) cols.push("is_deleted");
+        if (state.authorDisplayAvailable) cols.push("author_display");
+        if (state.roomCommentParentAvailable) cols.push("parent_id");
+        if (state.roomCommentImageAvailable) cols.push("image_path");
+        if (state.roomCommentLikeCountAvailable) cols.push("like_count");
+        return cols.join(",");
+      };
+
+      let query = sbClient
+        .from("board_comments")
+        .select(buildCols())
+        .in("post_id", ids);
+      if (state.roomCommentSoftDeleteAvailable) query = query.eq("is_deleted", false);
+      query = query.order("created_at", { ascending: true });
+      let { data, error } = await query;
+
+      const missingAuthor = isMissingAuthorDisplayError(error);
+      const missingSoftDelete = APP.isMissingColumnError(error, "is_deleted");
+      const missingParent = isMissingParentIdError(error);
+      const missingImage = isMissingImagePathError(error);
+      const missingLike = isMissingLikeCountError(error);
+      if (error && (
+        (state.authorDisplayAvailable && missingAuthor) ||
+        (state.roomCommentSoftDeleteAvailable && missingSoftDelete) ||
+        (state.roomCommentParentAvailable && missingParent) ||
+        (state.roomCommentImageAvailable && missingImage) ||
+        (state.roomCommentLikeCountAvailable && missingLike)
+      )) {
+        if (missingAuthor) state.authorDisplayAvailable = false;
+        if (missingSoftDelete) {
+          state.roomCommentSoftDeleteAvailable = false;
+          writeCapabilityCache(ROOM_COMMENT_SOFT_DELETE_CAPABILITY_KEY, "missing");
+        }
+        if (missingParent) {
+          state.roomCommentParentAvailable = false;
+          writeCapabilityCache(ROOM_COMMENT_PARENT_CAPABILITY_KEY, "missing");
+          logRoomParentFallbackOnce();
+        }
+        if (missingImage) state.roomCommentImageAvailable = false;
+        if (missingLike) state.roomCommentLikeCountAvailable = false;
+        query = sbClient
+          .from("board_comments")
+          .select(buildCols())
+          .in("post_id", ids);
+        if (state.roomCommentSoftDeleteAvailable) query = query.eq("is_deleted", false);
+        query = query.order("created_at", { ascending: true });
+        ({ data, error } = await query);
+      }
+      if (error) return grouped;
+      if (state.roomCommentSoftDeleteAvailable) {
+        writeCapabilityCache(ROOM_COMMENT_SOFT_DELETE_CAPABILITY_KEY, "ready");
+      }
+      if (state.roomCommentParentAvailable) {
+        writeCapabilityCache(ROOM_COMMENT_PARENT_CAPABILITY_KEY, "ready");
+      }
+
+      const rows = data || [];
+      const imagePaths = [];
+      for (const row of rows) {
+        const pid = Number(row.post_id || 0);
+        if (!grouped.has(pid)) grouped.set(pid, []);
+        const parsed = parseRoomCommentMeta(row);
+        const mapped = {
+          id: Number(row.id),
+          post_id: pid,
+          author_id: row.author_id,
+          author_display: row.author_display,
+          body: parsed.body,
+          created_at: row.created_at,
+          parent_id: parsed.parentId,
+          image_path: parsed.imagePath,
+          like_count: Number(row.like_count || 0),
+          image_url: ""
+        };
+        if (mapped.image_path) imagePaths.push(mapped.image_path);
+        grouped.get(pid).push(mapped);
+      }
+
+      const urlMap = new Map();
+      const uniqueImagePaths = [...new Set(imagePaths)];
+      const imagePairs = await Promise.all(uniqueImagePaths.map(async (path) => {
+        const url = await APP.resolveBoardUploadUrl(path);
+        return [path, url];
+      }));
+      for (const [path, url] of imagePairs) {
+        if (url) urlMap.set(path, url);
+      }
+      grouped.forEach((items) => {
+        items.forEach((item) => {
+          if (item.image_path) item.image_url = urlMap.get(item.image_path) || "";
+        });
+      });
+
+      const commentIds = rows.map((row) => Number(row.id)).filter((v) => Number.isFinite(v) && v > 0);
+      state.roomCommentLikesByPost = new Map();
+      state.roomCommentLikedByMe = new Set();
+      const likesReady = await ensureRoomCommentLikesTableReady();
+      if (likesReady && commentIds.length) {
+        const { data: likeRows, error: likeError } = await sbClient
+          .from("board_comment_likes")
+          .select("comment_id")
+          .in("comment_id", commentIds)
+          .limit(Math.max(800, commentIds.length * 40));
+        if (!likeError) {
+          for (const row of (likeRows || [])) {
+            const cid = Number(row.comment_id || 0);
+            if (!Number.isFinite(cid) || cid < 1) continue;
+            state.roomCommentLikesByPost.set(cid, (state.roomCommentLikesByPost.get(cid) || 0) + 1);
+          }
+        } else if (isMissingRelationError(likeError, "board_comment_likes")) {
+          state.roomCommentLikesReady = false;
+          writeCapabilityCache(ROOM_COMMENT_LIKES_CAPABILITY_KEY, "missing");
+        }
+        if (currentUser) {
+          const { data: mineRows, error: mineError } = await sbClient
+            .from("board_comment_likes")
+            .select("comment_id")
+            .in("comment_id", commentIds)
+            .eq("user_id", currentUser.id)
+            .limit(Math.max(300, commentIds.length * 4));
+          if (!mineError) {
+            for (const row of (mineRows || [])) {
+              const cid = Number(row.comment_id || 0);
+              if (!Number.isFinite(cid) || cid < 1) continue;
+              state.roomCommentLikedByMe.add(cid);
+            }
+          } else if (isMissingRelationError(mineError, "board_comment_likes")) {
+            state.roomCommentLikesReady = false;
+            writeCapabilityCache(ROOM_COMMENT_LIKES_CAPABILITY_KEY, "missing");
+          }
+        }
+      } else {
+        rows.forEach((row) => {
+          const cid = Number(row.id || 0);
+          if (Number.isFinite(cid) && cid > 0) {
+            state.roomCommentLikesByPost.set(cid, Number(row.like_count || 0));
+          }
+        });
+        grouped.forEach((items) => {
+          items.forEach((item) => {
+            if (isRoomCommentLikedLocally(item.id)) state.roomCommentLikedByMe.add(item.id);
+          });
+        });
+      }
+
+      return grouped;
+    }
+
+    function roomCommentLikeCount(comment) {
+      if (state.roomCommentLikesByPost.has(comment.id)) return state.roomCommentLikesByPost.get(comment.id) || 0;
+      const base = Number(comment.like_count || 0);
+      if (state.roomCommentLikesReady === false && state.roomCommentLikedByMe.has(comment.id)) return base + 1;
+      return base;
+    }
+
+    function renderRoomCommentNodes(postId, byParent, parentId, depth, pathSet) {
+      if (depth > MAX_COMMENT_RENDER_DEPTH) {
+        return '<div class="mt-2 text-xs font-black text-amber-700">답글 깊이 제한으로 일부 댓글이 접혔습니다.</div>';
+      }
+      const nodes = byParent.get(parentId) || [];
+      if (!nodes.length) return "";
+      return nodes.map((comment) => {
+        const commentId = Number(comment.id || 0);
+        if (!Number.isFinite(commentId) || commentId < 1) return "";
+        if (pathSet.has(commentId)) {
+          return '<div class="mt-2 text-xs font-black text-rose-700">댓글 구조 오류(순환 참조)를 감지해 출력을 중단했습니다.</div>';
+        }
+        const canDelete = Boolean(currentUser && (currentUser.id === comment.author_id || state.isAdmin));
+        const likedByMe = state.roomCommentLikedByMe.has(comment.id);
+        const likeCount = roomCommentLikeCount(comment);
+        const avatar = roomAvatarUrl(comment.author_id);
+        const author = roomAuthorLabel(comment.author_id, comment.author_display);
+        const nextPath = new Set(pathSet);
+        nextPath.add(commentId);
+        const children = renderRoomCommentNodes(postId, byParent, comment.id, depth + 1, nextPath);
+        const margin = Math.min(depth, 9) * 22;
+        return `
+          <article class="border-t border-slate-200 pt-3 mt-3" style="margin-left:${margin}px;">
+            <div class="flex items-start gap-2">
+              <div class="size-10 shrink-0 rounded-md border border-slate-300 bg-slate-100 overflow-hidden">
+                ${avatar ? `<img src="${esc(avatar)}" alt="avatar" class="h-full w-full object-cover" />` : `<div class="h-full w-full text-slate-500 text-xs font-black flex items-center justify-center">${esc(String(author).slice(0, 1))}</div>`}
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="font-black text-[27px] text-slate-800">${esc(author)}</div>
+                  <div class="mono text-xs font-black text-slate-400">${new Date(comment.created_at).toLocaleString("ko-KR")}</div>
+                </div>
+                <div class="mt-1 whitespace-pre-wrap font-bold text-slate-800">${esc(comment.body)}</div>
+                ${comment.image_url ? `<img src="${esc(comment.image_url)}" alt="comment image" class="mt-2 max-h-72 border border-slate-200" />` : ""}
+                <div class="mt-2 flex items-center gap-3 text-xs font-black">
+                  ${state.roomCommentParentAvailable ? `<button data-room-reply-open="${comment.id}" data-room-post-id="${postId}" class="text-slate-500 hover:text-slate-700">↪ 답글</button>` : ""}
+                  <button data-room-comment-like="${comment.id}" class="${likedByMe ? "text-blue-700" : "text-slate-500"} hover:text-blue-700">👍 ${likeCount}</button>
+                  ${canDelete ? `<button data-room-comment-delete="${comment.id}" class="text-rose-600 hover:text-rose-700">삭제</button>` : ""}
+                </div>
+                <div class="hidden mt-2 border border-slate-200 bg-slate-50 p-2" data-room-reply-form="${comment.id}">
+                  <textarea data-room-reply-input="${comment.id}" rows="2" class="w-full border border-slate-300 px-2 py-1 text-sm font-bold" placeholder="답글을 입력하세요."></textarea>
+                  <div class="mt-2 flex items-center justify-between gap-2">
+                    <label class="inline-flex items-center gap-1 text-xs font-black text-slate-600 cursor-pointer">
+                      <input type="file" accept="image/*" data-room-reply-file="${comment.id}" class="hidden" />
+                      사진
+                    </label>
+                    <span data-room-reply-file-name="${comment.id}" class="text-xs font-bold text-slate-500">사진 없음</span>
+                    <button data-room-reply-submit="${comment.id}" data-room-post-id="${postId}" class="px-3 py-1 bg-[#5467AC] text-white text-xs font-black hover:brightness-110">댓글쓰기</button>
+                  </div>
+                </div>
+                ${children}
+              </div>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderRoomComments(postId, comments) {
+      if (!state.roomCommentParentAvailable) {
+        const flatComments = (comments || []).map((item) => ({ ...item, parent_id: null }));
+        if (!flatComments.length) return '<div class="text-sm font-bold text-slate-500">첫 댓글을 남겨주세요.</div>';
+        return renderRoomCommentNodes(postId, new Map([[0, flatComments]]), 0, 0, new Set());
+      }
+      const byParent = new Map();
+      const ids = new Set((comments || []).map((item) => Number(item.id)).filter((v) => Number.isFinite(v) && v > 0));
+      for (const item of (comments || [])) {
+        const parent = Number(item.parent_id || 0);
+        const key = Number.isFinite(parent) && parent > 0 && parent !== Number(item.id) && ids.has(parent) ? parent : 0;
+        if (!byParent.has(key)) byParent.set(key, []);
+        byParent.get(key).push(item);
+      }
+      const roots = byParent.get(0) || [];
+      if (!roots.length) return '<div class="text-sm font-bold text-slate-500">첫 댓글을 남겨주세요.</div>';
+      return renderRoomCommentNodes(postId, byParent, 0, 0, new Set());
+    }
+
+    function roomPostLikeText(post) {
+      return `👍 ${Number(post.like_count || 0)}명`;
+    }
+
+    function buildRoomPostTitle(body) {
+      const compact = String(body || "").replace(/\s+/g, " ").trim();
+      if (!compact) return "필요의 방";
+      return compact.slice(0, 80);
+    }
+
+    async function renderRoomThread(posts, postFilesMap, postCommentsMap) {
+      const list = $("roomThreadList");
+      if (!posts.length) {
+        list.innerHTML = '<div class="border border-slate-300 bg-white p-4 text-sm font-black text-slate-500">아직 글이 없습니다.</div>';
+        return;
+      }
+
+      const allAuthorIds = [];
+      posts.forEach((post) => allAuthorIds.push(post.author_id));
+      postCommentsMap.forEach((comments) => comments.forEach((comment) => allAuthorIds.push(comment.author_id)));
+      await loadRoomProfiles(allAuthorIds);
+
+      list.innerHTML = posts.map((post) => {
+        const avatar = roomAvatarUrl(post.author_id);
+        const author = roomAuthorLabel(post.author_id, post.author_display);
+        const files = postFilesMap.get(Number(post.id)) || [];
+        const canEdit = Boolean(currentUser && String(currentUser.id) === String(post.author_id));
+        const canDelete = Boolean(canEdit || state.isAdmin);
+        const imageHtml = files.map((file) => {
+          if (!file.url || !String(file.mime || "").toLowerCase().startsWith("image/")) return "";
+          return `<img src="${esc(file.url)}" alt="${esc(file.filename || "image")}" class="mt-2 w-full max-h-[520px] object-cover border border-slate-200" />`;
+        }).join("");
+        const comments = postCommentsMap.get(Number(post.id)) || [];
+        return `
+          <article class="border border-slate-300 bg-white p-3" data-room-post-id="${post.id}">
+            <div class="flex items-start gap-3">
+              <div class="size-14 shrink-0 rounded-md border border-slate-300 bg-slate-100 overflow-hidden">
+                ${avatar ? `<img src="${esc(avatar)}" alt="avatar" class="h-full w-full object-cover" />` : `<div class="h-full w-full text-slate-500 text-sm font-black flex items-center justify-center">${esc(String(author).slice(0, 1))}</div>`}
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="font-black text-[36px] text-[#3d4f8f]">${esc(author)}</div>
+                  <div class="mono text-xs font-black text-slate-400">${new Date(post.created_at).toLocaleString("ko-KR")}</div>
+                </div>
+                <div class="mt-2 whitespace-pre-wrap font-bold text-slate-900 text-lg">${esc(post.body || "")}</div>
+                ${imageHtml}
+                <div class="mt-3 border-t border-slate-200 pt-2 flex items-center justify-between text-sm font-black">
+                  <div class="flex items-center gap-3">
+                    <button data-room-post-like="${post.id}" class="text-[#3d66d9] hover:underline">${roomPostLikeText(post)}</button>
+                    ${canEdit ? `<button data-room-post-edit="${post.id}" class="text-slate-600 hover:text-slate-800">수정</button>` : ""}
+                    ${canDelete ? `<button data-room-post-delete="${post.id}" class="text-rose-600 hover:text-rose-700">삭제</button>` : ""}
+                  </div>
+                  <span class="text-slate-600">댓글 ${comments.length}개</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3 border-t border-slate-200 pt-3">
+              <textarea data-room-comment-input-post="${post.id}" rows="2" class="w-full border border-slate-300 px-2 py-2 text-sm font-bold" placeholder="댓글을 입력하세요."></textarea>
+              <div class="mt-2 flex items-center justify-between gap-2">
+                <label class="inline-flex items-center gap-1 text-sm font-black text-slate-600 cursor-pointer">
+                  <input type="file" accept="image/*" data-room-comment-file-post="${post.id}" class="hidden" />
+                  사진
+                </label>
+                <span data-room-comment-file-name-post="${post.id}" class="text-xs font-bold text-slate-500">사진 없음</span>
+                <button data-room-comment-submit-post="${post.id}" class="px-4 py-1 bg-[#5467AC] text-white text-sm font-black hover:brightness-110">댓글쓰기</button>
+              </div>
+            </div>
+
+            <div class="mt-3" data-room-comments-wrap-post="${post.id}">
+              ${renderRoomComments(Number(post.id), comments)}
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    async function loadRoomThreads() {
+      if (!currentUser) {
+        $("roomThreadList").innerHTML = '<div class="border border-slate-300 bg-white p-4 text-sm font-black text-slate-700">필요의 방은 로그인 후 입장할 수 있습니다.</div>';
+        state.roomTodayCount = 0;
+        setRoomComposerMeta();
+        scrubRoomFloatingWrite();
+        return;
+      }
+      await refreshRoomTodayCount();
+      const { data, error } = await sbClient.rpc("get_room_threads_secure", { p_limit: 20 });
+
+      if (error) {
+        console.error("Board Load Error:", error);
+        let msg = error.message || "불러오기 실패";
+        if (isRoomAccessDeniedError(error)) {
+          msg = "필요의 방 접근 권한이 없습니다.";
+        } else if (isMissingRoomThreadsRpcError(error)) {
+          msg = "보안 조회 함수가 설정되지 않았습니다. 관리자에게 문의해 주세요.";
+        }
+        $("roomThreadList").innerHTML = `<div class="border border-slate-300 bg-white p-4 text-sm font-black text-rose-700">${esc(msg)}</div>`;
+        scrubRoomFloatingWrite();
+        return;
+      }
+
+      const posts = data || [];
+      const postIds = posts.map((post) => Number(post.id)).filter((v) => Number.isFinite(v) && v > 0);
+      const [postFilesMap, postCommentsMap] = await Promise.all([
+        loadRoomPostFiles(postIds),
+        loadRoomComments(postIds)
+      ]);
+      await renderRoomThread(posts, postFilesMap, postCommentsMap);
+      scrubRoomFloatingWrite();
+    }
+
+    async function uploadRoomPostFiles(postId, files, pathPrefix) {
+      if (!files.length) return { ok: true };
+      for (const file of files) {
+        const storagePath = `${pathPrefix || postId}/${Date.now()}_${APP.sanitizeFilename(file.name)}`;
+        const { error: uploadError } = await sbClient.storage.from(FILE_BUCKET).upload(storagePath, file, {
+          upsert: false,
+          contentType: file.type || "application/octet-stream"
+        });
+        if (uploadError) return { ok: false, message: "업로드 실패: 파일 저장에 실패했습니다." };
+        const { error: metaError } = await sbClient.from("board_post_files").insert({
+          post_id: postId,
+          user_id: currentUser.id,
+          storage_path: storagePath,
+          filename: file.name,
+          mime: file.type || null,
+          size_bytes: file.size
+        });
+        if (metaError) return { ok: false, message: "업로드 실패: 첨부 정보 저장에 실패했습니다." };
+      }
+      return { ok: true };
+    }
+
+    async function createRoomPost() {
+      if (!currentUser) return APP.openAuth("login");
+      if (Number(state.roomTodayCount || 0) >= Number(state.roomDailyLimit || 5)) {
+        alert("필요의 방은 하루 5개까지만 작성할 수 있습니다.");
+        setRoomComposerMeta();
+        return;
+      }
+      const body = String($("roomComposerBody").value || "").trim();
+      if (!body) return alert("내용을 입력하세요.");
+      if (body.length > 500) return alert("내용은 500자 이하로 작성해 주세요.");
+      const files = Array.from(state.roomComposerSelectedFiles || []);
+      if (files.length > 5) return alert("사진은 최대 5장까지 업로드할 수 있습니다.");
+      const over = files.find((file) => file.size > MAX_FILE_SIZE);
+      if (over) return alert(`파일 용량 초과: ${over.name}`);
+
+      let payload = {
+        section_slug: "room",
+        author_id: currentUser.id,
+        author_display: await getMyDisplayName(),
+        title: buildRoomPostTitle(body),
+        body
+      };
+
+      let created = null;
+      for (;;) {
+        const { data, error } = await sbClient.from("board_posts").insert(payload).select("id").single();
+        if (!error) {
+          created = data;
+          break;
+        }
+        let removed = false;
+        if ("author_display" in payload && isMissingAuthorDisplayError(error)) {
+          state.authorDisplayAvailable = false;
+          delete payload.author_display;
+          removed = true;
+        }
+        if (!removed) {
+          alert(mapRoomCreateError(error));
+          if (isRoomDailyLimitError(error)) await refreshRoomTodayCount();
+          return;
+        }
+      }
+
+      const postId = Number(created?.id || 0);
+      if (!Number.isFinite(postId) || postId < 1) return;
+      if (files.length) {
+        const upload = await uploadRoomPostFiles(postId, files, `${postId}`);
+        if (!upload.ok) alert(upload.message || "사진 업로드 실패");
+      }
+      $("roomComposerBody").value = "";
+      resetRoomComposerFiles();
+      state.roomTodayCount = Number(state.roomTodayCount || 0) + 1;
+      setRoomComposerMeta();
+      await loadRoomThreads();
+    }
+
+    async function deleteRoomPost(postId) {
+      if (!currentUser) return APP.openAuth("login");
+      if (!confirm("삭제할까요?")) return;
+      try {
+        const { data: sessData } = await sbClient.auth.getSession();
+        const accessToken = sessData?.session?.access_token || "";
+        const headers = { "Content-Type": "application/json; charset=utf-8" };
+        if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+        const res = await fetch("/.netlify/functions/delete-post", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ post_id: Number(postId) }),
+        });
+        const payload = await res.json().catch(() => null);
+        if (!res.ok || !payload?.ok) {
+          alert(payload?.message || "삭제 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+          return;
+        }
+      } catch {
+        alert("삭제 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+        return;
+      }
+      await refreshRoomTodayCount();
+      await loadRoomThreads();
+    }
+
+    async function submitRoomComment({ postId, parentId, body, file }) {
+      if (!currentUser) return APP.openAuth("login");
+      const text = String(body || "").trim();
+      if (!text) return alert("댓글 내용을 입력하세요.");
+      if (parentId) {
+        const parentCheck = await validateRoomReplyTarget(parentId, postId);
+        if (!parentCheck.ok) {
+          alert(parentCheck.message || "답글 대상을 확인할 수 없습니다.");
+          return;
+        }
+      }
+      let imagePath = "";
+      if (file) {
+        if (file.size > MAX_FILE_SIZE) return alert("댓글 사진은 13MB 이하만 가능합니다.");
+        const path = `comments/${postId}/${Date.now()}_${APP.sanitizeFilename(file.name)}`;
+        const { error: upErr } = await sbClient.storage.from(FILE_BUCKET).upload(path, file, {
+          upsert: false,
+          contentType: file.type || "application/octet-stream"
+        });
+        if (upErr) return alert(upErr.message || "댓글 사진 업로드 실패");
+        imagePath = path;
+      }
+
+      const encodedBody = buildRoomCommentBody(text, parentId, imagePath);
+      let payload = {
+        post_id: Number(postId),
+        author_id: currentUser.id,
+        author_display: await getMyDisplayName(),
+        body: text
+      };
+      if (parentId && state.roomCommentParentAvailable) payload.parent_id = Number(parentId);
+      if (imagePath && state.roomCommentImageAvailable) payload.image_path = imagePath;
+      if ((parentId && !state.roomCommentParentAvailable) || (imagePath && !state.roomCommentImageAvailable)) {
+        payload.body = encodedBody;
+      }
+
+      for (;;) {
+        const { error } = await sbClient.from("board_comments").insert(payload);
+        if (!error) break;
+
+        let removed = false;
+        if ("author_display" in payload && isMissingAuthorDisplayError(error)) {
+          state.authorDisplayAvailable = false;
+          delete payload.author_display;
+          removed = true;
+        }
+        if ("parent_id" in payload && isMissingParentIdError(error)) {
+          state.roomCommentParentAvailable = false;
+          writeCapabilityCache(ROOM_COMMENT_PARENT_CAPABILITY_KEY, "missing");
+          logRoomParentFallbackOnce();
+          delete payload.parent_id;
+          payload.body = encodedBody;
+          removed = true;
+        }
+        if ("image_path" in payload && isMissingImagePathError(error)) {
+          state.roomCommentImageAvailable = false;
+          delete payload.image_path;
+          payload.body = encodedBody;
+          removed = true;
+        }
+        if (!removed) {
+          alert(error.message || "댓글 등록 실패");
+          return;
+        }
+      }
+      await loadRoomThreads();
+    }
+
+    async function toggleRoomCommentLike(commentId) {
+      if (!currentUser) return APP.openAuth("login");
+      const likesReady = await ensureRoomCommentLikesTableReady();
+      if (!likesReady) {
+        const liked = isRoomCommentLikedLocally(commentId);
+        setRoomCommentLikedLocally(commentId, !liked);
+        await loadRoomThreads();
+        return;
+      }
+      const { data, error } = await sbClient
+        .from("board_comment_likes")
+        .select("id")
+        .eq("comment_id", commentId)
+        .eq("user_id", currentUser.id)
+        .maybeSingle();
+      if (error && isMissingRelationError(error, "board_comment_likes")) {
+        state.roomCommentLikesReady = false;
+        writeCapabilityCache(ROOM_COMMENT_LIKES_CAPABILITY_KEY, "missing");
+        const liked = isRoomCommentLikedLocally(commentId);
+        setRoomCommentLikedLocally(commentId, !liked);
+        await loadRoomThreads();
+        return;
+      }
+      if (data?.id) {
+        await sbClient.from("board_comment_likes").delete().eq("id", data.id);
+      } else {
+        await sbClient.from("board_comment_likes").insert({ comment_id: commentId, user_id: currentUser.id });
+      }
+      await loadRoomThreads();
+    }
+
+    async function submitRoomPostLike(postId) {
+      if (!currentUser) return APP.openAuth("login");
+      const { data: sessData } = await sbClient.auth.getSession();
+      const token = sessData?.session?.access_token;
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch("/.netlify/functions/vote-post", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ post_id: Number(postId), vote: 1 })
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        alert(payload?.message || "추천 처리 실패");
+        return;
+      }
+      await loadRoomThreads();
+    }
+
+    async function deleteRoomComment(commentId) {
+      if (!currentUser) return APP.openAuth("login");
+      if (!confirm("댓글을 삭제할까요?")) return;
+      const { error } = await sbClient
+        .from("board_comments")
+        .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+        .eq("id", Number(commentId));
+      if (error) {
+        alert(error.message || "댓글 삭제 실패");
+        return;
+      }
+      await loadRoomThreads();
+    }
+
+    function setupRoomEvents() {
+      $("roomComposerBody").addEventListener("input", setRoomComposerMeta);
+      $("roomComposerFiles").addEventListener("change", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) return;
+        appendRoomComposerFiles(target.files || []);
+        target.value = "";
+        setRoomComposerMeta();
+      });
+      $("roomComposeBtn").addEventListener("click", createRoomPost);
+
+      $("roomThreadList").addEventListener("change", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) return;
+        const postId = target.dataset.roomCommentFilePost;
+        if (postId) {
+          const label = $("roomThreadList").querySelector(`[data-room-comment-file-name-post="${postId}"]`);
+          if (label) label.textContent = target.files?.[0]?.name || "사진 없음";
+          return;
+        }
+        const replyId = target.dataset.roomReplyFile;
+        if (replyId) {
+          const label = $("roomThreadList").querySelector(`[data-room-reply-file-name="${replyId}"]`);
+          if (label) label.textContent = target.files?.[0]?.name || "사진 없음";
+        }
+      });
+
+      $("roomThreadList").addEventListener("click", async (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+
+        const postEditId = Number(target.dataset.roomPostEdit || 0);
+        if (postEditId) {
+          location.href = `/write.html?edit=1&id=${postEditId}`;
+          return;
+        }
+
+        const postDeleteId = Number(target.dataset.roomPostDelete || 0);
+        if (postDeleteId) {
+          await deleteRoomPost(postDeleteId);
+          return;
+        }
+
+        const postLikeId = Number(target.dataset.roomPostLike || 0);
+        if (postLikeId) {
+          await submitRoomPostLike(postLikeId);
+          return;
+        }
+
+        const submitPostId = Number(target.dataset.roomCommentSubmitPost || 0);
+        if (submitPostId) {
+          const input = $("roomThreadList").querySelector(`[data-room-comment-input-post="${submitPostId}"]`);
+          const fileInput = $("roomThreadList").querySelector(`[data-room-comment-file-post="${submitPostId}"]`);
+          if (!(input instanceof HTMLTextAreaElement) || !(fileInput instanceof HTMLInputElement)) return;
+          await submitRoomComment({
+            postId: submitPostId,
+            parentId: null,
+            body: input.value,
+            file: fileInput.files?.[0] || null
+          });
+          return;
+        }
+
+        const replyOpenId = Number(target.dataset.roomReplyOpen || 0);
+        if (replyOpenId) {
+          const form = $("roomThreadList").querySelector(`[data-room-reply-form="${replyOpenId}"]`);
+          if (form) form.classList.toggle("hidden");
+          return;
+        }
+
+        const replySubmitId = Number(target.dataset.roomReplySubmit || 0);
+        if (replySubmitId) {
+          const postId = Number(target.dataset.roomPostId || 0);
+          const input = $("roomThreadList").querySelector(`[data-room-reply-input="${replySubmitId}"]`);
+          const fileInput = $("roomThreadList").querySelector(`[data-room-reply-file="${replySubmitId}"]`);
+          if (!(input instanceof HTMLTextAreaElement) || !(fileInput instanceof HTMLInputElement)) return;
+          await submitRoomComment({
+            postId,
+            parentId: replySubmitId,
+            body: input.value,
+            file: fileInput.files?.[0] || null
+          });
+          return;
+        }
+
+        const likeCommentId = Number(target.dataset.roomCommentLike || 0);
+        if (likeCommentId) {
+          await toggleRoomCommentLike(likeCommentId);
+          return;
+        }
+
+        const deleteCommentId = Number(target.dataset.roomCommentDelete || 0);
+        if (deleteCommentId) {
+          await deleteRoomComment(deleteCommentId);
+        }
+      });
+    }
+
+    function renderRows(rows) {
+      const tbody = $("postTbody");
+      tbody.innerHTML = "";
+      const deduped = [];
+      const seen = new Set();
+      [...state.noticeRows, ...rows].forEach((row) => {
+        const key = Number(row?.id || 0);
+        if (!Number.isFinite(key) || key < 1) return;
+        if (seen.has(key)) return;
+        seen.add(key);
+        deduped.push(row);
+      });
+      const merged = deduped;
+
+      if (!merged.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-8 text-center text-sm font-bold text-slate-400">게시글이 없습니다.</td></tr>';
+        return;
+      }
+
+      merged.forEach((row) => {
+        const isNotice = Boolean(row.__isNotice || APP.isNoticePost(row));
+        const rawPrefix = prefixLabel(row.prefix);
+        const prefix = rawPrefix || (isNotice ? "공지" : "");
+        const comments = Number(row.comment_count || 0);
+        const boardNo = Number(row?.board_seq || 0);
+        const displayNo = Number.isFinite(boardNo) && boardNo > 0 ? boardNo : Number(row?.id || 0);
+        const tr = document.createElement("tr");
+        tr.className = isNotice ? "bg-slate-50" : "hover:bg-slate-50/70";
+        tr.innerHTML = `
+          <td class="px-3 py-2 font-black mono text-slate-500">${displayNo > 0 ? displayNo : "-"}</td>
+          <td class="px-3 py-2 min-w-0">
+            <div class="flex items-center gap-2 min-w-0">
+              ${prefix ? `<span class="prefix-tag ${prefixClass(prefix)}">${esc(prefix)}</span>` : ""}
+              <a href="/post.html?id=${row.id}" class="truncate font-black text-slate-900 hover:underline">${esc(row.title)}</a>
+              ${comments > 0 ? `<span class="comment-badge ${comments > 10 ? "high" : ""} mono">${comments}</span>${(() => {
+                const plusTone = APP.classifyRecentCommentPlus(state.latestCommentAtByPost.get(Number(row.id)));
+                return plusTone ? `<span class="comment-plus ${plusTone}">+</span>` : "";
+              })()}` : ""}
+            </div>
+          </td>
+          <td class="px-3 py-2 font-black text-slate-700">${esc(authorLabel(row))}</td>
+          <td class="px-3 py-2 font-black text-slate-500 mono">${APP.formatYmd(row.created_at)}</td>
+          <td class="px-3 py-2 text-right font-black text-slate-600 mono">${Number(row.view_count || 0)}</td>
+          <td class="px-3 py-2 text-right font-black text-slate-600 mono">${Number(row.like_count || 0)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderPager() {
+      const wrap = $("pager");
+      wrap.innerHTML = "";
+      if (state.totalPages <= 0) return;
+
+      const start = Math.floor((state.page - 1) / state.groupSize) * state.groupSize + 1;
+      const end = Math.min(state.totalPages, start + state.groupSize - 1);
+
+      if (start > 1) {
+        const prev = document.createElement("button");
+        prev.className = "pager-btn";
+        prev.textContent = "이전";
+        prev.dataset.page = String(start - state.groupSize);
+        wrap.appendChild(prev);
+      }
+
+      for (let p = start; p <= end; p += 1) {
+        const btn = document.createElement("button");
+        btn.className = `pager-btn ${p === state.page ? "active" : ""}`;
+        btn.textContent = String(p);
+        btn.dataset.page = String(p);
+        wrap.appendChild(btn);
+      }
+
+      if (end < state.totalPages) {
+        const next = document.createElement("button");
+        next.className = "pager-btn";
+        next.textContent = "다음";
+        next.dataset.page = String(start + state.groupSize);
+        wrap.appendChild(next);
+      }
+    }
+
+    async function loadPinnedNotices() {
+      if (sectionSlug === "notice") {
+        state.noticeRows = [];
+        return;
+      }
+
+      const buildCols = () => {
+        const cols = ["id", "section_slug", "author_id", "title", "created_at", "view_count", "like_count", "comment_count", "active_at"];
+        if (state.boardSeqAvailable) cols.push("board_seq");
+        if (state.prefixAvailable) cols.push("prefix");
+        if (state.authorDisplayAvailable) cols.push("author_display");
+        return cols.join(",");
+      };
+
+      let query = sbClient
+        .from("board_posts_active")
+        .select(buildCols())
+        .eq("is_deleted", false);
+      query = applyVisibleFilter(query)
+        .order("id", { ascending: false })
+        .limit(5);
+      query = applyNoticeFilter(query);
+      let { data, error } = await query;
+
+      const missingAuthor = isMissingAuthorDisplayError(error);
+      const missingPrefix = isMissingPrefixError(error);
+      const missingBoardSeq = isMissingBoardSeqError(error);
+      if (error && (
+        (state.authorDisplayAvailable && missingAuthor) ||
+        (state.prefixAvailable && missingPrefix) ||
+        (state.boardSeqAvailable && missingBoardSeq)
+      )) {
+        if (missingAuthor) state.authorDisplayAvailable = false;
+        if (missingPrefix) state.prefixAvailable = false;
+        if (missingBoardSeq) state.boardSeqAvailable = false;
+        let retry = sbClient
+          .from("board_posts_active")
+          .select(buildCols())
+          .eq("is_deleted", false);
+        retry = applyVisibleFilter(retry)
+          .order("id", { ascending: false })
+          .limit(5);
+        retry = applyNoticeFilter(retry);
+        ({ data, error } = await retry);
+      }
+
+      if (error) {
+        state.noticeRows = [];
+        return;
+      }
+
+      state.noticeRows = (data || []).map((row) => ({ ...row, __isNotice: true }));
+    }
+
+    async function loadPosts() {
+      const sort = sortSpec();
+
+      if (state.idsFilter !== null && state.idsFilter.length === 0) {
+        state.totalCount = 0;
+        state.totalPages = 1;
+        state.noticeRows = [];
+        renderRows([]);
+        renderPager();
+        $("resultHint").textContent = "결과 없음";
+        return;
+      }
+
+      let countQuery = sbClient
+        .from("board_posts_active")
+        .select("id", { count: "exact", head: true })
+        .eq("is_deleted", false);
+      countQuery = applySectionFilter(countQuery);
+      countQuery = applyVisibleFilter(countQuery);
+      if (state.idsFilter !== null) countQuery = countQuery.in("id", state.idsFilter);
+
+      let { count, error: countError } = await countQuery;
+      if (countError) {
+        console.error("Board Load Error:", countError);
+        $("resultHint").textContent = `오류: ${countError.message}`;
+        return;
+      }
+
+      state.totalCount = count || 0;
+      state.totalPages = Math.max(1, Math.ceil(state.totalCount / state.pageSize));
+      if (state.page > state.totalPages) state.page = state.totalPages;
+
+      const buildCols = () => {
+        const cols = ["id", "section_slug", "author_id", "title", "created_at", "view_count", "like_count", "comment_count", "active_at"];
+        if (state.boardSeqAvailable) cols.push("board_seq");
+        if (state.prefixAvailable) cols.push("prefix");
+        if (state.authorDisplayAvailable) cols.push("author_display");
+        return cols.join(",");
+      };
+
+      let query = sbClient
+        .from("board_posts_active")
+        .select(buildCols())
+        .eq("is_deleted", false);
+      query = applySectionFilter(query);
+      query = applyVisibleFilter(query);
+      if (state.idsFilter !== null) query = query.in("id", state.idsFilter);
+      query = query
+        .order(sort.col, { ascending: sort.asc })
+        .range((state.page - 1) * state.pageSize, (state.page - 1) * state.pageSize + state.pageSize - 1);
+
+      let { data, error } = await query;
+      const missingAuthor = isMissingAuthorDisplayError(error);
+      const missingPrefix = isMissingPrefixError(error);
+      const missingBoardSeq = isMissingBoardSeqError(error);
+
+      if (error && (
+        (state.authorDisplayAvailable && missingAuthor) ||
+        (state.prefixAvailable && missingPrefix) ||
+        (state.boardSeqAvailable && missingBoardSeq)
+      )) {
+        if (missingAuthor) state.authorDisplayAvailable = false;
+        if (missingPrefix) state.prefixAvailable = false;
+        if (missingBoardSeq) state.boardSeqAvailable = false;
+        let retry = sbClient
+          .from("board_posts_active")
+          .select(buildCols())
+          .eq("is_deleted", false);
+        retry = applySectionFilter(retry);
+        retry = applyVisibleFilter(retry);
+        if (state.idsFilter !== null) retry = retry.in("id", state.idsFilter);
+        retry = retry
+          .order(sort.col, { ascending: sort.asc })
+          .range((state.page - 1) * state.pageSize, (state.page - 1) * state.pageSize + state.pageSize - 1);
+        ({ data, error } = await retry);
+      }
+
+      if (error) {
+        console.error("Board Load Error:", error);
+        $("resultHint").textContent = `오류: ${error.message}`;
+        return;
+      }
+
+      await loadPinnedNotices();
+      const rows = data || [];
+      const mergedIds = [...new Set([...state.noticeRows, ...rows].map((row) => Number(row.id || 0)).filter((id) => Number.isFinite(id) && id > 0))];
+      await loadLatestCommentActivity(mergedIds);
+      await loadProfileMap([...state.noticeRows, ...rows]);
+      renderRows(rows);
+      renderPager();
+      if (!state.totalCount) $("resultHint").textContent = "결과 없음";
+      else $("resultHint").textContent = `총 ${state.totalCount}개 · ${state.page}/${state.totalPages} 페이지`;
+    }
+
+    async function runSearch({ resetPage = true } = {}) {
+      const built = await buildSearchIds();
+      if (built.error) {
+        $("resultHint").textContent = built.error;
+        return;
+      }
+      state.idsFilter = built.ids;
+      if (resetPage) state.page = 1;
+      await loadPosts();
+    }
+
+    function setHeading() {
+      const meta = APP.SECTION_META[sectionSlug] || APP.SECTION_META.free;
+      $("boardTitlePrimary").textContent = meta.name;
+      $("boardDesc").innerHTML = (meta.descBullets || []).map((line) => `<li>- ${esc(line)}</li>`).join("");
+      $("btnWrite").href = `/write.html?b=${encodeURIComponent(sectionSlug)}`;
+
+      $("recent2hLink").href = `/board.html?b=${encodeURIComponent(sectionSlug)}&recent=2h`;
+      $("recent4hLink").href = `/board.html?b=${encodeURIComponent(sectionSlug)}&recent=4h`;
+    }
+
+    async function syncAuthUI(session) {
+      currentUser = session?.user || null;
+      const signedIn = Boolean(currentUser);
+      $("welcomeText").classList.toggle("hidden", !signedIn);
+      $("btnLogoutTop").classList.toggle("hidden", !signedIn);
+      $("btnLoginTop").classList.toggle("hidden", signedIn);
+      $("btnSignupTop").classList.toggle("hidden", signedIn);
+      $("btnWrite").classList.toggle("hidden", isRoomMode || !signedIn);
+      $("adminHiddenWrap").classList.add("hidden");
+
+      if (signedIn) {
+        state.isAdmin = await detectBoardAdmin();
+        $("adminHiddenWrap").classList.toggle("hidden", !state.isAdmin);
+        const display = await getMyDisplayName();
+        $("welcomeText").textContent = `${display}님`;
+        $("welcomeText").style.color = "#212d2b";
+      } else {
+        state.isAdmin = false;
+        state.includeHidden = false;
+        $("chkIncludeHidden").checked = false;
+        $("welcomeText").style.color = "";
+      }
+    }
+
+    $("btnLoginTop")?.addEventListener("click", () => APP.openAuth("login"));
+    $("btnSignupTop")?.addEventListener("click", () => APP.openAuth("signup"));
+
+    $("btnLogoutTop").addEventListener("click", async () => {
+      try {
+        await APP.hardSignOut(sbClient);
+      } finally {
+        location.replace("/?auth=login&needs_login=1");
+      }
+    });
+
+    $("btnSearch").addEventListener("click", () => runSearch({ resetPage: true }));
+    $("sortSelect").addEventListener("change", () => loadPosts());
+    $("chkIncludeHidden").addEventListener("change", async (event) => {
+      if (!state.isAdmin) {
+        $("chkIncludeHidden").checked = false;
+        return;
+      }
+      const node = event.target;
+      if (!(node instanceof HTMLInputElement)) return;
+      state.includeHidden = node.checked;
+      await loadPosts();
+    });
+    $("searchKeyword").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") runSearch({ resetPage: true });
+    });
+
+    $("pager").addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const page = Number(target.dataset.page || "");
+      if (!Number.isFinite(page) || page < 1 || page === state.page) return;
+      state.page = page;
+      loadPosts();
+    });
+
+    (async function init() {
+      APP.setupMobileMenu("btnMobileMenu", "mobileMenu");
+      APP.setupContactModal();
+      APP.setupAuthModal();
+      APP.setupSecretRoomHover({
+        elementId: "room-of-requirement",
+        hiddenColor: "#7092BE",
+        hoverColor: "#7496C2",
+        openColor: "#FFFFFF",
+        requiredCount: 3,
+        withinMs: 1500,
+        resetMs: 1500
+      });
+      const preview = $("kakaoLinkPreview");
+      if (preview) preview.textContent = APP.getKakaoOpenChatUrl();
+      setHeading();
+      if (isRoomMode) {
+        startRoomWriteObserver();
+        setupRoomEvents();
+        setRoomComposerMeta();
+      } else {
+        auditFreeWriteOnce();
+      }
+      document.addEventListener("DOMContentLoaded", () => {
+        if (!isRoomBoard()) return;
+        scrubRoomFloatingWrite();
+        auditRoomWriteButtonsOnce();
+      }, { once: true });
+      $("authGateLoginBtn")?.addEventListener("click", () => APP.openAuth("login"));
+      $("authGateSignupBtn")?.addEventListener("click", () => APP.openAuth("signup"));
+      const { data } = await sbClient.auth.getSession();
+      await syncAuthUI(data.session);
+
+      sbClient.auth.onAuthStateChange(async (_event, session) => {
+        await syncAuthUI(session);
+        if (!session?.user && isRoomMode) {
+          showAuthGateBoard();
+          return;
+        }
+        // 일반 게시판은 로그아웃해도 계속 열람
+        $("authGateNotice")?.classList.add("hidden");
+        if (isRoomMode) {
+          toggleRoomModeLayout(true);
+          await loadRoomThreads();
+        } else {
+          await runSearch({ resetPage: true });
+        }
+      });
+
+      // Auth gate: room(필요의 방)만 로그인 + 승인 필요
+      if (!data.session && isRoomMode) {
+        showAuthGateBoard();
+        return;
+      }
+      $("authGateNotice")?.classList.add("hidden");
+      if (isRoomMode) {
+        toggleRoomModeLayout(true);
+        await loadRoomThreads(); // RPC(get_room_threads_secure) 내부에서 승인 체크
+      } else {
+        await runSearch({ resetPage: true }); // 비로그인도 열람 가능
+      }
+    })();
+  </script>
+</body>
+</html>
+
+

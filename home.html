@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bmunhak.com</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.css" rel="stylesheet" />
+  <style>
+    :root{
+      --bm-header:#7a90b8;
+      --bm-bg:#d7d7da;
+      --bm-text:#33506a;
+    }
+    body{
+      margin:0;
+      font-family:"SUIT Variable","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+      background:var(--bm-bg);
+      color:#1f2937;
+    }
+    .shell{max-width:1180px;margin:0 auto;padding:0 16px;}
+    .card{background:#fff;border:1px solid #cbd5e1;border-radius:14px;}
+    .card-h{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #e2e8f0;}
+    .card-b{padding:14px 16px;}
+    .card-title{font-weight:900;color:#334155;font-size:22px;}
+    .more{font-weight:800;color:#64748b;}
+  </style>
+</head>
+
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="border-b border-slate-400 bg-[var(--bm-header)] text-white">
+    <div class="shell">
+      <div class="flex h-16 items-center gap-4">
+        <a href="/index.html" class="text-[34px] leading-none font-black tracking-tight text-[var(--bm-text)]">bmunhak</a>
+
+        <nav class="hidden md:flex flex-1 items-center justify-center gap-8 text-[18px] leading-none font-semibold whitespace-nowrap">
+          <a href="/board.html?b=room" class="hover:underline">필요의 방</a>
+          <a href="/board.html?b=notice" class="hover:underline">공지사항</a>
+          <a href="/board.html?b=intro" class="hover:underline">가입인사</a>
+          <a href="/board.html?b=free" class="hover:underline">자유게시판</a>
+          <a href="/board.html?b=qna" class="hover:underline">질문</a>
+          <a href="/grader.html" class="hover:underline">채점하기</a>
+          <a href="/my.html" class="hover:underline">My Page</a>
+        </nav>
+
+        <div class="hidden md:flex items-center justify-end gap-3 text-sm font-semibold whitespace-nowrap">
+          <button id="btnSignupTop" type="button" class="hover:underline">회원가입</button>
+          <button id="btnLoginTop" type="button" class="hover:underline">로그인</button>
+          <span id="welcomeText" class="hidden text-sm font-bold"></span>
+          <button id="btnLogoutTop" type="button" class="hidden hover:underline">로그아웃</button>
+        </div>
+
+        <button id="btnMobileMenu" class="md:hidden rounded px-3 py-2 text-2xl" type="button" aria-label="menu">☰</button>
+      </div>
+
+      <div id="mobileMenu" class="md:hidden hidden pb-3">
+        <div class="grid gap-1 text-xl font-semibold">
+          <a href="/board.html?b=room" class="rounded px-2 py-1 hover:bg-white/10">필요의 방</a>
+          <a href="/board.html?b=notice" class="rounded px-2 py-1 hover:bg-white/10">공지사항</a>
+          <a href="/board.html?b=intro" class="rounded px-2 py-1 hover:bg-white/10">가입인사</a>
+          <a href="/board.html?b=free" class="rounded px-2 py-1 hover:bg-white/10">자유게시판</a>
+          <a href="/board.html?b=qna" class="rounded px-2 py-1 hover:bg-white/10">질문</a>
+          <a href="/grader.html" class="rounded px-2 py-1 hover:bg-white/10">채점하기</a>
+          <a href="/my.html" class="rounded px-2 py-1 hover:bg-white/10">My Page</a>
+        </div>
+        <div class="flex items-center gap-3 px-3 pt-2">
+          <button id="btnSignupMobile" class="hover:underline" type="button">회원가입</button>
+          <button id="btnLoginMobile" class="hover:underline" type="button">로그인</button>
+          <button id="btnLogoutMobile" class="hidden hover:underline" type="button">로그아웃</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="shell py-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Left: boards -->
+      <section class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <article class="card">
+          <div class="card-h">
+            <div class="card-title">공지사항</div>
+            <a class="more hover:underline" href="/board.html?b=notice">더보기</a>
+          </div>
+          <div class="card-b text-slate-500 font-bold">게시글이 없습니다.</div>
+        </article>
+
+        <article class="card">
+          <div class="card-h">
+            <div class="card-title">가입인사</div>
+            <a class="more hover:underline" href="/board.html?b=intro">더보기</a>
+          </div>
+          <div class="card-b text-slate-500 font-bold">게시글이 없습니다.</div>
+        </article>
+
+        <article class="card">
+          <div class="card-h">
+            <div class="card-title">자유게시판</div>
+            <a class="more hover:underline" href="/board.html?b=free">더보기</a>
+          </div>
+          <div class="card-b text-slate-500 font-bold">게시글이 없습니다.</div>
+        </article>
+
+        <article class="card">
+          <div class="card-h">
+            <div class="card-title">필요의 방</div>
+            <a class="more hover:underline" href="/board.html?b=room">더보기</a>
+          </div>
+          <div class="card-b text-slate-500 font-bold">익명/비공개 느낌의 특별 게시판(컨셉 유지 가능).</div>
+        </article>
+
+        <article class="card">
+          <div class="card-h">
+            <div class="card-title">언어이해</div>
+            <a class="more hover:underline" href="/board.html?b=lang">더보기</a>
+          </div>
+          <div class="card-b text-slate-500 font-bold">게시글이 없습니다.</div>
+        </article>
+
+        <article class="card">
+          <div class="card-h">
+            <div class="card-title">추리논증</div>
+            <a class="more hover:underline" href="/board.html?b=logic">더보기</a>
+          </div>
+          <div class="card-b text-slate-500 font-bold">게시글이 없습니다.</div>
+        </article>
+
+      </section>
+
+      <!-- Right: latest + login -->
+      <aside class="grid gap-6">
+        <article class="card">
+          <div class="card-h">
+            <div class="card-title">최신글 보기</div>
+          </div>
+          <div class="card-b text-slate-500 font-bold">
+            아직은 정적(placeholder).<br/>
+            다음 단계에서 Supabase로 “최신 N개”만 끌어오면 jungdap처럼 바로 됨.
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-h">
+            <div class="card-title">로그인</div>
+          </div>
+          <div class="card-b">
+            <div class="text-slate-700 font-black mb-3">로그인이 필요합니다.</div>
+            <div class="flex gap-2">
+              <button class="flex-1 border border-slate-300 bg-white hover:bg-slate-50 py-2 font-black">로그인</button>
+              <button class="flex-1 border border-slate-300 bg-white hover:bg-slate-50 py-2 font-black">회원가입</button>
+            </div>
+            <div class="mt-3">
+              <a href="/records.html" class="block text-center border border-slate-300 bg-white hover:bg-slate-50 py-2 font-black">내 기록</a>
+            </div>
+          </div>
+        </article>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="mt-0 border-t border-slate-300 bg-[var(--bm-bg)] py-8">
+    <div class="shell text-center text-[44px] leading-none font-semibold tracking-tight text-[var(--bm-text)]">
+      bmunhak.com
+    </div>
+  </footer>
+
+  <script>
+    const btnMobileMenu = document.getElementById("btnMobileMenu");
+    const mobileMenu = document.getElementById("mobileMenu");
+    btnMobileMenu?.addEventListener("click", () => mobileMenu.classList.toggle("hidden"));
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>내 기록 | jungdap.com</title>
+  <link rel="icon" href="/favicon.ico" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.css" rel="stylesheet" />
+  <style>
+    :root {
+      --jd-header: #7092BE;
+    }
+    body { font-family: "SUIT Variable", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+    .mono { font-variant-numeric: tabular-nums; }
+    .pager-btn {
+      min-width: 42px;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      color: #334155;
+      font-size: 14px;
+      font-weight: 900;
+      padding: 0 12px;
+    }
+    .pager-btn:hover { background: #f8fafc; }
+    .pager-btn.active { background: #e2e8f0; color: #0f172a; border-color: #cbd5e1; }
+    .footer-logo {
+      height: 86px;
+      width: auto;
+      display: block;
+    }
+    .hc-shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-white">
+  <header class="border-b border-slate-400 bg-[#7092BE] text-white overflow-hidden">
+    <div class="hc-shell">
+      <div class="flex h-16 items-center gap-4 overflow-hidden">
+        <div class="flex items-center min-w-[160px]">
+          <a href="/" class="block">
+            <span class="block text-[34px] leading-none font-black tracking-tight text-white">bmunhak</span>
+          </a>
+        </div>
+
+        <nav class="hidden md:flex flex-1 items-center justify-center gap-5 lg:gap-7 text-[18px] lg:text-[21px] leading-none min-w-0 flex-nowrap whitespace-nowrap">
+          <span class="room-secret-slot inline-flex items-center justify-center w-[104px] whitespace-nowrap">
+            <a id="room-of-requirement" href="/board.html?b=room" class="leading-none transition-colors whitespace-nowrap">필요의 방</a>
+          </span>
+          <a href="/board.html?b=notice" class="leading-none hover:underline whitespace-nowrap">공지사항</a>
+          <a href="/board.html?b=intro" class="leading-none hover:underline whitespace-nowrap">가입인사</a>
+          <a href="/board.html?b=free" class="leading-none hover:underline whitespace-nowrap">자유게시판</a>
+          <a href="/board.html?b=qna" class="leading-none hover:underline whitespace-nowrap">질문</a>
+          <a href="/grader.html" class="leading-none hover:underline whitespace-nowrap">채점하기</a>
+          <a href="/my.html" class="leading-none hover:underline whitespace-nowrap">My Page</a>
+        </nav>
+
+        <div class="hidden md:flex items-center justify-end gap-3 min-w-[140px] whitespace-nowrap">
+          <button id="btnSignupTop" type="button" class="hover:underline whitespace-nowrap">회원가입</button>
+          <button id="btnLoginTop" type="button" class="hover:underline whitespace-nowrap">로그인</button>
+          <span id="welcomeText" class="hidden text-sm font-bold whitespace-nowrap"></span>
+          <button id="btnLogoutTop" type="button" class="hidden hover:underline whitespace-nowrap">로그아웃</button>
+        </div>
+
+        <button id="btnMobileMenu" class="md:hidden px-3 py-2 rounded-lg hover:bg-white/10" type="button" aria-label="menu">
+          ☰
+        </button>
+      </div>
+
+      <div id="mobileMenu" class="md:hidden hidden pb-3">
+        <div class="flex flex-col gap-2 text-base font-bold">
+          <a id="room-of-requirement-mobile" href="/board.html?b=room" class="hidden px-3 py-2 rounded-lg transition-colors whitespace-nowrap">필요의 방</a>
+          <a href="/board.html?b=notice" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">공지사항</a>
+          <a href="/board.html?b=intro" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">가입인사</a>
+          <a href="/board.html?b=free" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">자유게시판</a>
+          <a href="/board.html?b=qna" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">질문</a>
+          <a href="/grader.html" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">채점하기</a>
+          <a href="/my.html" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">My Page</a>
+
+          <div class="flex items-center gap-3 px-3 pt-2">
+            <button id="btnSignupMobile" class="hover:underline whitespace-nowrap" type="button">회원가입</button>
+            <button id="btnLoginMobile" class="hover:underline whitespace-nowrap" type="button">로그인</button>
+            <button id="btnLogoutMobile" class="hidden hover:underline whitespace-nowrap" type="button">로그아웃</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="hc-shell py-6">
+    <section class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+      <h1 class="text-[26px] leading-[1.05] font-extrabold text-slate-900 tracking-tight">내 기록</h1>
+      <p class="mt-2 text-sm font-bold text-slate-500">학년도/영역을 선택하면 해당 시도 목록을 확인할 수 있습니다.</p>
+
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div>
+          <label for="yearSelect" class="block text-xs font-black text-slate-400 mb-1 ml-1">학년도</label>
+          <select id="yearSelect" class="w-full p-3 rounded-2xl border-2 border-slate-200 bg-slate-50 font-black"></select>
+        </div>
+        <div>
+          <label for="sectionSelect" class="block text-xs font-black text-slate-400 mb-1 ml-1">영역</label>
+          <select id="sectionSelect" class="w-full p-3 rounded-2xl border-2 border-slate-200 bg-slate-50 font-black">
+            <option value="both">언어이해+추리논증</option>
+            <option value="lang">언어이해</option>
+            <option value="logic">추리논증</option>
+          </select>
+        </div>
+        <div class="flex items-end">
+          <button id="btnReload" class="w-full px-4 py-3 rounded-2xl bg-slate-900 text-white font-black hover:opacity-90">조회</button>
+        </div>
+      </div>
+
+      <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50 border-b border-slate-200">
+            <tr class="text-slate-500 font-black">
+              <th class="px-3 py-3 text-left w-[70px]">번호</th>
+              <th class="px-3 py-3 text-left w-[100px]">영역</th>
+              <th class="px-3 py-3 text-left">시험</th>
+              <th class="px-3 py-3 text-left w-[120px]">점수</th>
+              <th class="px-3 py-3 text-left w-[110px]">표준점수</th>
+              <th class="px-3 py-3 text-left w-[90px]">백분위</th>
+              <th class="px-3 py-3 text-left w-[100px]">채점일</th>
+              <th class="px-3 py-3 text-center w-[90px]">삭제</th>
+            </tr>
+          </thead>
+          <tbody id="attemptTbody" class="divide-y divide-slate-200"></tbody>
+        </table>
+      </div>
+
+      <div class="mt-4 flex items-center justify-between gap-3">
+        <div id="recordsHint" class="text-xs font-bold text-slate-400">로딩 중...</div>
+        <div id="recordsPager" class="flex items-center gap-1"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="mt-8 border-t border-slate-300 bg-[#efefef] py-8">
+    <div class="hc-shell">
+      <div class="grid grid-cols-1 md:grid-cols-3 items-end gap-6 text-sm font-bold text-slate-600">
+        <div class="flex items-center justify-center md:justify-start gap-4 md:self-end">
+          <button id="btnContactOpen" class="hover:underline">문의</button>
+          <a href="/terms.html" class="hover:underline">이용약관</a>
+          <a href="/privacy.html" class="hover:underline">개인정보처리방침</a>
+        </div>
+        <div class="flex justify-center md:self-end">
+          <a href="/" class="block">
+            <span class="block text-[44px] leading-none font-black tracking-tight text-slate-700">bmunhak.com</span>
+          </a>
+        </div>
+        <div class="flex items-center justify-center md:justify-end gap-3 md:self-end">
+          <img src="/assets/kakao-qr.png" alt="kakao qr" class="h-14 w-14 border border-slate-300 bg-white p-1" />
+          <button id="btnCopyKakaoLink" class="px-3 py-1 border border-slate-300 bg-white hover:bg-slate-100">링크복사</button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <div id="contactModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 p-4 z-[60]">
+    <div class="w-full max-w-lg bg-white border border-slate-300 p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-black text-slate-900">문의하기</h3>
+        <button id="btnCloseContact" class="px-3 py-1 border border-slate-300 hover:bg-slate-100">닫기</button>
+      </div>
+      <div class="grid gap-4">
+        <p class="text-sm font-bold text-slate-600">아래 QR 또는 링크 복사로 오픈채팅에 접속해 주세요.</p>
+        <div class="flex flex-col sm:flex-row items-center gap-4">
+          <img src="/assets/kakao-qr.png" alt="kakao qr large" class="h-44 w-44 border border-slate-300 bg-white p-2" />
+          <div class="grid gap-2 w-full">
+            <button id="btnCopyKakaoLink2" class="px-3 py-2 border border-slate-300 bg-white font-black hover:bg-slate-100">링크 복사</button>
+            <div class="text-xs font-bold text-slate-500 break-all" id="kakaoLinkPreview"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="copyToast" class="fixed hidden items-center justify-center bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-900 text-white text-sm font-black z-[70]">복사됨</div>
+
+  <script src="/app.js"></script>
+  <script>
+    const APP = window.JungdapApp;
+    const sbClient = APP.getSb();
+
+    const $ = (id) => document.getElementById(id);
+    const qs = new URLSearchParams(location.search);
+    const yearFromQs = String(qs.get("year") || "");
+    const sectionFromQs = String(qs.get("section") || "both");
+    const YEARS = (() => {
+      const arr = ["2009_pre"];
+      for (let y = 2010; y <= 2026; y += 1) arr.push(String(y));
+      return arr.reverse();
+    })();
+    const PAGE_SIZE = 10;
+    const GROUP_SIZE = 5;
+
+    let currentUser = null;
+    let profileNickname = "";
+    const state = { page: 1, totalPages: 1, totalCount: 0, rows: [] };
+
+    function sectionLabel(section) {
+      if (section === "logic") return "추리논증";
+      if (section === "lang") return "언어이해";
+      if (section === "both") return "언어+추리";
+      return "-";
+    }
+    function formLabel(form) {
+      return form === "even" ? "짝수형" : "홀수형";
+    }
+    function fmtDate(ts) {
+      const d = new Date(ts);
+      if (!Number.isFinite(d.getTime())) return "-";
+      const yy = String(d.getFullYear()).slice(2);
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${yy}/${mm}/${dd}`;
+    }
+
+    async function getProfileNicknameByUserId(uid) {
+      if (!uid) return "";
+      const { data } = await sbClient.from("profiles").select("nickname").eq("user_id", uid).maybeSingle();
+      return String(data?.nickname || "").trim();
+    }
+
+    async function getMyDisplayName() {
+      if (!currentUser) return "";
+      if (profileNickname) return profileNickname;
+      profileNickname = await getProfileNicknameByUserId(currentUser.id);
+      if (profileNickname) return profileNickname;
+      return String(currentUser.email || "").split("@")[0] || String(currentUser.id || "").slice(0, 8);
+    }
+
+    function clearRows(message) {
+      $("attemptTbody").innerHTML = "";
+      $("recordsPager").innerHTML = "";
+      $("recordsHint").textContent = message || "";
+    }
+
+    async function syncAuthUI(session) {
+      currentUser = session?.user || null;
+      const signedIn = Boolean(currentUser);
+      $("welcomeText").classList.toggle("hidden", !signedIn);
+      $("btnLogoutTop").classList.toggle("hidden", !signedIn);
+      $("btnLoginTop").classList.toggle("hidden", signedIn);
+      $("btnSignupTop").classList.toggle("hidden", signedIn);
+      if (signedIn) {
+        profileNickname = await getProfileNicknameByUserId(currentUser.id);
+        $("welcomeText").textContent = `${await getMyDisplayName()}님`;
+        $("welcomeText").style.color = "#212d2b";
+      } else {
+        $("welcomeText").style.color = "";
+      }
+    }
+
+    function fillYearOptions() {
+      $("yearSelect").innerHTML = YEARS.map((y) => `<option value="${y}">${y === "2009_pre" ? "2009 예비" : y}</option>`).join("");
+      $("yearSelect").value = YEARS.includes(yearFromQs) ? yearFromQs : "2026";
+      $("sectionSelect").value =
+        (sectionFromQs === "lang" || sectionFromQs === "logic" || sectionFromQs === "both")
+          ? sectionFromQs
+          : "both";
+    }
+
+    function renderPager() {
+      const wrap = $("recordsPager");
+      wrap.innerHTML = "";
+      if (state.totalPages <= 0) return;
+      const start = Math.floor((state.page - 1) / GROUP_SIZE) * GROUP_SIZE + 1;
+      const end = Math.min(state.totalPages, start + GROUP_SIZE - 1);
+      if (start > 1) {
+        const prev = document.createElement("button");
+        prev.className = "pager-btn";
+        prev.textContent = "이전";
+        prev.dataset.page = String(start - GROUP_SIZE);
+        wrap.appendChild(prev);
+      }
+      for (let p = start; p <= end; p += 1) {
+        const btn = document.createElement("button");
+        btn.className = `pager-btn ${p === state.page ? "active" : ""}`;
+        btn.textContent = String(p);
+        btn.dataset.page = String(p);
+        wrap.appendChild(btn);
+      }
+      if (end < state.totalPages) {
+        const next = document.createElement("button");
+        next.className = "pager-btn";
+        next.textContent = "다음";
+        next.dataset.page = String(start + GROUP_SIZE);
+        wrap.appendChild(next);
+      }
+    }
+
+    function renderRows() {
+      const tbody = $("attemptTbody");
+      tbody.innerHTML = "";
+      if (state.rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="px-3 py-4 text-sm font-black text-slate-500">기록이 없습니다.</td></tr>';
+        return;
+      }
+      const offset = (state.page - 1) * PAGE_SIZE;
+      for (let i = 0; i < state.rows.length; i += 1) {
+        const row = state.rows[i];
+        const no = offset + i + 1;
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 cursor-pointer";
+        tr.dataset.year = row.year;
+        tr.dataset.section = row.section;
+        tr.innerHTML = `
+          <td class="px-3 py-2 font-black mono text-slate-600">${no}</td>
+          <td class="px-3 py-2 font-black text-slate-700">${sectionLabel(row.section)}</td>
+          <td class="px-3 py-2 font-black text-slate-800">${row.year} (${formLabel(row.form)})</td>
+          <td class="px-3 py-2 font-black mono text-slate-700">${row.raw_score ?? "-"} / ${row.official_total ?? "-"}</td>
+          <td class="px-3 py-2 font-black mono text-slate-700">${row.standard_score ?? "-"}</td>
+          <td class="px-3 py-2 font-black mono text-slate-700">${row.percentile ?? "-"}</td>
+          <td class="px-3 py-2 font-black mono text-slate-500">${fmtDate(row.created_at)}</td>
+          <td class="px-3 py-2 text-center">
+            <button type="button" data-delete-id="${row.id}" class="px-2 py-1 border border-rose-200 bg-rose-50 text-rose-700 text-xs font-black hover:bg-rose-100">삭제</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    async function loadAttempts() {
+      if (!currentUser) return;
+      clearRows("조회 중...");
+
+      const year = $("yearSelect").value;
+      const section = $("sectionSelect").value;
+      const from = (state.page - 1) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      const applySectionFilter = (query) => {
+        if (section === "both") return query.in("section", ["lang", "logic"]);
+        return query.eq("section", section);
+      };
+
+      const buildCountQuery = () => {
+        let query = sbClient
+          .from("exam_attempts")
+          .select("id", { head: true, count: "exact" })
+          .eq("user_id", currentUser.id)
+          .eq("year", year)
+          .eq("is_deleted", false);
+        query = applySectionFilter(query);
+        return query;
+      };
+      const buildRowsQuery = () => {
+        let query = sbClient
+          .from("exam_attempts")
+          .select("id,created_at,year,section,form,raw_score,official_total,standard_score,percentile")
+          .eq("user_id", currentUser.id)
+          .eq("year", year)
+          .eq("is_deleted", false);
+        query = applySectionFilter(query);
+        return query
+          .order("created_at", { ascending: false })
+          .range(from, to);
+      };
+
+      const [{ count, error: countError }, { data, error }] = await Promise.all([
+        buildCountQuery(),
+        buildRowsQuery()
+      ]);
+
+      if (error || countError) {
+        clearRows(`오류: ${(error || countError).message}`);
+        return;
+      }
+
+      state.totalCount = count || 0;
+      state.totalPages = Math.max(1, Math.ceil(state.totalCount / PAGE_SIZE));
+      if (state.page > state.totalPages) state.page = state.totalPages;
+      state.rows = data || [];
+
+      renderRows();
+      renderPager();
+      if (state.totalCount === 0) $("recordsHint").textContent = "기록이 없습니다.";
+      else $("recordsHint").textContent = `총 ${state.totalCount}개 · ${state.page}/${state.totalPages} 페이지`;
+    }
+
+    async function deleteAttempt(attemptId) {
+      if (!currentUser) return APP.openAuth("login");
+      if (!confirm("이 기록을 삭제할까요?")) return;
+
+      const { error } = await sbClient
+        .from("exam_attempts")
+        .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+        .eq("id", attemptId)
+        .eq("user_id", currentUser.id);
+      if (error) {
+        alert(error.message || "삭제 실패");
+        return;
+      }
+      await loadAttempts();
+    }
+
+    $("btnLoginTop")?.addEventListener("click", () => APP.openAuth("login"));
+    $("btnSignupTop")?.addEventListener("click", () => APP.openAuth("signup"));
+    $("btnLoginMobile")?.addEventListener("click", () => APP.openAuth("login"));
+    $("btnSignupMobile")?.addEventListener("click", () => APP.openAuth("signup"));
+    $("btnLogoutTop").addEventListener("click", async () => {
+      await APP.hardSignOut(sbClient);
+    });
+    $("btnReload").addEventListener("click", async () => {
+      state.page = 1;
+      await loadAttempts();
+    });
+    $("recordsPager").addEventListener("click", async (e) => {
+      const target = e.target;
+      if (!(target instanceof HTMLElement)) return;
+      const page = Number(target.dataset.page || "");
+      if (!Number.isFinite(page) || page < 1 || page === state.page) return;
+      state.page = page;
+      await loadAttempts();
+    });
+    $("attemptTbody").addEventListener("click", (e) => {
+      const target = e.target;
+      if (!(target instanceof HTMLElement)) return;
+      const deleteBtn = target.closest("button[data-delete-id]");
+      if (deleteBtn instanceof HTMLButtonElement) {
+        e.stopPropagation();
+        const id = Number(deleteBtn.dataset.deleteId || "");
+        if (Number.isFinite(id)) deleteAttempt(id);
+        return;
+      }
+      const row = target.closest("tr[data-year][data-section]");
+      if (!(row instanceof HTMLElement)) return;
+      const y = row.dataset.year || $("yearSelect").value;
+      const s = row.dataset.section || $("sectionSelect").value;
+      location.href = `/accumulated.html?year=${encodeURIComponent(y)}&section=${encodeURIComponent(s)}`;
+    });
+
+    (async function init() {
+      APP.setupMobileMenu("btnMobileMenu", "mobileMenu");
+      APP.setupContactModal();
+      APP.setupAuthModal();
+      APP.setupSecretRoomHover({
+        elementId: "room-of-requirement",
+        hiddenColor: "#7092BE",
+        hoverColor: "#7496C2",
+        openColor: "#FFFFFF",
+        requiredCount: 3,
+        withinMs: 1500,
+        resetMs: 1500
+      });
+      const preview = $("kakaoLinkPreview");
+      if (preview) preview.textContent = APP.getKakaoOpenChatUrl();
+      fillYearOptions();
+      const { data } = await sbClient.auth.getSession();
+      await syncAuthUI(data.session);
+      sbClient.auth.onAuthStateChange(async (_evt, session) => {
+        await syncAuthUI(session);
+        if (session?.user) await loadAttempts();
+        else {
+          clearRows("로그인이 필요합니다.");
+          APP.openAuth("login");
+        }
+      });
+      if (!data.session) {
+        clearRows("로그인이 필요합니다.");
+        APP.openAuth("login");
+        return;
+      }
+      await loadAttempts();
+    })();
+  </script>
+</body>
+</html>
+
+

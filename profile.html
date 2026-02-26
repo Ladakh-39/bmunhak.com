@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>개인정보수정 | jungdap.com</title>
+  <link rel="icon" href="/favicon.ico" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.css" rel="stylesheet" />
+  <style>
+    :root {
+      --jd-header: #7092BE;
+    }
+    body {
+      font-family: "SUIT Variable", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      background: #ededed;
+      color: #111827;
+    }
+    .mono { font-variant-numeric: tabular-nums; }
+    .footer-logo {
+      height: 86px;
+      width: auto;
+      display: block;
+    }
+    .hc-shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <header class="border-b border-slate-400 bg-[#7092BE] text-white overflow-hidden">
+    <div class="hc-shell">
+      <div class="flex h-16 items-center gap-4 overflow-hidden">
+        <div class="flex items-center min-w-[160px]">
+          <a href="/" class="block">
+            <span class="block text-[34px] leading-none font-black tracking-tight text-white">bmunhak</span>
+          </a>
+        </div>
+
+        <nav class="hidden md:flex flex-1 items-center justify-center gap-5 lg:gap-7 text-[18px] lg:text-[21px] leading-none min-w-0 flex-nowrap whitespace-nowrap">
+          <span class="room-secret-slot inline-flex items-center justify-center w-[104px] whitespace-nowrap">
+            <a id="room-of-requirement" href="/board.html?b=room" class="leading-none transition-colors whitespace-nowrap">필요의 방</a>
+          </span>
+          <a href="/board.html?b=notice" class="leading-none hover:underline whitespace-nowrap">공지사항</a>
+          <a href="/board.html?b=intro" class="leading-none hover:underline whitespace-nowrap">가입인사</a>
+          <a href="/board.html?b=free" class="leading-none hover:underline whitespace-nowrap">자유게시판</a>
+          <a href="/board.html?b=qna" class="leading-none hover:underline whitespace-nowrap">질문</a>
+          <a href="/grader.html" class="leading-none hover:underline whitespace-nowrap">채점하기</a>
+          <a href="/my.html" class="leading-none hover:underline whitespace-nowrap">My Page</a>
+        </nav>
+
+        <div class="hidden md:flex items-center justify-end gap-3 min-w-[140px] whitespace-nowrap">
+          <button id="btnSignupTop" type="button" class="hover:underline whitespace-nowrap">회원가입</button>
+          <button id="btnLoginTop" type="button" class="hover:underline whitespace-nowrap">로그인</button>
+          <span id="welcomeText" class="hidden text-sm font-bold whitespace-nowrap"></span>
+          <button id="btnLogoutTop" type="button" class="hidden hover:underline whitespace-nowrap">로그아웃</button>
+        </div>
+
+        <button id="btnMobileMenu" class="md:hidden px-3 py-2 rounded-lg hover:bg-white/10" type="button" aria-label="menu">
+          ☰
+        </button>
+      </div>
+
+      <div id="mobileMenu" class="md:hidden hidden pb-3">
+        <div class="flex flex-col gap-2 text-base font-bold">
+          <a id="room-of-requirement-mobile" href="/board.html?b=room" class="hidden px-3 py-2 rounded-lg transition-colors whitespace-nowrap">필요의 방</a>
+          <a href="/board.html?b=notice" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">공지사항</a>
+          <a href="/board.html?b=intro" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">가입인사</a>
+          <a href="/board.html?b=free" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">자유게시판</a>
+          <a href="/board.html?b=qna" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">질문</a>
+          <a href="/grader.html" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">채점하기</a>
+          <a href="/my.html" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">My Page</a>
+
+          <div class="flex items-center gap-3 px-3 pt-2">
+            <button id="btnSignupMobile" class="hover:underline whitespace-nowrap" type="button">회원가입</button>
+            <button id="btnLoginMobile" class="hover:underline whitespace-nowrap" type="button">로그인</button>
+            <button id="btnLogoutMobile" class="hidden hover:underline whitespace-nowrap" type="button">로그아웃</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="hc-shell py-6">
+    <section class="border border-slate-300 bg-white">
+      <div class="px-4 py-3 border-b border-slate-300 bg-slate-100">
+        <h1 class="text-[26px] leading-[1.05] font-extrabold tracking-tight">개인정보수정</h1>
+      </div>
+      <div class="p-4 grid gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-[160px_1fr] items-center gap-2">
+          <label class="font-black">ID</label>
+          <div id="profileId" class="font-bold text-slate-700">-</div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-[160px_1fr_1fr] items-start gap-2">
+          <label class="font-black pt-2">비밀번호</label>
+          <input id="passwordInput" type="password" class="border border-slate-300 px-3 py-2 font-bold" placeholder="새 비밀번호" />
+          <input id="passwordConfirmInput" type="password" class="border border-slate-300 px-3 py-2 font-bold" placeholder="비밀번호 확인" />
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-[160px_1fr] items-center gap-2">
+          <label class="font-black">Name</label>
+          <input id="nicknameInput" class="border border-slate-300 px-3 py-2 font-bold" placeholder="닉네임" />
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-[160px_1fr] items-center gap-2">
+          <label class="font-black">E-mail</label>
+          <input id="emailInput" readonly class="border border-slate-300 px-3 py-2 font-bold bg-slate-50" />
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-[160px_1fr] items-start gap-2">
+          <label class="font-black pt-2">프로필 사진</label>
+          <div>
+            <input id="avatarInput" type="file" accept="image/*" class="block border border-slate-300 bg-white p-2 text-sm font-bold w-full" />
+            <img id="avatarPreview" alt="avatar" class="mt-2 max-h-72 border border-slate-300 hidden" />
+            <label class="mt-2 inline-flex items-center gap-2 text-sm font-bold text-slate-700">
+              <input id="chkDeleteAvatar" type="checkbox" class="size-4" />
+              삭제
+            </label>
+            <div class="text-xs font-bold text-slate-500 mt-1">(320px로 리사이즈되어 저장됩니다.)</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-[160px_1fr] items-start gap-2">
+          <label class="font-black pt-2">간단한 소개 글</label>
+          <textarea id="bioInput" rows="4" class="border border-slate-300 px-3 py-2 font-bold"></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-[160px_1fr] items-center gap-2">
+          <label class="font-black">Point</label>
+          <div id="pointText" class="font-black text-slate-700">-</div>
+        </div>
+
+        <div id="profileMsg" class="hidden text-sm font-black text-rose-700"></div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200">
+          <button id="btnDeleteAccount" class="px-4 py-2 border border-rose-300 bg-rose-50 text-rose-700 font-black hover:bg-rose-100">회원탈퇴</button>
+          <div class="flex items-center gap-2">
+            <a href="/my.html" class="px-4 py-2 border border-slate-300 font-black hover:bg-slate-100">닫기</a>
+            <button id="btnSaveProfile" class="px-5 py-2 bg-slate-900 text-white font-black hover:bg-black">수정완료</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="mt-8 border-t border-slate-300 bg-[#efefef] py-8">
+    <div class="hc-shell">
+      <div class="grid grid-cols-1 md:grid-cols-3 items-end gap-6 text-sm font-bold text-slate-600">
+        <div class="flex items-center justify-center md:justify-start gap-4 md:self-end">
+          <button id="btnContactOpen" class="hover:underline">문의</button>
+          <a href="/terms.html" class="hover:underline">이용약관</a>
+          <a href="/privacy.html" class="hover:underline">개인정보처리방침</a>
+        </div>
+        <div class="flex justify-center md:self-end">
+          <a href="/" class="block">
+            <span class="block text-[44px] leading-none font-black tracking-tight text-slate-700">bmunhak.com</span>
+          </a>
+        </div>
+        <div class="flex items-center justify-center md:justify-end gap-3 md:self-end">
+          <img src="/assets/kakao-qr.png" alt="kakao qr" class="h-14 w-14 border border-slate-300 bg-white p-1" />
+          <button id="btnCopyKakaoLink" class="px-3 py-1 border border-slate-300 bg-white hover:bg-slate-100">링크복사</button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <div id="contactModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 p-4 z-[60]">
+    <div class="w-full max-w-lg bg-white border border-slate-300 p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-black text-slate-900">문의하기</h3>
+        <button id="btnCloseContact" class="px-3 py-1 border border-slate-300 hover:bg-slate-100">닫기</button>
+      </div>
+      <div class="grid gap-4">
+        <p class="text-sm font-bold text-slate-600">아래 QR 또는 링크 복사로 오픈채팅에 접속해 주세요.</p>
+        <div class="flex flex-col sm:flex-row items-center gap-4">
+          <img src="/assets/kakao-qr.png" alt="kakao qr large" class="h-44 w-44 border border-slate-300 bg-white p-2" />
+          <div class="grid gap-2 w-full">
+            <button id="btnCopyKakaoLink2" class="px-3 py-2 border border-slate-300 bg-white font-black hover:bg-slate-100">링크 복사</button>
+            <div class="text-xs font-bold text-slate-500 break-all" id="kakaoLinkPreview"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="copyToast" class="fixed hidden items-center justify-center bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-900 text-white text-sm font-black z-[70]">복사됨</div>
+
+  <script src="/app.js"></script>
+  <script>
+    const APP = window.JungdapApp;
+    const sbClient = APP.getSb();
+    const AVATAR_BUCKET = "avatars";
+
+    const $ = (id) => document.getElementById(id);
+    let currentUser = null;
+    let currentAvatarPath = "";
+    let hasAvatarPathColumn = true;
+    let hasBioColumn = true;
+
+    function setProfileMsg(message) {
+      const node = $("profileMsg");
+      if (!message) {
+        node.textContent = "";
+        node.classList.add("hidden");
+        return;
+      }
+      node.textContent = message;
+      node.classList.remove("hidden");
+    }
+
+    function isMissingColumn(error, column) {
+      return APP.isMissingColumnError(error, column);
+    }
+
+    async function getProfileNicknameByUserId(uid) {
+      if (!uid) return "";
+      const { data } = await sbClient.from("profiles").select("nickname").eq("user_id", uid).maybeSingle();
+      return String(data?.nickname || "").trim();
+    }
+
+    async function getMyDisplayName() {
+      if (!currentUser) return "";
+      const nick = await getProfileNicknameByUserId(currentUser.id);
+      if (nick) return nick;
+      return String(currentUser.email || "").split("@")[0] || String(currentUser.id || "").slice(0, 8);
+    }
+
+    async function syncAuthUI(session) {
+      currentUser = session?.user || null;
+      const signedIn = Boolean(currentUser);
+      $("welcomeText").classList.toggle("hidden", !signedIn);
+      $("btnLogoutTop").classList.toggle("hidden", !signedIn);
+      $("btnLoginTop").classList.toggle("hidden", signedIn);
+      $("btnSignupTop").classList.toggle("hidden", signedIn);
+      if (signedIn) {
+        $("welcomeText").textContent = `${await getMyDisplayName()}님`;
+        $("welcomeText").style.color = "#212d2b";
+      } else {
+        $("welcomeText").style.color = "";
+      }
+    }
+
+    async function loadPointSummary() {
+      if (!currentUser) return;
+      const [{ count: postCount }, { count: commentCount }] = await Promise.all([
+        sbClient.from("board_posts_active").select("id", { count: "exact", head: true }).eq("author_id", currentUser.id).eq("is_deleted", false),
+        sbClient.from("board_comments").select("id", { count: "exact", head: true }).eq("author_id", currentUser.id).eq("is_deleted", false)
+      ]);
+      const posts = Number(postCount || 0);
+      const comments = Number(commentCount || 0);
+      const points = posts + comments;
+      $("pointText").textContent = `Point ${points} 점 ( 작성글수 : ${posts}, 댓글 : ${comments} )`;
+    }
+
+    async function resolveAvatarUrl(path) {
+      if (!path) return "";
+      const { data: signedData, error: signedError } = await sbClient.storage.from(AVATAR_BUCKET).createSignedUrl(path, 3600);
+      if (!signedError && signedData?.signedUrl) return signedData.signedUrl;
+      const { data: pubData } = sbClient.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+      return pubData?.publicUrl || "";
+    }
+
+    async function loadProfile() {
+      if (!currentUser) return;
+      $("profileId").textContent = `${String(currentUser.email || "").split("@")[0]} (${currentUser.id.slice(0, 8)})`;
+      $("emailInput").value = currentUser.email || "";
+
+      const baseCols = ["user_id", "nickname"];
+      if (hasAvatarPathColumn) baseCols.push("avatar_path");
+      if (hasBioColumn) baseCols.push("bio");
+
+      let { data, error } = await sbClient.from("profiles").select(baseCols.join(",")).eq("user_id", currentUser.id).maybeSingle();
+      if (error && ((hasAvatarPathColumn && isMissingColumn(error, "avatar_path")) || (hasBioColumn && isMissingColumn(error, "bio")))) {
+        if (isMissingColumn(error, "avatar_path")) hasAvatarPathColumn = false;
+        if (isMissingColumn(error, "bio")) hasBioColumn = false;
+        const retryCols = ["user_id", "nickname"];
+        ({ data, error } = await sbClient.from("profiles").select(retryCols.join(",")).eq("user_id", currentUser.id).maybeSingle());
+      }
+
+      if (error) {
+        setProfileMsg(error.message || "프로필을 불러오지 못했습니다.");
+        return;
+      }
+
+      $("nicknameInput").value = data?.nickname || "";
+      $("bioInput").value = data?.bio || "";
+      currentAvatarPath = String(data?.avatar_path || "");
+      const avatarUrl = await resolveAvatarUrl(currentAvatarPath);
+      if (avatarUrl) {
+        $("avatarPreview").src = avatarUrl;
+        $("avatarPreview").classList.remove("hidden");
+      } else {
+        $("avatarPreview").classList.add("hidden");
+      }
+      await loadPointSummary();
+    }
+
+    function resizeImageTo320(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            const width = 320;
+            const ratio = width / img.width;
+            const height = Math.max(1, Math.round(img.height * ratio));
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+              reject(new Error("이미지 처리 실패"));
+              return;
+            }
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob((blob) => {
+              if (!blob) {
+                reject(new Error("이미지 변환 실패"));
+                return;
+              }
+              resolve(blob);
+            }, "image/jpeg", 0.92);
+          };
+          img.onerror = () => reject(new Error("이미지를 읽을 수 없습니다."));
+          img.src = String(reader.result || "");
+        };
+        reader.onerror = () => reject(new Error("파일을 읽을 수 없습니다."));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function uploadAvatarIfNeeded() {
+      const file = $("avatarInput").files?.[0] || null;
+      const deleteAvatar = $("chkDeleteAvatar").checked;
+
+      if (deleteAvatar && currentAvatarPath) {
+        await sbClient.storage.from(AVATAR_BUCKET).remove([currentAvatarPath]);
+        currentAvatarPath = "";
+        return "";
+      }
+      if (!file) return currentAvatarPath || "";
+
+      const resized = await resizeImageTo320(file);
+      const path = `${currentUser.id}/avatar_${Date.now()}.jpg`;
+      const { error } = await sbClient.storage.from(AVATAR_BUCKET).upload(path, resized, {
+        upsert: true,
+        contentType: "image/jpeg"
+      });
+      if (error) throw error;
+
+      if (currentAvatarPath && currentAvatarPath !== path) {
+        await sbClient.storage.from(AVATAR_BUCKET).remove([currentAvatarPath]);
+      }
+      currentAvatarPath = path;
+      return path;
+    }
+
+    async function saveProfile() {
+      if (!currentUser) return APP.openAuth("login");
+      setProfileMsg("");
+
+      const password = $("passwordInput").value;
+      const passwordConfirm = $("passwordConfirmInput").value;
+      if (password || passwordConfirm) {
+        if (password !== passwordConfirm) {
+          setProfileMsg("비밀번호 확인이 일치하지 않습니다.");
+          return;
+        }
+        if (password.length < 8) {
+          setProfileMsg("비밀번호는 8자 이상으로 입력하세요.");
+          return;
+        }
+      }
+
+      try {
+        const avatarPath = await uploadAvatarIfNeeded();
+        const profilePayload = {
+          nickname: $("nicknameInput").value.trim()
+        };
+        if (hasBioColumn) profilePayload.bio = $("bioInput").value.trim();
+        if (hasAvatarPathColumn) profilePayload.avatar_path = avatarPath;
+
+        let { error } = await sbClient.from("profiles").update(profilePayload).eq("user_id", currentUser.id);
+        if (error && ((hasBioColumn && isMissingColumn(error, "bio")) || (hasAvatarPathColumn && isMissingColumn(error, "avatar_path")))) {
+          if (isMissingColumn(error, "bio")) {
+            hasBioColumn = false;
+            delete profilePayload.bio;
+          }
+          if (isMissingColumn(error, "avatar_path")) {
+            hasAvatarPathColumn = false;
+            delete profilePayload.avatar_path;
+          }
+          ({ error } = await sbClient.from("profiles").update(profilePayload).eq("user_id", currentUser.id));
+        }
+        if (error) throw error;
+
+        if (password) {
+          const { error: pwError } = await sbClient.auth.updateUser({ password });
+          if (pwError) throw pwError;
+        }
+
+        $("passwordInput").value = "";
+        $("passwordConfirmInput").value = "";
+        $("chkDeleteAvatar").checked = false;
+        $("avatarInput").value = "";
+        setProfileMsg("저장되었습니다.");
+        await loadProfile();
+      } catch (error) {
+        setProfileMsg(error?.message || "저장에 실패했습니다.");
+      }
+    }
+
+    async function deleteAccount() {
+      if (!currentUser) return APP.openAuth("login");
+      if (!confirm("정말 회원탈퇴할까요? 이 작업은 되돌릴 수 없습니다.")) return;
+      setProfileMsg("");
+      try {
+        const { data } = await sbClient.auth.getSession();
+        const token = data?.session?.access_token || "";
+        if (!token) {
+          setProfileMsg("다시 로그인 후 시도해 주세요.");
+          return;
+        }
+        const res = await fetch("/.netlify/functions/delete-account", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: "{}"
+        });
+        const payload = await res.json().catch(() => null);
+        if (!res.ok || !payload?.ok) {
+          setProfileMsg(payload?.message || "회원탈퇴 처리 실패");
+          return;
+        }
+        await APP.hardSignOut(sbClient);
+        location.href = "/";
+      } catch {
+        setProfileMsg("회원탈퇴 처리 중 오류가 발생했습니다.");
+      }
+    }
+
+    $("btnLoginTop")?.addEventListener("click", () => APP.openAuth("login"));
+    $("btnSignupTop")?.addEventListener("click", () => APP.openAuth("signup"));
+    $("btnLoginMobile")?.addEventListener("click", () => APP.openAuth("login"));
+    $("btnSignupMobile")?.addEventListener("click", () => APP.openAuth("signup"));
+    $("btnLogoutTop").addEventListener("click", async () => {
+      await APP.hardSignOut(sbClient);
+    });
+    $("btnSaveProfile").addEventListener("click", saveProfile);
+    $("btnDeleteAccount").addEventListener("click", deleteAccount);
+
+    $("avatarInput").addEventListener("change", () => {
+      const file = $("avatarInput").files?.[0] || null;
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      $("avatarPreview").src = url;
+      $("avatarPreview").classList.remove("hidden");
+    });
+
+    (async function init() {
+      APP.setupMobileMenu("btnMobileMenu", "mobileMenu");
+      APP.setupContactModal();
+      APP.setupAuthModal();
+      APP.setupSecretRoomHover({
+        elementId: "room-of-requirement",
+        hiddenColor: "#7092BE",
+        hoverColor: "#7496C2",
+        openColor: "#FFFFFF",
+        requiredCount: 3,
+        withinMs: 1500,
+        resetMs: 1500
+      });
+      const preview = $("kakaoLinkPreview");
+      if (preview) preview.textContent = APP.getKakaoOpenChatUrl();
+
+      const { data } = await sbClient.auth.getSession();
+      await syncAuthUI(data.session);
+      sbClient.auth.onAuthStateChange(async (_event, session) => {
+        await syncAuthUI(session);
+        if (session?.user) await loadProfile();
+        else APP.openAuth("login");
+      });
+
+      if (!data.session) {
+        APP.openAuth("login");
+        return;
+      }
+      await loadProfile();
+    })();
+  </script>
+</body>
+</html>
+
+

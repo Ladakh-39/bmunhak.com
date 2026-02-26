@@ -15,29 +15,36 @@
 <body class="min-h-screen">
 <header class="border-b border-slate-400 bg-[#7b90b8] text-white">
     <div class="mx-auto flex h-16 max-w-[1180px] items-center gap-4 px-4">
-        <a href="/index.html" class="text-[50px] leading-none font-black tracking-tight text-[#2f4d66]">bmunhak</a>
-        <nav class="hidden flex-1 items-center justify-center gap-7 text-[30px] font-semibold md:flex">
-            <a href="#" class="hover:underline">공지사항</a>
-            <a href="#" class="hover:underline">가입인사</a>
-            <a href="#" class="hover:underline">자유게시판</a>
-            <a href="#" class="hover:underline">질문</a>
+        <a href="/index.html" class="text-[34px] leading-none font-black tracking-tight text-[#2f4d66]">bmunhak</a>
+        <nav class="hidden flex-1 items-center justify-center gap-7 text-[18px] font-semibold md:flex">
+            <a href="/board.html?b=notice" class="hover:underline">공지사항</a>
+            <a href="/board.html?b=intro" class="hover:underline">가입인사</a>
+            <a href="/board.html?b=free" class="hover:underline">자유게시판</a>
+            <a href="/board.html?b=qna" class="hover:underline">질문</a>
             <a href="/grader.html" class="hover:underline">채점하기</a>
-            <a href="#" class="hover:underline">My Page</a>
+            <a href="/my.html" class="hover:underline">My Page</a>
         </nav>
-        <div class="hidden items-center gap-3 text-lg font-semibold md:flex">
-            <a href="#" class="hover:underline">회원가입</a>
-            <a href="#" class="hover:underline">로그인</a>
+        <div class="hidden items-center gap-3 text-sm font-semibold md:flex">
+            <button id="btnSignupTop" type="button" class="hover:underline">회원가입</button>
+            <button id="btnLoginTop" type="button" class="hover:underline">로그인</button>
+            <span id="welcomeText" class="hidden text-sm font-bold"></span>
+            <button id="btnLogoutTop" type="button" class="hidden hover:underline">로그아웃</button>
         </div>
         <button id="btnMenu" class="rounded-lg px-3 py-2 text-2xl md:hidden" type="button">☰</button>
     </div>
     <div id="mobileMenu" class="mx-auto hidden max-w-[1180px] px-4 pb-3 md:hidden">
         <div class="grid gap-1 text-xl font-semibold">
-            <a href="#" class="rounded px-2 py-1 hover:bg-white/10">공지사항</a>
-            <a href="#" class="rounded px-2 py-1 hover:bg-white/10">가입인사</a>
-            <a href="#" class="rounded px-2 py-1 hover:bg-white/10">자유게시판</a>
-            <a href="#" class="rounded px-2 py-1 hover:bg-white/10">질문</a>
+            <a href="/board.html?b=notice" class="rounded px-2 py-1 hover:bg-white/10">공지사항</a>
+            <a href="/board.html?b=intro" class="rounded px-2 py-1 hover:bg-white/10">가입인사</a>
+            <a href="/board.html?b=free" class="rounded px-2 py-1 hover:bg-white/10">자유게시판</a>
+            <a href="/board.html?b=qna" class="rounded px-2 py-1 hover:bg-white/10">질문</a>
             <a href="/grader.html" class="rounded px-2 py-1 hover:bg-white/10">채점하기</a>
-            <a href="#" class="rounded px-2 py-1 hover:bg-white/10">My Page</a>
+            <a href="/my.html" class="rounded px-2 py-1 hover:bg-white/10">My Page</a>
+        </div>
+        <div class="flex items-center gap-3 px-3 pt-2">
+            <button id="btnSignupMobile" class="hover:underline" type="button">회원가입</button>
+            <button id="btnLoginMobile" class="hover:underline" type="button">로그인</button>
+            <button id="btnLogoutMobile" class="hidden hover:underline" type="button">로그아웃</button>
         </div>
     </div>
 </header>
@@ -93,7 +100,7 @@
 </main>
 
 <footer class="border-t border-slate-300 bg-[#d7d9de] py-6">
-    <div class="mx-auto max-w-[1180px] px-4 text-center text-[48px] font-semibold tracking-tight text-[#36516b] md:text-[64px]">
+    <div class="mx-auto max-w-[1180px] px-4 text-center text-[44px] font-semibold tracking-tight text-[#36516b]">
         bmunhak.com
     </div>
 </footer>
@@ -415,6 +422,9 @@
     setDefaultRange();
     resetAll();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/app.js"></script>
 
 </body>
 </html>
+

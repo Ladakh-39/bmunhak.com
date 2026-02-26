@@ -29,20 +29,23 @@
   <header class="border-b border-slate-400 bg-[var(--bm-header)] text-white">
     <div class="shell">
       <div class="flex h-16 items-center gap-4">
-        <a href="/index.html" class="text-[50px] leading-none font-black tracking-tight text-[var(--bm-text)]">bmunhak</a>
+        <a href="/index.html" class="text-[34px] leading-none font-black tracking-tight text-[var(--bm-text)]">bmunhak</a>
 
-        <nav class="hidden md:flex flex-1 items-center justify-center gap-8 text-[30px] leading-none font-semibold whitespace-nowrap">
-          <a href="#" class="hover:underline">공지사항</a>
-          <a href="#" class="hover:underline">가입인사</a>
-          <a href="#" class="hover:underline">자유게시판</a>
-          <a href="#" class="hover:underline">질문</a>
+        <nav class="hidden md:flex flex-1 items-center justify-center gap-8 text-[18px] leading-none font-semibold whitespace-nowrap">
+          <a href="/board.html?b=room" class="hover:underline">필요의 방</a>
+          <a href="/board.html?b=notice" class="hover:underline">공지사항</a>
+          <a href="/board.html?b=intro" class="hover:underline">가입인사</a>
+          <a href="/board.html?b=free" class="hover:underline">자유게시판</a>
+          <a href="/board.html?b=qna" class="hover:underline">질문</a>
           <a href="/grader.html" class="hover:underline">채점하기</a>
-          <a href="#" class="hover:underline">My Page</a>
+          <a href="/my.html" class="hover:underline">My Page</a>
         </nav>
 
-        <div class="hidden md:flex items-center justify-end gap-4 text-lg font-semibold whitespace-nowrap">
-          <a href="#" class="hover:underline">회원가입</a>
-          <a href="#" class="hover:underline">로그인</a>
+        <div class="hidden md:flex items-center justify-end gap-3 text-sm font-semibold whitespace-nowrap">
+          <button id="btnSignupTop" type="button" class="hover:underline">회원가입</button>
+          <button id="btnLoginTop" type="button" class="hover:underline">로그인</button>
+          <span id="welcomeText" class="hidden text-sm font-bold"></span>
+          <button id="btnLogoutTop" type="button" class="hidden hover:underline">로그아웃</button>
         </div>
 
         <button id="btnMobileMenu" class="md:hidden rounded px-3 py-2 text-2xl" type="button" aria-label="menu">☰</button>
@@ -50,12 +53,18 @@
 
       <div id="mobileMenu" class="md:hidden hidden pb-3">
         <div class="grid gap-1 text-xl font-semibold">
-          <a href="#" class="rounded px-2 py-1 hover:bg-white/10">공지사항</a>
-          <a href="#" class="rounded px-2 py-1 hover:bg-white/10">가입인사</a>
-          <a href="#" class="rounded px-2 py-1 hover:bg-white/10">자유게시판</a>
-          <a href="#" class="rounded px-2 py-1 hover:bg-white/10">질문</a>
+          <a href="/board.html?b=room" class="rounded px-2 py-1 hover:bg-white/10">필요의 방</a>
+          <a href="/board.html?b=notice" class="rounded px-2 py-1 hover:bg-white/10">공지사항</a>
+          <a href="/board.html?b=intro" class="rounded px-2 py-1 hover:bg-white/10">가입인사</a>
+          <a href="/board.html?b=free" class="rounded px-2 py-1 hover:bg-white/10">자유게시판</a>
+          <a href="/board.html?b=qna" class="rounded px-2 py-1 hover:bg-white/10">질문</a>
           <a href="/grader.html" class="rounded px-2 py-1 hover:bg-white/10">채점하기</a>
-          <a href="#" class="rounded px-2 py-1 hover:bg-white/10">My Page</a>
+          <a href="/my.html" class="rounded px-2 py-1 hover:bg-white/10">My Page</a>
+        </div>
+        <div class="flex items-center gap-3 px-3 pt-2">
+          <button id="btnSignupMobile" class="hover:underline" type="button">회원가입</button>
+          <button id="btnLoginMobile" class="hover:underline" type="button">로그인</button>
+          <button id="btnLogoutMobile" class="hidden hover:underline" type="button">로그아웃</button>
         </div>
       </div>
     </div>
@@ -64,13 +73,15 @@
   <main class="py-3">
     <section class="shell border border-slate-300 bg-[#efefef] pt-3">
       <div class="border-y border-slate-300 bg-white">
-        <img src="/image/bmunhak.png" alt="bmunhak 대문" class="block h-auto w-full" />
+        <a href="/home.html" class="block cursor-pointer">
+          <img src="/image/bmunhak.png" alt="bmunhak 대문" class="block h-auto w-full" />
+        </a>
       </div>
     </section>
   </main>
 
   <footer class="mt-0 border-t border-slate-300 bg-[var(--bm-bg)] py-8">
-    <div class="shell text-center text-[58px] leading-none font-semibold tracking-tight text-[var(--bm-text)] md:text-[64px]">
+    <div class="shell text-center text-[44px] leading-none font-semibold tracking-tight text-[var(--bm-text)]">
       bmunhak.com
     </div>
   </footer>
@@ -82,5 +93,8 @@
       mobileMenu.classList.toggle("hidden");
     });
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/app.js"></script>
 </body>
 </html>
+
