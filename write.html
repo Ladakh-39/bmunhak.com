@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>글쓰기 | jungdap.com</title>
+  <link rel="icon" href="/favicon.ico" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.css" rel="stylesheet" />
+  <style>
+    :root {
+      --jd-header: #7092BE;
+    }
+    body {
+      font-family: "SUIT Variable", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      background: #ededed;
+      color: #111827;
+    }
+    .hc-shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+    .editor-box {
+      min-height: 420px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      padding: 12px;
+      font-size: 16px;
+      line-height: 1.7;
+      font-weight: 700;
+      outline: none;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+    .editor-box:empty::before {
+      content: attr(data-placeholder);
+      color: #94a3b8;
+      font-weight: 700;
+    }
+    .footer-logo {
+      height: 86px;
+      width: auto;
+      display: block;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <header class="border-b border-slate-400 bg-[#7092BE] text-white overflow-hidden">
+    <div class="hc-shell">
+      <div class="flex h-16 items-center gap-4 overflow-hidden">
+        <div class="flex items-center min-w-[160px]">
+          <a href="/" class="block">
+            <img src="/logo_export.svg" alt="jungdap" class="h-8 w-auto block" />
+          </a>
+        </div>
+
+        <nav class="hidden md:flex flex-1 items-center justify-center gap-5 lg:gap-7 text-[18px] lg:text-[21px] leading-none min-w-0 flex-nowrap whitespace-nowrap">
+          <span class="room-secret-slot inline-flex items-center justify-center w-[104px] whitespace-nowrap">
+            <a id="room-of-requirement" href="/board.html?b=room" class="leading-none transition-colors whitespace-nowrap">필요의 방</a>
+          </span>
+          <a href="/board.html?b=notice" class="leading-none hover:underline whitespace-nowrap">공지사항</a>
+          <a href="/board.html?b=intro" class="leading-none hover:underline whitespace-nowrap">가입인사</a>
+          <a href="/board.html?b=free" class="leading-none hover:underline whitespace-nowrap">자유게시판</a>
+          <a href="/board.html?b=qna" class="leading-none hover:underline whitespace-nowrap">질문</a>
+          <a href="/grader.html" class="leading-none hover:underline whitespace-nowrap">채점하기</a>
+          <a href="/my.html" class="leading-none hover:underline whitespace-nowrap">My Page</a>
+        </nav>
+
+        <div class="hidden md:flex items-center justify-end gap-3 min-w-[140px] whitespace-nowrap">
+          <button id="btnSignupTop" type="button" class="hover:underline whitespace-nowrap">회원가입</button>
+          <button id="btnLoginTop" type="button" class="hover:underline whitespace-nowrap">로그인</button>
+          <span id="welcomeText" class="hidden text-sm font-bold whitespace-nowrap"></span>
+          <button id="btnLogoutTop" type="button" class="hidden hover:underline whitespace-nowrap">로그아웃</button>
+        </div>
+
+        <button id="btnMobileMenu" class="md:hidden px-3 py-2 rounded-lg hover:bg-white/10" type="button" aria-label="menu">
+          ☰
+        </button>
+      </div>
+
+      <div id="mobileMenu" class="md:hidden hidden pb-3">
+        <div class="flex flex-col gap-2 text-base font-bold">
+          <a id="room-of-requirement-mobile" href="/board.html?b=room" class="hidden px-3 py-2 rounded-lg transition-colors whitespace-nowrap">필요의 방</a>
+          <a href="/board.html?b=notice" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">공지사항</a>
+          <a href="/board.html?b=intro" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">가입인사</a>
+          <a href="/board.html?b=free" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">자유게시판</a>
+          <a href="/board.html?b=qna" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">질문</a>
+          <a href="/grader.html" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">채점하기</a>
+          <a href="/my.html" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">My Page</a>
+
+          <div class="flex items-center gap-3 px-3 pt-2">
+            <button id="btnSignupMobile" class="hover:underline whitespace-nowrap" type="button">회원가입</button>
+            <button id="btnLoginMobile" class="hover:underline whitespace-nowrap" type="button">로그인</button>
+            <button id="btnLogoutMobile" class="hidden hover:underline whitespace-nowrap" type="button">로그아웃</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="hc-shell py-6">
+    <section class="bg-white border border-slate-300 mb-4">
+      <div class="px-4 py-3 border-b border-slate-300 bg-slate-100 flex items-center justify-between gap-2">
+        <h1 id="pageTitle" class="text-[26px] leading-[1.05] font-extrabold tracking-tight">글쓰기</h1>
+        <a id="backToList" href="/board.html?b=free" class="px-4 py-2 border border-slate-300 bg-white text-sm font-black hover:bg-slate-100">목록</a>
+      </div>
+      <ul id="boardDesc" class="px-4 py-3 space-y-1 text-[15px] font-bold text-slate-600"></ul>
+    </section>
+
+    <section class="bg-white border border-slate-300 p-4">
+      <div class="grid gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label for="sectionSelect" class="block text-xs font-black text-slate-500 mb-1">게시판</label>
+            <select id="sectionSelect" class="w-full border border-slate-300 px-3 py-2 text-sm font-black bg-white">
+              <option value="notice">공지사항</option>
+              <option value="welcome">가입인사</option>
+              <option value="free">자유게시판</option>
+              <option value="study">스터디 모집</option>
+              <option value="review">시험후기</option>
+              <option value="lang">언어이해</option>
+              <option value="logic">추리논증</option>
+              <option value="room">필요의 방</option>
+            </select>
+          </div>
+          <div>
+            <label for="prefixSelect" class="block text-xs font-black text-slate-500 mb-1">말머리</label>
+            <select id="prefixSelect" class="w-full border border-slate-300 px-3 py-2 text-sm font-black bg-white"></select>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 text-2xl font-black">
+          <label class="inline-flex items-center gap-2"><input id="chkHtml" type="checkbox" class="size-5" />HTML</label>
+          <label class="inline-flex items-center gap-2"><input id="chkAnonymous" type="checkbox" class="size-5" />익명</label>
+        </div>
+
+        <div>
+          <label for="titleInput" class="block text-xs font-black text-slate-500 mb-1">제목</label>
+          <input id="titleInput" maxlength="120" class="w-full border border-slate-300 px-3 py-2 text-base font-bold" placeholder="제목" />
+        </div>
+
+        <div>
+          <div class="flex items-center justify-end gap-2 mb-2">
+          <button type="button" id="btnToggleTextHtml" class="px-4 py-1 border border-slate-300 bg-slate-700 text-white text-lg font-black">TEXT</button>
+            <button type="button" id="btnToggleEditor" class="px-4 py-1 border border-slate-300 bg-white text-lg font-black hover:bg-slate-100">에디터</button>
+          </div>
+          <div id="editorToolbar" class="hidden mb-2 flex flex-wrap items-center gap-2 border border-slate-300 bg-slate-50 p-2">
+            <button type="button" data-cmd="bold" class="px-3 py-1 border border-slate-300 bg-white font-black hover:bg-slate-100">굵게</button>
+            <button type="button" data-cmd="strikeThrough" class="px-3 py-1 border border-slate-300 bg-white font-black hover:bg-slate-100">취소선</button>
+            <button type="button" data-cmd="justifyLeft" class="px-3 py-1 border border-slate-300 bg-white font-black hover:bg-slate-100">좌</button>
+            <button type="button" data-cmd="justifyCenter" class="px-3 py-1 border border-slate-300 bg-white font-black hover:bg-slate-100">중</button>
+            <button type="button" data-cmd="justifyRight" class="px-3 py-1 border border-slate-300 bg-white font-black hover:bg-slate-100">우</button>
+            <button type="button" data-cmd="indent" class="px-3 py-1 border border-slate-300 bg-white font-black hover:bg-slate-100">들여쓰기</button>
+            <button type="button" data-cmd="outdent" class="px-3 py-1 border border-slate-300 bg-white font-black hover:bg-slate-100">내어쓰기</button>
+          </div>
+          <textarea id="bodyInput" rows="15" class="w-full border border-slate-300 px-3 py-3 text-base font-bold leading-relaxed" placeholder="내용을 입력하세요."></textarea>
+          <div id="editorBox" class="editor-box hidden" contenteditable="true" data-placeholder="내용을 입력하세요."></div>
+          <div id="roomWriteMeta" class="hidden mt-2 text-xs font-black text-slate-500 mono">오늘 0/5 · 0/500</div>
+        </div>
+
+        <div class="grid gap-3">
+          <div>
+            <label for="link1Input" class="block text-2xl font-black mb-1">Link #1</label>
+            <input id="link1Input" type="url" class="w-full border border-slate-300 px-3 py-2 text-base font-bold" placeholder="https://" />
+          </div>
+          <div>
+            <label for="link2Input" class="block text-2xl font-black mb-1">Link #2</label>
+            <input id="link2Input" type="url" class="w-full border border-slate-300 px-3 py-2 text-base font-bold" placeholder="https://" />
+          </div>
+        </div>
+
+        <div class="grid gap-2">
+          <label for="fileInput" class="block text-xl font-black">파일 첨부</label>
+          <input id="fileInput" type="file" multiple class="block w-full border border-slate-300 bg-white p-2 text-sm font-bold" />
+          <div id="uploadLimitLabel" class="text-2xl font-black">업로드는 - 까지 가능</div>
+          <div id="fileList" class="text-sm font-bold text-slate-600"></div>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div id="msg" class="hidden text-sm font-black text-rose-700"></div>
+          <button type="button" id="btnSave" class="px-8 py-3 bg-[#5467AC] text-white text-lg font-black hover:brightness-110">저장</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="mt-8 border-t border-slate-300 bg-[#efefef] py-8">
+    <div class="hc-shell">
+      <div class="grid grid-cols-1 md:grid-cols-3 items-end gap-6 text-sm font-bold text-slate-600">
+        <div class="flex items-center justify-center md:justify-start gap-4 md:self-end">
+          <button id="btnContactOpen" class="hover:underline">문의</button>
+          <a href="/terms.html" class="hover:underline">이용약관</a>
+          <a href="/privacy.html" class="hover:underline">개인정보처리방침</a>
+        </div>
+        <div class="flex justify-center md:self-end">
+          <a href="/" class="block">
+            <img src="/logo_export.svg" alt="jungdap" class="h-[86px] w-auto block" />
+          </a>
+        </div>
+        <div class="flex items-center justify-center md:justify-end gap-3 md:self-end">
+          <img src="/assets/kakao-qr.png" alt="kakao qr" class="h-14 w-14 border border-slate-300 bg-white p-1" />
+          <button id="btnCopyKakaoLink" class="px-3 py-1 border border-slate-300 bg-white hover:bg-slate-100">링크복사</button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <div id="contactModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 p-4 z-[60]">
+    <div class="w-full max-w-lg bg-white border border-slate-300 p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-black text-slate-900">문의하기</h3>
+        <button id="btnCloseContact" class="px-3 py-1 border border-slate-300 hover:bg-slate-100">닫기</button>
+      </div>
+      <div class="grid gap-4">
+        <p class="text-sm font-bold text-slate-600">아래 QR 또는 링크 복사로 오픈채팅에 접속해 주세요.</p>
+        <div class="flex flex-col sm:flex-row items-center gap-4">
+          <img src="/assets/kakao-qr.png" alt="kakao qr large" class="h-44 w-44 border border-slate-300 bg-white p-2" />
+          <div class="grid gap-2 w-full">
+            <button id="btnCopyKakaoLink2" class="px-3 py-2 border border-slate-300 bg-white font-black hover:bg-slate-100">링크 복사</button>
+            <div class="text-xs font-bold text-slate-500 break-all" id="kakaoLinkPreview"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="copyToast" class="fixed hidden items-center justify-center bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-900 text-white text-sm font-black z-[70]">복사됨</div>
+
+  <script src="/app.js"></script>
+  <script>
+    const APP = window.JungdapApp;
+    const sbClient = APP.getSb();
+
+    const MAX_FILE_SIZE = 4 * 1024 * 1024;
+    const ROOM_DAILY_LIMIT = 5;
+
+    const $ = (id) => document.getElementById(id);
+    const qs = new URLSearchParams(location.search);
+    const isEdit = qs.get("edit") === "1";
+    const editId = Number(qs.get("id"));
+    const defaultSectionRaw = String(qs.get("b") || qs.get("board") || "free").toLowerCase();
+    const defaultSection = APP.parseSectionSlug(defaultSectionRaw, "free");
+
+    const STUDY_REGION_PREFIXES = [
+      "강원", "경기북부", "경기남부", "경남", "경북", "광주", "대구", "대전", "부산",
+      "서울동북", "서울서북", "서울동남", "서울서남", "서울도심", "세종", "울산", "인천",
+      "전남", "전북", "제주", "충남", "충북"
+    ];
+
+    const PREFIX_OPTIONS = {
+      notice: ["공지"],
+      free: ["자유", "질문", "정보", "기타"],
+      welcome: ["자유", "기타"],
+      study: STUDY_REGION_PREFIXES,
+      review: ["시대인재", "해커스", "메가", "법률저널", "프라임", "시험후기"],
+      room: ["자유", "일상", "질문", "정보"],
+      lang: ["질문", "해설", "토론", "자료"],
+      logic: ["질문", "해설", "토론", "자료"]
+    };
+
+    let currentUser = null;
+    let profileNickname = "";
+    let loadedPost = null;
+    let isBoardAdmin = false;
+    let htmlColumnAvailable = true;
+    let anonymousColumnAvailable = true;
+    let link1ColumnAvailable = true;
+    let link2ColumnAvailable = true;
+    let authorDisplayAvailable = true;
+    let prefixColumnAvailable = true;
+    let roomTodayCount = 0;
+
+    const editorState = {
+      htmlMode: false,
+      useRichEditor: false
+    };
+
+    function setMsg(message) {
+      const node = $("msg");
+      if (!message) {
+        node.textContent = "";
+        node.classList.add("hidden");
+        return;
+      }
+      node.textContent = message;
+      node.classList.remove("hidden");
+    }
+
+    function isMissingColumn(error, column) {
+      return APP.isMissingColumnError(error, column);
+    }
+
+    function isMissingTable(error, table) {
+      const msg = String(error?.message || "").toLowerCase();
+      const tbl = String(table || "").toLowerCase();
+      return msg.includes(tbl) && (msg.includes("does not exist") || msg.includes("schema cache"));
+    }
+
+    async function getMyDisplayName() {
+      if (!currentUser) return "";
+      if (profileNickname) return profileNickname;
+      const { data } = await sbClient.from("profiles").select("nickname").eq("user_id", currentUser.id).maybeSingle();
+      const nick = String(data?.nickname || "").trim();
+      if (nick) {
+        profileNickname = nick;
+        return nick;
+      }
+      const local = String(currentUser.email || "").split("@")[0];
+      return local || String(currentUser.id || "").slice(0, 8);
+    }
+
+    function deriveAuthorDisplay() {
+      if ($("chkAnonymous").checked) return "익명";
+      const nick = String(profileNickname || "").trim();
+      if (nick) return nick;
+      const email = String(currentUser?.email || "").trim().toLowerCase();
+      const local = email ? email.split("@")[0] : "";
+      return local ? local.slice(0, 12) : "";
+    }
+
+    async function detectBoardAdmin() {
+      if (!currentUser) return false;
+      const { data, error } = await sbClient.rpc("is_board_admin", { p_uid: currentUser.id });
+      if (error) return false;
+      return Boolean(data);
+    }
+
+    function syncSectionDesc() {
+      const section = $("sectionSelect").value;
+      $("backToList").href = `/board.html?b=${encodeURIComponent(section)}`;
+      const meta = APP.SECTION_META[section] || APP.SECTION_META.free;
+      $("boardDesc").innerHTML = (meta.descBullets || []).map((line) => `<li>- ${APP.escapeHtml(line)}</li>`).join("");
+    }
+
+    function syncSectionOptionsForRole() {
+      const sectionSelect = $("sectionSelect");
+      const noticeOption = sectionSelect.querySelector('option[value="notice"]');
+      if (!noticeOption) return;
+      noticeOption.hidden = !isBoardAdmin;
+      if (!isBoardAdmin && sectionSelect.value === "notice") sectionSelect.value = "free";
+    }
+
+    function renderPrefixOptions() {
+      const section = $("sectionSelect").value;
+      const options = [...(PREFIX_OPTIONS[section] || ["기타"])];
+      if (isBoardAdmin && !options.includes("공지")) options.unshift("공지");
+
+      const select = $("prefixSelect");
+      const prev = select.value;
+
+      if (section === "notice" && isBoardAdmin) {
+        select.innerHTML = '<option value="공지">공지</option>';
+        select.value = "공지";
+        select.disabled = true;
+      } else {
+        select.innerHTML = options.map((opt) => `<option value="${opt}">${opt}</option>`).join("");
+        if (options.includes(prev)) select.value = prev;
+        else select.selectedIndex = 0;
+        select.disabled = false;
+      }
+    }
+
+    function renderSelectedFiles() {
+      const files = Array.from($("fileInput").files || []);
+      if (!files.length) {
+        $("fileList").textContent = "선택된 파일 없음";
+        return;
+      }
+      $("fileList").innerHTML = files.map((file) => {
+        const over = file.size > MAX_FILE_SIZE;
+        return `<div class="${over ? "text-rose-700" : ""}">- ${APP.escapeHtml(file.name)} (${APP.formatFileSize(file.size)})${over ? " - 용량 초과" : ""}</div>`;
+      }).join("");
+    }
+
+    function isRoomSectionSelected() {
+      return String($("sectionSelect").value || "") === "room";
+    }
+
+    function getBodyLengthForLimit() {
+      if (editorState.useRichEditor) return String($("editorBox").innerText || "").length;
+      return String($("bodyInput").value || "").length;
+    }
+
+    function getKstDayRangeIso(now = new Date()) {
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Seoul",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).formatToParts(now);
+      const partMap = {};
+      parts.forEach((part) => {
+        if (part.type !== "literal") partMap[part.type] = part.value;
+      });
+      const year = Number(partMap.year || 0);
+      const month = Number(partMap.month || 0);
+      const day = Number(partMap.day || 0);
+      if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day) || year < 1 || month < 1 || day < 1) {
+        const fallbackStart = new Date();
+        fallbackStart.setHours(0, 0, 0, 0);
+        return {
+          startIso: fallbackStart.toISOString(),
+          endIso: new Date(fallbackStart.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+        };
+      }
+      const startUtcMs = Date.UTC(year, month - 1, day, 0, 0, 0, 0) - (9 * 60 * 60 * 1000);
+      return {
+        startIso: new Date(startUtcMs).toISOString(),
+        endIso: new Date(startUtcMs + (24 * 60 * 60 * 1000)).toISOString(),
+      };
+    }
+
+    async function refreshRoomWriteQuota() {
+      if (!currentUser || !isRoomSectionSelected()) {
+        roomTodayCount = 0;
+        renderRoomWriteMeta();
+        return;
+      }
+      const dayRange = getKstDayRangeIso();
+      const { count, error } = await sbClient
+        .from("board_posts_active")
+        .select("id", { count: "exact", head: true })
+        .eq("section_slug", "room")
+        .eq("author_id", currentUser.id)
+        .gte("created_at", dayRange.startIso)
+        .lt("created_at", dayRange.endIso);
+      roomTodayCount = error ? 0 : Number(count || 0);
+      renderRoomWriteMeta();
+    }
+
+    function renderRoomWriteMeta() {
+      const node = $("roomWriteMeta");
+      const roomMode = isRoomSectionSelected();
+      node.classList.toggle("hidden", !roomMode);
+      if (!roomMode) return;
+
+      const bodyLength = getBodyLengthForLimit();
+      const cappedToday = Math.min(Math.max(0, Number(roomTodayCount || 0)), ROOM_DAILY_LIMIT);
+      node.textContent = `오늘 ${cappedToday}/${ROOM_DAILY_LIMIT} · ${bodyLength}/500`;
+    }
+
+    function isRoomDailyLimitError(error) {
+      const msg = String(error?.message || "").toLowerCase();
+      return msg.includes("room_daily_limit_exceeded")
+        || msg.includes("daily limit")
+        || msg.includes("하루 5개")
+        || msg.includes("하루 5 개");
+    }
+
+    function setEditorModeText() {
+      $("chkHtml").checked = false;
+      editorState.htmlMode = false;
+      $("btnToggleTextHtml").textContent = "TEXT";
+      const current = getEditorValue();
+      setEditorValue(current, false);
+      renderRoomWriteMeta();
+    }
+
+    function setEditorModeHtml() {
+      $("chkHtml").checked = true;
+      editorState.htmlMode = true;
+      $("btnToggleTextHtml").textContent = "HTML";
+      const current = getEditorValue();
+      setEditorValue(current, true);
+      renderRoomWriteMeta();
+    }
+
+    function setUseRichEditor(next) {
+      const value = getEditorValue();
+      editorState.useRichEditor = next;
+      $("bodyInput").classList.toggle("hidden", next);
+      $("editorBox").classList.toggle("hidden", !next);
+      $("editorToolbar").classList.toggle("hidden", !next);
+      $("btnToggleEditor").classList.toggle("bg-slate-700", next);
+      $("btnToggleEditor").classList.toggle("text-white", next);
+      $("btnToggleEditor").classList.toggle("bg-white", !next);
+      setEditorValue(value, editorState.htmlMode);
+      renderRoomWriteMeta();
+    }
+
+    function getEditorValue() {
+      if (!editorState.useRichEditor) return $("bodyInput").value;
+      if (editorState.htmlMode) return $("editorBox").innerHTML;
+      return $("editorBox").innerText;
+    }
+
+    function setEditorValue(value, asHtml) {
+      const v = String(value || "");
+      $("bodyInput").value = v;
+      if (asHtml) $("editorBox").innerHTML = v;
+      else $("editorBox").textContent = v;
+      renderRoomWriteMeta();
+    }
+
+    function normalizeUrl(raw) {
+      const value = String(raw || "").trim();
+      if (!value) return "";
+      if (/^https?:\/\//i.test(value)) return value;
+      return `https://${value}`;
+    }
+
+    function validateBeforeSave() {
+      const title = String($("titleInput").value || "").trim();
+      if (!title) return "제목을 입력하세요.";
+      const bodyRaw = editorState.useRichEditor
+        ? String($("editorBox").innerText || "")
+        : String($("bodyInput").value || "");
+      const body = bodyRaw.trim();
+      if (!body) return "내용을 입력하세요.";
+      if (isRoomSectionSelected() && bodyRaw.length > 500) return "필요의 방 글은 500자 이하만 가능합니다.";
+
+      return "";
+    }
+
+    async function selectPostForEdit() {
+      if (!isEdit || !Number.isFinite(editId)) return null;
+      const baseCols = ["id", "section_slug", "author_id", "title", "body"];
+      const optional = [];
+      if (prefixColumnAvailable) optional.push("prefix");
+      if (htmlColumnAvailable) optional.push("is_html");
+      if (anonymousColumnAvailable) optional.push("is_anonymous");
+      if (link1ColumnAvailable) optional.push("link1");
+      if (link2ColumnAvailable) optional.push("link2");
+      if (authorDisplayAvailable) optional.push("author_display");
+
+      let cols = [...baseCols, ...optional];
+      for (;;) {
+        const { data, error } = await sbClient
+          .from("board_posts_active")
+          .select(cols.join(","))
+          .eq("id", editId)
+          .eq("is_deleted", false)
+          .maybeSingle();
+        if (!error) return data || null;
+
+        let removed = false;
+        [["prefix", "prefixColumnAvailable"], ["is_html", "htmlColumnAvailable"], ["is_anonymous", "anonymousColumnAvailable"], ["link1", "link1ColumnAvailable"], ["link2", "link2ColumnAvailable"], ["author_display", "authorDisplayAvailable"]].forEach(([col, flag]) => {
+          if (!cols.includes(col)) return;
+          if (isMissingColumn(error, col)) {
+            cols = cols.filter((name) => name !== col);
+            if (flag === "authorDisplayAvailable") authorDisplayAvailable = false;
+            if (flag === "prefixColumnAvailable") prefixColumnAvailable = false;
+            if (flag === "htmlColumnAvailable") htmlColumnAvailable = false;
+            if (flag === "anonymousColumnAvailable") anonymousColumnAvailable = false;
+            if (flag === "link1ColumnAvailable") link1ColumnAvailable = false;
+            if (flag === "link2ColumnAvailable") link2ColumnAvailable = false;
+            removed = true;
+          }
+        });
+        if (!removed) throw error;
+      }
+    }
+
+    async function insertPost(payload) {
+      let candidate = { ...payload };
+      for (;;) {
+        const { data, error } = await sbClient.from("board_posts").insert(candidate).select("id").single();
+        if (!error) return data;
+
+        let removed = false;
+        [["author_display", "authorDisplayAvailable"], ["prefix", "prefixColumnAvailable"], ["is_html", "htmlColumnAvailable"], ["is_anonymous", "anonymousColumnAvailable"], ["link1", "link1ColumnAvailable"], ["link2", "link2ColumnAvailable"]].forEach(([col, flag]) => {
+          if (!(col in candidate)) return;
+          if (isMissingColumn(error, col)) {
+            delete candidate[col];
+            if (flag === "authorDisplayAvailable") authorDisplayAvailable = false;
+            if (flag === "prefixColumnAvailable") prefixColumnAvailable = false;
+            if (flag === "htmlColumnAvailable") htmlColumnAvailable = false;
+            if (flag === "anonymousColumnAvailable") anonymousColumnAvailable = false;
+            if (flag === "link1ColumnAvailable") link1ColumnAvailable = false;
+            if (flag === "link2ColumnAvailable") link2ColumnAvailable = false;
+            removed = true;
+          }
+        });
+        if (!removed) throw error;
+      }
+    }
+
+    async function updatePost(updatePayload) {
+      let candidate = { ...updatePayload };
+      for (;;) {
+        const { error } = await sbClient.from("board_posts").update(candidate).eq("id", editId);
+        if (!error) return;
+
+        let removed = false;
+        [["prefix", "prefixColumnAvailable"], ["is_html", "htmlColumnAvailable"], ["is_anonymous", "anonymousColumnAvailable"], ["link1", "link1ColumnAvailable"], ["link2", "link2ColumnAvailable"]].forEach(([col, flag]) => {
+          if (!(col in candidate)) return;
+          if (isMissingColumn(error, col)) {
+            delete candidate[col];
+            if (flag === "prefixColumnAvailable") prefixColumnAvailable = false;
+            if (flag === "htmlColumnAvailable") htmlColumnAvailable = false;
+            if (flag === "anonymousColumnAvailable") anonymousColumnAvailable = false;
+            if (flag === "link1ColumnAvailable") link1ColumnAvailable = false;
+            if (flag === "link2ColumnAvailable") link2ColumnAvailable = false;
+            removed = true;
+          }
+        });
+        if (!removed) throw error;
+      }
+    }
+
+    async function uploadFiles(postId, files) {
+      if (!files.length) return { ok: true, uploaded: 0 };
+
+      const { data: sessionData } = await sbClient.auth.getSession();
+      const accessToken = String(sessionData?.session?.access_token || "").trim();
+      if (!accessToken) {
+        return { ok: false, message: "로그인이 만료되었습니다. 다시 로그인해 주세요." };
+      }
+
+      let uploaded = 0;
+
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file, file.name || "upload");
+        formData.append("post_id", String(postId));
+        formData.append("scope", "post");
+
+        let res;
+        let payload = null;
+        try {
+          res = await fetch("/.netlify/functions/upload-board-image", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${accessToken}` },
+            body: formData
+          });
+          payload = await res.json().catch(() => ({}));
+        } catch {
+          return { ok: false, message: `파일 업로드 실패: ${file.name} (네트워크 오류)` };
+        }
+
+        if (!res.ok || !payload?.ok) {
+          if (res.status === 401) return { ok: false, message: "로그인이 필요합니다. 다시 로그인해 주세요." };
+          if (res.status === 413) return { ok: false, message: "파일 용량은 4MB 이하만 가능합니다." };
+          if (res.status === 415) return { ok: false, message: `지원하지 않는 이미지 형식입니다: ${file.name}` };
+          return { ok: false, message: payload?.message || `파일 업로드 실패: ${file.name}` };
+        }
+
+        const storagePath = String(payload.storage_path || "").trim();
+        if (!storagePath) return { ok: false, message: `파일 업로드 실패: ${file.name}` };
+
+        const { error: metaError } = await sbClient.from("board_post_files").insert({
+          post_id: Number(postId),
+          user_id: currentUser.id,
+          storage_path: storagePath,
+          filename: file.name,
+          mime: String(payload.mime || "image/webp"),
+          size_bytes: Number(payload.size_bytes || file.size)
+        });
+
+        if (metaError) {
+          if (isMissingTable(metaError, "board_post_files")) {
+            return { ok: false, message: `첨부 메타 저장 실패: ${file.name} (board_post_files 테이블을 찾을 수 없습니다)` };
+          }
+          return { ok: false, message: `첨부 메타 저장 실패: ${file.name} (${metaError.message || "오류"})` };
+        }
+
+        uploaded += 1;
+      }
+
+      return { ok: true, uploaded };
+    }
+
+    function clearWriteTempState() {
+      setMsg("");
+      $("titleInput").value = "";
+      $("bodyInput").value = "";
+      $("editorBox").innerHTML = "";
+      $("link1Input").value = "";
+      $("link2Input").value = "";
+      $("fileInput").value = "";
+      renderSelectedFiles();
+      renderRoomWriteMeta();
+    }
+
+    async function savePost() {
+      setMsg("");
+      if (!currentUser) {
+        setMsg("로그인이 필요합니다.");
+        APP.openAuth("login");
+        return;
+      }
+
+      const invalidMessage = validateBeforeSave();
+      if (invalidMessage) {
+        setMsg(invalidMessage);
+        return;
+      }
+
+      const sectionSlug = $("sectionSelect").value;
+      const prefix = $("prefixSelect").value || "";
+      const title = String($("titleInput").value || "").trim();
+      const body = editorState.useRichEditor
+        ? String($("editorBox").innerHTML || "")
+        : String($("bodyInput").value || "");
+      const isHtml = editorState.useRichEditor ? true : Boolean($("chkHtml").checked);
+      const isAnonymous = Boolean($("chkAnonymous").checked);
+      const link1 = normalizeUrl($("link1Input").value);
+      const link2 = normalizeUrl($("link2Input").value);
+      const files = Array.from($("fileInput").files || []);
+      if (!isEdit && sectionSlug === "room") {
+        await refreshRoomWriteQuota();
+        if (roomTodayCount >= ROOM_DAILY_LIMIT) {
+          setMsg("필요의 방은 하루 5개까지만 작성할 수 있습니다.");
+          return;
+        }
+      }
+      const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
+      const isValidFile = files.every((f) =>
+        ALLOWED_MIME.has(String(f.type || "").toLowerCase()) && /\.(jpg|jpeg|png|webp)$/i.test(String(f.name || ""))
+      );
+      if (!isValidFile || files.some((f) => Number(f.size || 0) > MAX_FILE_SIZE)) {
+        return alert("허용되지 않은 파일이거나 용량(4MB)을 초과했습니다.");
+      }
+
+      try {
+        let postId = null;
+
+        if (isEdit) {
+          if (!loadedPost || currentUser.id !== loadedPost.author_id) {
+            setMsg("작성자만 수정할 수 있습니다.");
+            return;
+          }
+
+          const payload = {
+            prefix,
+            title,
+            body,
+            is_html: isHtml,
+            is_anonymous: isAnonymous,
+            link1,
+            link2
+          };
+          await updatePost(payload);
+          postId = editId;
+        } else {
+          const payload = {
+            section_slug: sectionSlug,
+            author_id: currentUser.id,
+            author_display: deriveAuthorDisplay(),
+            prefix,
+            title,
+            body,
+            is_html: isHtml,
+            is_anonymous: isAnonymous,
+            link1,
+            link2
+          };
+          const data = await insertPost(payload);
+          postId = data.id;
+        }
+
+        if (files.length) {
+          const result = await uploadFiles(postId, files);
+          if (!result.ok) {
+            alert(result.message);
+            return;
+          }
+        }
+
+        clearWriteTempState();
+        location.replace(`/post.html?id=${postId}`);
+      } catch (error) {
+        if (!isEdit && sectionSlug === "room" && isRoomDailyLimitError(error)) {
+          setMsg("필요의 방은 하루 5개까지만 작성할 수 있습니다.");
+          await refreshRoomWriteQuota();
+          return;
+        }
+        setMsg(error?.message || "저장 중 오류가 발생했습니다.");
+      }
+    }
+
+    async function loadEditPost() {
+      if (!isEdit || !Number.isFinite(editId)) return;
+      $("pageTitle").textContent = `글 수정 #${editId}`;
+
+      const post = await selectPostForEdit();
+      if (!post) {
+        setMsg("수정할 글을 찾지 못했습니다.");
+        return;
+      }
+      loadedPost = post;
+
+      if (!currentUser || currentUser.id !== post.author_id) {
+        setMsg("작성자만 수정할 수 있습니다.");
+        return;
+      }
+
+      $("sectionSelect").value = APP.parseSectionSlug(post.section_slug, "free");
+      syncSectionDesc();
+      renderPrefixOptions();
+      if (post.prefix) {
+        const existing = Array.from($("prefixSelect").options).map((opt) => opt.value);
+        if (!existing.includes(post.prefix)) {
+          $("prefixSelect").insertAdjacentHTML("beforeend", `<option value="${post.prefix}">${post.prefix}</option>`);
+        }
+        $("prefixSelect").value = post.prefix;
+      }
+
+      $("titleInput").value = post.title || "";
+      setEditorValue(post.body || "", Boolean(post.is_html));
+      if (post.is_html) setEditorModeHtml();
+      else setEditorModeText();
+      $("chkAnonymous").checked = Boolean(post.is_anonymous);
+      $("link1Input").value = post.link1 || "";
+      $("link2Input").value = post.link2 || "";
+
+      $("sectionSelect").disabled = true;
+      $("prefixSelect").disabled = true;
+      $("backToList").href = `/post.html?id=${post.id}`;
+      await refreshRoomWriteQuota();
+    }
+
+    async function syncAuthUI(session) {
+      currentUser = session?.user || null;
+      const signedIn = Boolean(currentUser);
+      $("welcomeText").classList.toggle("hidden", !signedIn);
+      $("btnLogoutTop").classList.toggle("hidden", !signedIn);
+      $("btnLoginTop").classList.toggle("hidden", signedIn);
+      $("btnSignupTop").classList.toggle("hidden", signedIn);
+
+      if (signedIn) {
+        profileNickname = "";
+        const displayName = await getMyDisplayName();
+        $("welcomeText").textContent = `${displayName}님`;
+        $("welcomeText").style.color = "#212d2b";
+      } else {
+        $("welcomeText").style.color = "";
+      }
+    }
+
+    $("btnLoginTop")?.addEventListener("click", () => APP.openAuth("login"));
+    $("btnSignupTop")?.addEventListener("click", () => APP.openAuth("signup"));
+    $("btnLoginMobile")?.addEventListener("click", () => APP.openAuth("login"));
+    $("btnSignupMobile")?.addEventListener("click", () => APP.openAuth("signup"));
+
+    $("btnLogoutTop").addEventListener("click", async () => {
+      await APP.hardSignOut(sbClient);
+    });
+
+    $("chkHtml").addEventListener("change", () => {
+      if ($("chkHtml").checked) setEditorModeHtml();
+      else setEditorModeText();
+    });
+
+    $("btnToggleTextHtml").addEventListener("click", () => {
+      if (editorState.htmlMode) setEditorModeText();
+      else setEditorModeHtml();
+    });
+
+    $("btnToggleEditor").addEventListener("click", () => {
+      setUseRichEditor(!editorState.useRichEditor);
+    });
+
+    $("editorToolbar").addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const cmd = target.dataset.cmd;
+      if (!cmd) return;
+      event.preventDefault();
+      event.stopPropagation();
+      $("editorBox").focus();
+      document.execCommand(cmd, false, null);
+    });
+
+    $("sectionSelect").addEventListener("change", () => {
+      syncSectionDesc();
+      renderPrefixOptions();
+      void refreshRoomWriteQuota();
+    });
+
+    $("bodyInput").addEventListener("input", renderRoomWriteMeta);
+    $("editorBox").addEventListener("input", renderRoomWriteMeta);
+    $("fileInput").addEventListener("change", renderSelectedFiles);
+    $("btnSave").addEventListener("click", savePost);
+
+    (async function init() {
+      APP.setupMobileMenu("btnMobileMenu", "mobileMenu");
+      APP.setupContactModal();
+      APP.setupAuthModal();
+      APP.setupSecretRoomHover({
+        elementId: "room-of-requirement",
+        hiddenColor: "#7092BE",
+        hoverColor: "#7496C2",
+        openColor: "#FFFFFF",
+        requiredCount: 3,
+        withinMs: 1500,
+        resetMs: 1500
+      });
+      const preview = $("kakaoLinkPreview");
+      if (preview) preview.textContent = APP.getKakaoOpenChatUrl();
+      const uploadLimitLabel = $("uploadLimitLabel");
+      if (uploadLimitLabel) {
+        uploadLimitLabel.textContent = `업로드는 ${APP.formatFileSize(MAX_FILE_SIZE)} 까지 가능`;
+      }
+
+      $("sectionSelect").value = defaultSection;
+      syncSectionDesc();
+      renderPrefixOptions();
+      renderSelectedFiles();
+      setEditorModeText();
+      setUseRichEditor(false);
+      renderRoomWriteMeta();
+
+      const { data } = await sbClient.auth.getSession();
+      await syncAuthUI(data.session);
+      sbClient.auth.onAuthStateChange(async (_event, session) => {
+        await syncAuthUI(session);
+        if (session?.user) {
+          isBoardAdmin = await detectBoardAdmin();
+          syncSectionOptionsForRole();
+          renderPrefixOptions();
+          await refreshRoomWriteQuota();
+        } else {
+          roomTodayCount = 0;
+          renderRoomWriteMeta();
+        }
+      });
+
+      if (!data.session) {
+        APP.openAuth("login");
+        return;
+      }
+
+      isBoardAdmin = await detectBoardAdmin();
+      syncSectionOptionsForRole();
+      renderPrefixOptions();
+      syncSectionDesc();
+      await refreshRoomWriteQuota();
+      await loadEditPost();
+    })();
+  </script>
+</body>
+</html>
+

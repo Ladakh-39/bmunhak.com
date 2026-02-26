@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My | jungdap.com</title>
+  <link rel="icon" href="/favicon.ico" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.css" rel="stylesheet" />
+  <style>
+    :root {
+      --jd-header: #7092BE;
+    }
+    body {
+      font-family: "SUIT Variable", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      background: #ededed;
+      color: #111827;
+    }
+    .hc-shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+    .mono { font-variant-numeric: tabular-nums; }
+    .tab-link {
+      display: block;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      padding: 10px 12px;
+      font-size: 18px;
+      font-weight: 900;
+      color: #334155;
+    }
+    .tab-link.active {
+      background: linear-gradient(180deg, #6ca4c8 0%, #4d8bb3 100%);
+      color: #fff;
+      border-color: #3b7397;
+    }
+    .kind-tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1;
+    }
+    .kind-post { background: #dceaf2; border-color: #c3dce8; color: #275c78; }
+    .kind-comment { background: #f1e4ea; border-color: #dec2d0; color: #76415c; }
+    .kind-memo { background: #ece9d6; border-color: #d8d4b4; color: #6f6a29; }
+    .kind-scrap { background: #e3edf2; border-color: #c4d6e0; color: #35566a; }
+    .kind-record { background: #ebebeb; border-color: #d8d8d8; color: #5f5f5f; }
+    .memo-editor-box {
+      min-height: 220px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      padding: 12px;
+      font-size: 15px;
+      line-height: 1.7;
+      font-weight: 700;
+      outline: none;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+    .memo-editor-box:empty::before {
+      content: attr(data-placeholder);
+      color: #94a3b8;
+      font-weight: 700;
+    }
+    .footer-logo {
+      height: 86px;
+      width: auto;
+      display: block;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <header class="border-b border-slate-400 bg-[#7092BE] text-white overflow-hidden">
+    <div class="hc-shell">
+      <div class="flex h-16 items-center gap-4 overflow-hidden">
+        <div class="flex items-center min-w-[160px]">
+          <a href="/" class="block">
+            <img src="/logo_export.svg" alt="jungdap" class="h-8 w-auto block" />
+          </a>
+        </div>
+
+        <nav class="hidden md:flex flex-1 items-center justify-center gap-5 lg:gap-7 text-[18px] lg:text-[21px] leading-none min-w-0 flex-nowrap whitespace-nowrap">
+          <span class="room-secret-slot inline-flex items-center justify-center w-[104px] whitespace-nowrap">
+            <a id="room-of-requirement" href="/board.html?b=room" class="leading-none transition-colors whitespace-nowrap">필요의 방</a>
+          </span>
+          <a href="/board.html?b=notice" class="leading-none hover:underline whitespace-nowrap">공지사항</a>
+          <a href="/board.html?b=intro" class="leading-none hover:underline whitespace-nowrap">가입인사</a>
+          <a href="/board.html?b=free" class="leading-none hover:underline whitespace-nowrap">자유게시판</a>
+          <a href="/board.html?b=qna" class="leading-none hover:underline whitespace-nowrap">질문</a>
+          <a href="/grader.html" class="leading-none hover:underline whitespace-nowrap">채점하기</a>
+          <a href="/my.html" class="leading-none hover:underline whitespace-nowrap">My Page</a>
+        </nav>
+
+        <div class="hidden md:flex items-center justify-end gap-3 min-w-[140px] whitespace-nowrap">
+          <button id="btnSignupTop" type="button" class="hover:underline whitespace-nowrap">회원가입</button>
+          <button id="btnLoginTop" type="button" class="hover:underline whitespace-nowrap">로그인</button>
+          <span id="welcomeText" class="hidden text-sm font-bold whitespace-nowrap"></span>
+          <button id="btnLogoutTop" type="button" class="hidden hover:underline whitespace-nowrap">로그아웃</button>
+        </div>
+
+        <button id="btnMobileMenu" class="md:hidden px-3 py-2 rounded-lg hover:bg-white/10" type="button" aria-label="menu">
+          ☰
+        </button>
+      </div>
+
+      <div id="mobileMenu" class="md:hidden hidden pb-3">
+        <div class="flex flex-col gap-2 text-base font-bold">
+          <a id="room-of-requirement-mobile" href="/board.html?b=room" class="hidden px-3 py-2 rounded-lg transition-colors whitespace-nowrap">필요의 방</a>
+          <a href="/board.html?b=notice" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">공지사항</a>
+          <a href="/board.html?b=intro" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">가입인사</a>
+          <a href="/board.html?b=free" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">자유게시판</a>
+          <a href="/board.html?b=qna" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">질문</a>
+          <a href="/grader.html" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">채점하기</a>
+          <a href="/my.html" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">My Page</a>
+
+          <div class="flex items-center gap-3 px-3 pt-2">
+            <button id="btnSignupMobile" class="hover:underline whitespace-nowrap" type="button">회원가입</button>
+            <button id="btnLoginMobile" class="hover:underline whitespace-nowrap" type="button">로그인</button>
+            <button id="btnLogoutMobile" class="hidden hover:underline whitespace-nowrap" type="button">로그아웃</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="hc-shell py-6">
+    <section class="border border-slate-300 bg-white mb-4">
+      <div class="px-4 py-3 border-b border-slate-300 bg-slate-100 flex items-center justify-between gap-2">
+        <h1 class="text-[26px] leading-[1.05] font-extrabold tracking-tight">My Page</h1>
+        <div class="flex items-center gap-2 text-sm font-black">
+          <button id="btnTopLogout" class="hidden px-3 py-1 border border-slate-300 bg-white hover:bg-slate-100">로그아웃</button>
+          <a href="/profile.html" id="btnEditProfile" class="hidden px-3 py-1 border border-slate-300 bg-white hover:bg-slate-100">개인정보수정</a>
+          <a href="/records.html" class="px-3 py-1 border border-slate-300 bg-white hover:bg-slate-100">기록</a>
+        </div>
+      </div>
+      <div class="px-4 py-3 text-lg font-bold text-slate-600">
+        - 나만 볼 수 있는 게시판입니다.<br />
+        - 원하시는 용도로 다양하게 사용하셔도 좋습니다.
+      </div>
+    </section>
+
+    <div class="grid grid-cols-1 lg:grid-cols-[180px_1fr] gap-4">
+      <aside>
+        <nav class="space-y-1">
+          <a id="tabAll" href="/my.html?t=all" class="tab-link">전체</a>
+          <a id="tabPosts" href="/my.html?t=posts" class="tab-link">내 글</a>
+          <a id="tabComments" href="/my.html?t=comments" class="tab-link">내 댓글</a>
+          <a id="tabMemo" href="/my.html?t=memo" class="tab-link">메모</a>
+          <a id="tabScrap" href="/my.html?t=scrap" class="tab-link">스크랩</a>
+          <a id="tabRecords" href="/records.html" class="tab-link">내 기록</a>
+        </nav>
+      </aside>
+
+      <section class="border border-slate-300 bg-white p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 id="pageTitle" class="text-[26px] leading-[1.05] font-extrabold tracking-tight">전체</h2>
+          <button id="btnNewMemo" class="hidden px-4 py-2 bg-slate-800 text-white text-sm font-black hover:bg-black">메모 작성</button>
+        </div>
+
+        <div id="memoEditor" class="hidden mb-4 border border-slate-300 bg-slate-50 p-3">
+          <div class="grid gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+              <button id="btnExportMemoKey" class="px-3 py-1 border border-slate-300 bg-white text-xs font-black hover:bg-slate-100">키 내보내기</button>
+              <button id="btnImportMemoKey" class="px-3 py-1 border border-slate-300 bg-white text-xs font-black hover:bg-slate-100">키 가져오기</button>
+              <span class="text-xs font-bold text-amber-700">키 분실 시 복구 불가</span>
+            </div>
+            <input id="memoTitle" class="w-full border border-slate-300 px-3 py-2 font-bold" placeholder="메모 제목(선택)" />
+            <div class="flex items-center justify-end gap-2">
+              <button id="btnMemoToggleTextHtml" class="px-3 py-1 border border-slate-300 bg-slate-700 text-white text-sm font-black">TEXT</button>
+              <button id="btnMemoToggleEditor" class="px-3 py-1 border border-slate-300 bg-white text-sm font-black hover:bg-slate-100">에디터</button>
+            </div>
+            <div id="memoToolbar" class="hidden flex flex-wrap items-center gap-2 border border-slate-300 bg-white p-2">
+              <button type="button" data-cmd="bold" class="px-2 py-1 border border-slate-300 text-sm font-black hover:bg-slate-100">굵게</button>
+              <button type="button" data-cmd="strikeThrough" class="px-2 py-1 border border-slate-300 text-sm font-black hover:bg-slate-100">취소선</button>
+              <button type="button" data-cmd="justifyLeft" class="px-2 py-1 border border-slate-300 text-sm font-black hover:bg-slate-100">좌</button>
+              <button type="button" data-cmd="justifyCenter" class="px-2 py-1 border border-slate-300 text-sm font-black hover:bg-slate-100">중</button>
+              <button type="button" data-cmd="justifyRight" class="px-2 py-1 border border-slate-300 text-sm font-black hover:bg-slate-100">우</button>
+              <button type="button" data-cmd="indent" class="px-2 py-1 border border-slate-300 text-sm font-black hover:bg-slate-100">들여쓰기</button>
+              <button type="button" data-cmd="outdent" class="px-2 py-1 border border-slate-300 text-sm font-black hover:bg-slate-100">내어쓰기</button>
+            </div>
+            <textarea id="memoBody" rows="5" class="w-full border border-slate-300 px-3 py-2 font-bold" placeholder="메모 내용"></textarea>
+            <div id="memoEditorBox" class="memo-editor-box hidden" contenteditable="true" data-placeholder="메모 내용"></div>
+            <div>
+              <label for="memoFileInput" class="block text-sm font-black text-slate-600 mb-1">사진 첨부(암호화 업로드)</label>
+              <input id="memoFileInput" type="file" multiple accept="image/*" class="block w-full border border-slate-300 bg-white p-2 text-sm font-bold" />
+              <div id="memoFileList" class="text-xs font-bold text-slate-600 mt-1">선택된 파일 없음</div>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <div id="memoMsg" class="hidden text-sm font-black text-rose-700"></div>
+              <div class="flex items-center gap-2">
+                <button id="btnCancelMemo" class="px-4 py-2 border border-slate-300 font-black hover:bg-slate-100">취소</button>
+                <button id="btnSaveMemo" class="px-4 py-2 bg-slate-800 text-white font-black hover:bg-black">저장</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-[15px]">
+            <thead class="bg-slate-100 border-b border-slate-300 text-slate-600">
+              <tr class="font-black">
+                <th class="px-3 py-2 text-left w-[90px]">번호</th>
+                <th class="px-3 py-2 text-left w-[110px]">구분</th>
+                <th class="px-3 py-2 text-left">제목</th>
+                <th class="px-3 py-2 text-left w-[110px]">날짜</th>
+                <th class="px-3 py-2 text-right w-[110px]">관리</th>
+              </tr>
+            </thead>
+            <tbody id="tbody" class="divide-y divide-slate-200"></tbody>
+          </table>
+        </div>
+        <section id="memoViewer" class="hidden mt-4 border border-slate-300 bg-white p-4">
+          <div class="flex items-center justify-between mb-2">
+            <h3 id="memoViewerTitle" class="text-lg font-black">메모</h3>
+            <button id="btnCloseMemoViewer" class="px-3 py-1 border border-slate-300 font-black hover:bg-slate-100">닫기</button>
+          </div>
+          <div id="memoViewerBody" class="whitespace-pre-wrap leading-relaxed font-bold text-slate-800"></div>
+          <div id="memoViewerFiles" class="mt-3 grid gap-3"></div>
+        </section>
+        <div id="hint" class="pt-3 text-xs font-black text-slate-500">로딩 중...</div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="mt-8 border-t border-slate-300 bg-[#efefef] py-8">
+    <div class="hc-shell">
+      <div class="grid grid-cols-1 md:grid-cols-3 items-end gap-6 text-sm font-bold text-slate-600">
+        <div class="flex items-center justify-center md:justify-start gap-4 md:self-end">
+          <button id="btnContactOpen" class="hover:underline">문의</button>
+          <a href="/terms.html" class="hover:underline">이용약관</a>
+          <a href="/privacy.html" class="hover:underline">개인정보처리방침</a>
+        </div>
+        <div class="flex justify-center md:self-end">
+          <a href="/" class="block">
+            <img src="/logo_export.svg" alt="jungdap" class="h-[86px] w-auto block" />
+          </a>
+        </div>
+        <div class="flex items-center justify-center md:justify-end gap-3 md:self-end">
+          <img src="/assets/kakao-qr.png" alt="kakao qr" class="h-14 w-14 border border-slate-300 bg-white p-1" />
+          <button id="btnCopyKakaoLink" class="px-3 py-1 border border-slate-300 bg-white hover:bg-slate-100">링크복사</button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <div id="contactModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 p-4 z-[60]">
+    <div class="w-full max-w-lg bg-white border border-slate-300 p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-black text-slate-900">문의하기</h3>
+        <button id="btnCloseContact" class="px-3 py-1 border border-slate-300 hover:bg-slate-100">닫기</button>
+      </div>
+      <div class="grid gap-4">
+        <p class="text-sm font-bold text-slate-600">아래 QR 또는 링크 복사로 오픈채팅에 접속해 주세요.</p>
+        <div class="flex flex-col sm:flex-row items-center gap-4">
+          <img src="/assets/kakao-qr.png" alt="kakao qr large" class="h-44 w-44 border border-slate-300 bg-white p-2" />
+          <div class="grid gap-2 w-full">
+            <button id="btnCopyKakaoLink2" class="px-3 py-2 border border-slate-300 bg-white font-black hover:bg-slate-100">링크 복사</button>
+            <div class="text-xs font-bold text-slate-500 break-all" id="kakaoLinkPreview"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="copyToast" class="fixed hidden items-center justify-center bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-900 text-white text-sm font-black z-[70]">복사됨</div>
+
+  <script src="/app.js"></script>
+  <script>
+    const APP = window.JungdapApp;
+    const sbClient = APP.getSb();
+
+    const PRIVATE_MEMO_TABLE = "private_memos";
+    const PRIVATE_MEMO_FILE_TABLE = "private_memo_files";
+    const PRIVATE_MEMO_BUCKET = "private-memos";
+    const MEMO_KEY_STORAGE_KEY = "jungdap_private_memo_key_v1";
+    const MAX_MEMO_FILE_SIZE = 13 * 1024 * 1024;
+
+    const $ = (id) => document.getElementById(id);
+    const qs = new URLSearchParams(location.search);
+    const rawTab = String(qs.get("t") || "all").toLowerCase();
+    const shouldRedirectToRecords = rawTab === "records" || rawTab === "record";
+    if (shouldRedirectToRecords) {
+      location.replace("/records.html");
+    }
+
+    const TAB_ALIAS = {
+      all: "all",
+      memo: "memo",
+      scrap: "scrap",
+      posts: "posts",
+      post: "posts",
+      comments: "comments",
+      comment: "comments",
+      records: "records",
+      record: "records"
+    };
+
+    const KIND_META = {
+      post: { label: "내 글", className: "kind-post" },
+      comment: { label: "내 댓글", className: "kind-comment" },
+      memo: { label: "메모", className: "kind-memo" },
+      scrap: { label: "스크랩", className: "kind-scrap" },
+      record: { label: "기록", className: "kind-record" }
+    };
+
+    const state = {
+      tab: TAB_ALIAS[rawTab] || "all",
+      privateMemoReady: null,
+      memoObjects: []
+    };
+
+    const memoEditorState = {
+      htmlMode: false,
+      useRichEditor: false
+    };
+
+    let currentUser = null;
+    let profileNickname = "";
+    let memoCryptoKey = null;
+    let memoKeyB64 = "";
+    let myPostBoardSeqAvailable = true;
+
+    function esc(v) {
+      return APP.escapeHtml(v);
+    }
+
+    function setHint(text) {
+      $("hint").textContent = text;
+    }
+
+    function setMemoMsg(message) {
+      const node = $("memoMsg");
+      if (!message) {
+        node.textContent = "";
+        node.classList.add("hidden");
+        return;
+      }
+      node.textContent = message;
+      node.classList.remove("hidden");
+    }
+
+    async function getMyDisplayName() {
+      if (!currentUser) return "";
+      if (profileNickname) return profileNickname;
+      const { data } = await sbClient.from("profiles").select("nickname").eq("user_id", currentUser.id).maybeSingle();
+      const nick = String(data?.nickname || "").trim();
+      if (nick) {
+        profileNickname = nick;
+        return nick;
+      }
+      return String(currentUser.email || "").split("@")[0] || String(currentUser.id || "").slice(0, 8);
+    }
+
+    function showMemoEditor(visible) {
+      $("memoEditor").classList.toggle("hidden", !visible);
+    }
+
+    function showMemoViewer(visible) {
+      $("memoViewer").classList.toggle("hidden", !visible);
+      if (!visible) {
+        $("memoViewerTitle").textContent = "메모";
+        $("memoViewerBody").textContent = "";
+        $("memoViewerFiles").innerHTML = "";
+        for (const url of state.memoObjects) {
+          try { URL.revokeObjectURL(url); } catch {}
+        }
+        state.memoObjects = [];
+      }
+    }
+
+    function setTabTitle() {
+      const titleMap = {
+        all: "전체",
+        memo: "메모",
+        scrap: "스크랩",
+        posts: "내 글",
+        comments: "내 댓글",
+        records: "내 기록"
+      };
+      $("pageTitle").textContent = titleMap[state.tab] || "전체";
+      $("btnNewMemo").classList.toggle("hidden", state.tab !== "memo");
+      if (state.tab !== "memo") {
+        showMemoEditor(false);
+        showMemoViewer(false);
+      }
+    }
+
+    function activateTabs() {
+      ["tabAll", "tabMemo", "tabScrap", "tabPosts", "tabComments", "tabRecords"].forEach((id) => {
+        $(id).classList.remove("active");
+      });
+      const idMap = {
+        all: "tabAll",
+        memo: "tabMemo",
+        scrap: "tabScrap",
+        posts: "tabPosts",
+        comments: "tabComments",
+        records: "tabRecords"
+      };
+      const activeId = idMap[state.tab] || "tabAll";
+      $(activeId).classList.add("active");
+    }
+
+    function renderRows(items) {
+      const tbody = $("tbody");
+      tbody.innerHTML = "";
+
+      if (!items.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-8 text-center text-sm font-bold text-slate-400">데이터가 없습니다.</td></tr>';
+        return;
+      }
+
+      items.forEach((item) => {
+        const meta = KIND_META[item.kind] || KIND_META.record;
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50/70";
+
+        let manageHtml = "-";
+        if (item.kind === "memo") {
+          manageHtml = `<button data-kind="memo-delete" data-id="${item.id}" class="px-3 py-1 border border-slate-300 font-black hover:bg-slate-100">삭제</button>`;
+        } else if (item.kind === "scrap") {
+          manageHtml = `<button data-kind="scrap" data-id="${item.id}" class="px-3 py-1 border border-slate-300 font-black hover:bg-slate-100">해제</button>`;
+        }
+
+        let titleHtml = item.href
+          ? `<a href="${item.href}" class="font-black text-slate-900 hover:underline">${esc(item.title)}</a>`
+          : `<span class="font-black text-slate-900">${esc(item.title)}</span>`;
+        if (item.kind === "memo") {
+          titleHtml = `<button data-kind="memo-view" data-id="${item.id}" class="font-black text-slate-900 hover:underline text-left">${esc(item.title)}</button>`;
+        }
+
+        tr.innerHTML = `
+          <td class="px-3 py-2 mono font-black text-slate-500">${esc(item.number)}</td>
+          <td class="px-3 py-2"><span class="kind-tag ${meta.className}">${meta.label}</span></td>
+          <td class="px-3 py-2">
+            ${titleHtml}
+            ${item.metaText ? `<div class="text-xs font-bold text-slate-400 mt-1">${esc(item.metaText)}</div>` : ""}
+          </td>
+          <td class="px-3 py-2 mono font-black text-slate-500">${APP.formatYmd(item.createdAt)}</td>
+          <td class="px-3 py-2 text-right">${manageHtml}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function bytesToBase64(bytes) {
+      let binary = "";
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+      }
+      return btoa(binary);
+    }
+
+    function base64ToBytes(base64Text) {
+      const binary = atob(base64Text);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return bytes;
+    }
+
+    function isMissingTable(error, table) {
+      const msg = String(error?.message || "").toLowerCase();
+      const t = String(table || "").toLowerCase();
+      return msg.includes(t) && (msg.includes("does not exist") || msg.includes("schema cache"));
+    }
+
+    async function ensureMemoCryptoKey() {
+      if (memoCryptoKey) return memoCryptoKey;
+      let stored = String(localStorage.getItem(MEMO_KEY_STORAGE_KEY) || "").trim();
+      if (!stored) {
+        const raw = new Uint8Array(32);
+        crypto.getRandomValues(raw);
+        stored = bytesToBase64(raw);
+        localStorage.setItem(MEMO_KEY_STORAGE_KEY, stored);
+      }
+      memoKeyB64 = stored;
+      const rawKey = base64ToBytes(stored);
+      if (rawKey.length !== 32) throw new Error("메모 키 형식이 올바르지 않습니다.");
+      memoCryptoKey = await crypto.subtle.importKey("raw", rawKey, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+      return memoCryptoKey;
+    }
+
+    async function encryptText(plainText) {
+      const key = await ensureMemoCryptoKey();
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const src = new TextEncoder().encode(String(plainText || ""));
+      const encrypted = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, src));
+      return JSON.stringify({ iv: bytesToBase64(iv), ct: bytesToBase64(encrypted) });
+    }
+
+    async function decryptText(encryptedText) {
+      if (!encryptedText) return "";
+      const key = await ensureMemoCryptoKey();
+      const payload = JSON.parse(String(encryptedText));
+      const iv = base64ToBytes(String(payload.iv || ""));
+      const ct = base64ToBytes(String(payload.ct || ""));
+      const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ct);
+      return new TextDecoder().decode(plain);
+    }
+
+    async function encryptBinary(buffer) {
+      const key = await ensureMemoCryptoKey();
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const encrypted = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, buffer));
+      const merged = new Uint8Array(iv.length + encrypted.length);
+      merged.set(iv, 0);
+      merged.set(encrypted, iv.length);
+      return merged;
+    }
+
+    async function decryptBinary(buffer) {
+      const key = await ensureMemoCryptoKey();
+      const src = new Uint8Array(buffer);
+      if (src.length <= 12) throw new Error("암호화 파일 형식이 올바르지 않습니다.");
+      const iv = src.slice(0, 12);
+      const encrypted = src.slice(12);
+      return crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, encrypted);
+    }
+
+    async function ensurePrivateMemoReady() {
+      if (state.privateMemoReady !== null) return state.privateMemoReady;
+      const { error: memoErr } = await sbClient.from(PRIVATE_MEMO_TABLE).select("id").limit(1);
+      if (memoErr && isMissingTable(memoErr, PRIVATE_MEMO_TABLE)) {
+        state.privateMemoReady = false;
+        return false;
+      }
+      const { error: fileErr } = await sbClient.from(PRIVATE_MEMO_FILE_TABLE).select("id").limit(1);
+      if (fileErr && isMissingTable(fileErr, PRIVATE_MEMO_FILE_TABLE)) {
+        state.privateMemoReady = false;
+        return false;
+      }
+      state.privateMemoReady = true;
+      return true;
+    }
+
+    function getMemoBodyValue() {
+      if (memoEditorState.useRichEditor) {
+        return memoEditorState.htmlMode ? $("memoEditorBox").innerHTML : $("memoEditorBox").innerText;
+      }
+      return $("memoBody").value;
+    }
+
+    function setMemoBodyValue(value, asHtml) {
+      const v = String(value || "");
+      $("memoBody").value = v;
+      if (asHtml) $("memoEditorBox").innerHTML = v;
+      else $("memoEditorBox").textContent = v;
+    }
+
+    function setMemoEditorModeHtml() {
+      memoEditorState.htmlMode = true;
+      $("btnMemoToggleTextHtml").textContent = "HTML";
+      const current = getMemoBodyValue();
+      setMemoBodyValue(current, true);
+    }
+
+    function setMemoEditorModeText() {
+      memoEditorState.htmlMode = false;
+      $("btnMemoToggleTextHtml").textContent = "TEXT";
+      const current = getMemoBodyValue();
+      setMemoBodyValue(current, false);
+    }
+
+    function setMemoRichEditor(next) {
+      const value = getMemoBodyValue();
+      memoEditorState.useRichEditor = next;
+      $("memoBody").classList.toggle("hidden", next);
+      $("memoEditorBox").classList.toggle("hidden", !next);
+      $("memoToolbar").classList.toggle("hidden", !next);
+      $("btnMemoToggleEditor").classList.toggle("bg-slate-700", next);
+      $("btnMemoToggleEditor").classList.toggle("text-white", next);
+      $("btnMemoToggleEditor").classList.toggle("bg-white", !next);
+      setMemoBodyValue(value, memoEditorState.htmlMode);
+    }
+
+    function renderMemoFiles() {
+      const files = Array.from($("memoFileInput").files || []);
+      if (!files.length) {
+        $("memoFileList").textContent = "선택된 파일 없음";
+        return;
+      }
+      $("memoFileList").innerHTML = files.map((file) => {
+        const over = file.size > MAX_MEMO_FILE_SIZE;
+        return `<div class="${over ? "text-rose-700" : ""}">- ${esc(file.name)} (${APP.formatFileSize(file.size)})${over ? " - 용량 초과" : ""}</div>`;
+      }).join("");
+    }
+
+    async function loadPosts() {
+      const buildCols = () => {
+        const cols = ["id", "title", "section_slug", "comment_count", "like_count", "view_count", "created_at"];
+        if (myPostBoardSeqAvailable) cols.push("board_seq");
+        return cols.join(",");
+      };
+      let { data, error } = await sbClient
+        .from("board_posts_active")
+        .select(buildCols())
+        .eq("author_id", currentUser.id)
+        .order("created_at", { ascending: false });
+      if (error && myPostBoardSeqAvailable && APP.isMissingColumnError(error, "board_seq")) {
+        myPostBoardSeqAvailable = false;
+        ({ data, error } = await sbClient
+          .from("board_posts_active")
+          .select(buildCols())
+          .eq("author_id", currentUser.id)
+          .order("created_at", { ascending: false }));
+      }
+      if (error) throw error;
+      return (data || []).map((row) => ({
+        id: row.id,
+        number: Number(row?.board_seq || 0) > 0 ? Number(row.board_seq) : row.id,
+        kind: "post",
+        title: row.title,
+        metaText: `${APP.SECTION_META[row.section_slug]?.name || row.section_slug} · 댓글 ${row.comment_count || 0} · 추천 ${row.like_count || 0} · 조회 ${row.view_count || 0}`,
+        createdAt: row.created_at,
+        href: `/post.html?id=${row.id}`
+      }));
+    }
+
+    async function loadComments() {
+      const { data, error } = await sbClient
+        .from("board_comments")
+        .select("id,body,created_at,post_id,board_posts!inner(id,title,section_slug,is_deleted)")
+        .eq("author_id", currentUser.id)
+        .eq("is_deleted", false)
+        .eq("board_posts.is_deleted", false)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []).map((row) => {
+        const post = row.board_posts;
+        const short = String(row.body || "").replace(/\s+/g, " ").slice(0, 40);
+        return {
+          id: row.id,
+          number: row.id,
+          kind: "comment",
+          title: post?.title || "삭제된 글",
+          metaText: `${APP.SECTION_META[post?.section_slug]?.name || "게시글"} · 댓글: ${short}${String(row.body || "").length > 40 ? "..." : ""}`,
+          createdAt: row.created_at,
+          href: post ? `/post.html?id=${post.id}` : ""
+        };
+      });
+    }
+
+    async function loadMemos() {
+      const ready = await ensurePrivateMemoReady();
+      if (!ready) {
+        setHint("암호화 메모 기능은 관리자 설정이 필요합니다.");
+        return [];
+      }
+
+      const { data, error } = await sbClient
+        .from(PRIVATE_MEMO_TABLE)
+        .select("id,title_enc,body_enc,created_at")
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+
+      const rows = [];
+      for (const row of (data || [])) {
+        let title = "";
+        let body = "";
+        try {
+          title = await decryptText(row.title_enc);
+          body = await decryptText(row.body_enc);
+        } catch {
+          title = "(복호화 실패)";
+          body = "메모 키가 다르거나 손상된 데이터입니다.";
+        }
+        rows.push({
+          id: row.id,
+          number: row.id,
+          kind: "memo",
+          title: title.trim() || String(body || "").replace(/\s+/g, " ").slice(0, 28) || "제목 없음",
+          metaText: String(body || "").replace(/\s+/g, " ").slice(0, 80),
+          createdAt: row.created_at,
+          href: ""
+        });
+      }
+      return rows;
+    }
+
+    async function loadScraps() {
+      const { data, error } = await sbClient
+        .from("board_post_scraps")
+        .select("created_at,post_id,board_posts!inner(id,title,section_slug,comment_count,like_count,view_count,is_deleted)")
+        .eq("user_id", currentUser.id)
+        .eq("board_posts.is_deleted", false)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []).map((row) => {
+        const post = row.board_posts;
+        return {
+          id: post.id,
+          number: post.id,
+          kind: "scrap",
+          title: post.title,
+          metaText: `${APP.SECTION_META[post.section_slug]?.name || post.section_slug} · 댓글 ${post.comment_count || 0} · 추천 ${post.like_count || 0} · 조회 ${post.view_count || 0}`,
+          createdAt: row.created_at,
+          href: `/post.html?id=${post.id}`
+        };
+      });
+    }
+
+    async function loadList() {
+      if (!currentUser) {
+        renderRows([]);
+        setHint("로그인이 필요합니다.");
+        return;
+      }
+
+      try {
+        if (state.tab === "memo") {
+          const rows = await loadMemos();
+          renderRows(rows);
+          setHint(`메모 ${rows.length}개`);
+          return;
+        }
+
+        if (state.tab === "scrap") {
+          const rows = await loadScraps();
+          renderRows(rows);
+          setHint(`스크랩 ${rows.length}개`);
+          return;
+        }
+
+        if (state.tab === "posts") {
+          const rows = await loadPosts();
+          renderRows(rows);
+          setHint(`내 글 ${rows.length}개`);
+          return;
+        }
+
+        if (state.tab === "comments") {
+          const rows = await loadComments();
+          renderRows(rows);
+          setHint(`내 댓글 ${rows.length}개`);
+          return;
+        }
+
+        const [posts, comments, memos, scraps] = await Promise.all([
+          loadPosts(),
+          loadComments(),
+          loadMemos(),
+          loadScraps()
+        ]);
+        const merged = [...posts, ...comments, ...memos, ...scraps]
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 100);
+        renderRows(merged);
+        setHint(`전체 ${merged.length}개`);
+      } catch (error) {
+        renderRows([]);
+        setHint(error?.message || "목록을 불러오지 못했습니다.");
+      }
+    }
+
+    async function syncAuthUI(session) {
+      currentUser = session?.user || null;
+      const signedIn = Boolean(currentUser);
+      $("welcomeText").classList.toggle("hidden", !signedIn);
+      $("btnLogoutTop").classList.toggle("hidden", !signedIn);
+      $("btnLoginTop").classList.toggle("hidden", signedIn);
+      $("btnSignupTop").classList.toggle("hidden", signedIn);
+      $("btnTopLogout").classList.toggle("hidden", !signedIn);
+      $("btnEditProfile").classList.toggle("hidden", !signedIn);
+
+      if (signedIn) {
+        profileNickname = "";
+        const displayName = await getMyDisplayName();
+        $("welcomeText").textContent = `${displayName}님`;
+        $("welcomeText").style.color = "#212d2b";
+      } else {
+        $("welcomeText").style.color = "";
+      }
+    }
+
+    async function resolveMemoFileUrl(storagePath) {
+      const { data: signedData, error: signedError } = await sbClient.storage.from(PRIVATE_MEMO_BUCKET).createSignedUrl(storagePath, 3600);
+      if (!signedError && signedData?.signedUrl) return signedData.signedUrl;
+      const { data: pubData } = sbClient.storage.from(PRIVATE_MEMO_BUCKET).getPublicUrl(storagePath);
+      return pubData?.publicUrl || "";
+    }
+
+    async function uploadMemoFiles(memoId, files) {
+      if (!files.length) return { ok: true };
+
+      for (const file of files) {
+        if (file.size > MAX_MEMO_FILE_SIZE) {
+          return { ok: false, message: `파일 용량 초과: ${file.name}` };
+        }
+        const encryptedBytes = await encryptBinary(await file.arrayBuffer());
+        const path = `${currentUser.id}/${memoId}/${Date.now()}_${APP.sanitizeFilename(file.name)}.enc`;
+        const blob = new Blob([encryptedBytes], { type: "application/octet-stream" });
+        const { error: uploadError } = await sbClient.storage.from(PRIVATE_MEMO_BUCKET).upload(path, blob, {
+          upsert: false,
+          contentType: "application/octet-stream"
+        });
+        if (uploadError) {
+          return { ok: false, message: `파일 업로드 실패: ${file.name} (${uploadError.message || "오류"})` };
+        }
+        const { error: metaError } = await sbClient.from(PRIVATE_MEMO_FILE_TABLE).insert({
+          memo_id: memoId,
+          user_id: currentUser.id,
+          storage_path: path,
+          filename: file.name,
+          mime: file.type || "application/octet-stream",
+          size_bytes: file.size
+        });
+        if (metaError) {
+          return { ok: false, message: `첨부 메타 저장 실패: ${file.name} (${metaError.message || "오류"})` };
+        }
+      }
+      return { ok: true };
+    }
+
+    async function openMemoViewer(memoId) {
+      if (!currentUser) return;
+      const { data: memoRow, error } = await sbClient
+        .from(PRIVATE_MEMO_TABLE)
+        .select("id,title_enc,body_enc")
+        .eq("id", memoId)
+        .eq("user_id", currentUser.id)
+        .maybeSingle();
+      if (error || !memoRow) {
+        setHint("메모를 불러오지 못했습니다.");
+        return;
+      }
+
+      let title = "";
+      let body = "";
+      try {
+        title = await decryptText(memoRow.title_enc);
+        body = await decryptText(memoRow.body_enc);
+      } catch {
+        title = "(복호화 실패)";
+        body = "메모 키가 다르거나 손상된 데이터입니다.";
+      }
+      $("memoViewerTitle").textContent = title || "제목 없음";
+      $("memoViewerBody").textContent = body;
+      $("memoViewerFiles").innerHTML = "";
+
+      const { data: files } = await sbClient
+        .from(PRIVATE_MEMO_FILE_TABLE)
+        .select("id,storage_path,filename,mime,size_bytes")
+        .eq("memo_id", memoId)
+        .order("id", { ascending: true });
+
+      for (const file of (files || [])) {
+        const url = await resolveMemoFileUrl(file.storage_path);
+        if (!url) continue;
+        try {
+          const response = await fetch(url);
+          const encryptedBuffer = await response.arrayBuffer();
+          const plainBuffer = await decryptBinary(encryptedBuffer);
+          const mime = String(file.mime || "application/octet-stream");
+          const blob = new Blob([plainBuffer], { type: mime });
+          const objectUrl = URL.createObjectURL(blob);
+          state.memoObjects.push(objectUrl);
+
+          const wrap = document.createElement("div");
+          wrap.className = "border border-slate-200 bg-slate-50 p-3";
+          const titleLine = `<div class="text-sm font-black text-slate-700">${esc(file.filename || "file")}</div><div class="text-xs font-bold text-slate-500">${APP.formatFileSize(file.size_bytes)}</div>`;
+          if (mime.startsWith("image/")) {
+            wrap.innerHTML = `${titleLine}<img src="${objectUrl}" alt="memo image" class="mt-2 max-h-72 border border-slate-200" /><a href="${objectUrl}" download="${esc(file.filename || "memo_file")}" class="mt-2 inline-block text-sm font-black text-blue-700 hover:underline">다운로드</a>`;
+          } else {
+            wrap.innerHTML = `${titleLine}<a href="${objectUrl}" download="${esc(file.filename || "memo_file")}" class="mt-2 inline-block text-sm font-black text-blue-700 hover:underline">다운로드</a>`;
+          }
+          $("memoViewerFiles").appendChild(wrap);
+        } catch {
+          const err = document.createElement("div");
+          err.className = "text-sm font-black text-rose-700";
+          err.textContent = `파일 복호화 실패: ${file.filename || "file"}`;
+          $("memoViewerFiles").appendChild(err);
+        }
+      }
+      showMemoViewer(true);
+    }
+
+    async function deleteMemo(memoId) {
+      if (!confirm("메모를 삭제할까요?")) return;
+      const { data: files } = await sbClient
+        .from(PRIVATE_MEMO_FILE_TABLE)
+        .select("storage_path")
+        .eq("memo_id", memoId)
+        .eq("user_id", currentUser.id);
+      const paths = (files || []).map((row) => row.storage_path).filter(Boolean);
+      if (paths.length) await sbClient.storage.from(PRIVATE_MEMO_BUCKET).remove(paths);
+      await sbClient.from(PRIVATE_MEMO_FILE_TABLE).delete().eq("memo_id", memoId).eq("user_id", currentUser.id);
+      await sbClient.from(PRIVATE_MEMO_TABLE).delete().eq("id", memoId).eq("user_id", currentUser.id);
+      showMemoViewer(false);
+      await loadList();
+    }
+
+    $("btnLoginTop")?.addEventListener("click", () => APP.openAuth("login"));
+    $("btnSignupTop")?.addEventListener("click", () => APP.openAuth("signup"));
+    $("btnLoginMobile")?.addEventListener("click", () => APP.openAuth("login"));
+    $("btnSignupMobile")?.addEventListener("click", () => APP.openAuth("signup"));
+
+    async function signOutAll() {
+      await APP.hardSignOut(sbClient);
+    }
+
+    $("btnLogoutTop").addEventListener("click", signOutAll);
+    $("btnTopLogout").addEventListener("click", signOutAll);
+
+    $("btnNewMemo").addEventListener("click", () => {
+      setMemoMsg("");
+      showMemoViewer(false);
+      showMemoEditor(true);
+    });
+
+    $("btnCancelMemo").addEventListener("click", () => {
+      setMemoMsg("");
+      showMemoEditor(false);
+    });
+
+    $("btnSaveMemo").addEventListener("click", async () => {
+      setMemoMsg("");
+      if (!currentUser) {
+        setMemoMsg("로그인이 필요합니다.");
+        return;
+      }
+      const ready = await ensurePrivateMemoReady();
+      if (!ready) {
+        setMemoMsg("암호화 메모 기능은 관리자 설정이 필요합니다.");
+        return;
+      }
+
+      const title = $("memoTitle").value.trim();
+      const body = String(getMemoBodyValue() || "").trim();
+      if (!body) {
+        setMemoMsg("내용을 입력하세요.");
+        return;
+      }
+      const files = Array.from($("memoFileInput").files || []);
+      const over = files.find((file) => file.size > MAX_MEMO_FILE_SIZE);
+      if (over) {
+        setMemoMsg(`파일 용량이 13MB를 초과했습니다: ${over.name}`);
+        return;
+      }
+
+      try {
+        await ensureMemoCryptoKey();
+        const titleEnc = await encryptText(title);
+        const bodyEnc = await encryptText(memoEditorState.useRichEditor && memoEditorState.htmlMode ? $("memoEditorBox").innerHTML : body);
+        const { data, error } = await sbClient
+          .from(PRIVATE_MEMO_TABLE)
+          .insert({
+            user_id: currentUser.id,
+            title_enc: titleEnc,
+            body_enc: bodyEnc,
+            is_html: memoEditorState.useRichEditor || memoEditorState.htmlMode
+          })
+          .select("id")
+          .single();
+        if (error) {
+          setMemoMsg(error.message || "저장 실패");
+          return;
+        }
+        const memoId = data.id;
+        const uploadResult = await uploadMemoFiles(memoId, files);
+        if (!uploadResult.ok) {
+          setMemoMsg(uploadResult.message || "첨부 업로드 실패");
+          return;
+        }
+        $("memoTitle").value = "";
+        $("memoBody").value = "";
+        $("memoEditorBox").innerHTML = "";
+        $("memoFileInput").value = "";
+        renderMemoFiles();
+        showMemoEditor(false);
+        await loadList();
+      } catch (error) {
+        setMemoMsg(error?.message || "저장 실패");
+      }
+    });
+
+    $("btnMemoToggleTextHtml").addEventListener("click", () => {
+      if (memoEditorState.htmlMode) setMemoEditorModeText();
+      else setMemoEditorModeHtml();
+    });
+
+    $("btnMemoToggleEditor").addEventListener("click", () => {
+      setMemoRichEditor(!memoEditorState.useRichEditor);
+    });
+
+    $("memoToolbar").addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const cmd = target.dataset.cmd;
+      if (!cmd) return;
+      event.preventDefault();
+      event.stopPropagation();
+      $("memoEditorBox").focus();
+      document.execCommand(cmd, false, null);
+    });
+
+    $("memoFileInput").addEventListener("change", renderMemoFiles);
+
+    $("btnExportMemoKey").addEventListener("click", async () => {
+      try {
+        await ensureMemoCryptoKey();
+        await navigator.clipboard.writeText(memoKeyB64);
+        setMemoMsg("키를 클립보드에 복사했습니다. 안전한 곳에 백업하세요.");
+      } catch {
+        setMemoMsg(`메모 키: ${memoKeyB64}`);
+      }
+    });
+
+    $("btnImportMemoKey").addEventListener("click", async () => {
+      const input = prompt("가져올 메모 키(Base64)를 입력하세요.");
+      if (!input) return;
+      const next = String(input || "").trim();
+      try {
+        const raw = base64ToBytes(next);
+        if (raw.length !== 32) throw new Error("키 길이가 올바르지 않습니다.");
+        localStorage.setItem(MEMO_KEY_STORAGE_KEY, next);
+        memoCryptoKey = null;
+        memoKeyB64 = "";
+        await ensureMemoCryptoKey();
+        setMemoMsg("메모 키를 적용했습니다.");
+        await loadList();
+      } catch (error) {
+        setMemoMsg(error.message || "메모 키 형식이 올바르지 않습니다.");
+      }
+    });
+
+    $("tbody").addEventListener("click", async (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const kind = target.dataset.kind;
+      const id = Number(target.dataset.id || "0");
+      if (!kind || !Number.isFinite(id) || !currentUser) return;
+
+      if (kind === "memo-view") {
+        await openMemoViewer(id);
+        return;
+      }
+
+      if (kind === "memo-delete") {
+        await deleteMemo(id);
+        return;
+      }
+
+      if (kind === "scrap") {
+        const { error } = await sbClient.from("board_post_scraps").delete().eq("post_id", id).eq("user_id", currentUser.id);
+        if (!error) await loadList();
+      }
+    });
+
+    $("btnCloseMemoViewer").addEventListener("click", () => showMemoViewer(false));
+
+    (async function init() {
+      if (shouldRedirectToRecords) return;
+      APP.setupMobileMenu("btnMobileMenu", "mobileMenu");
+      APP.setupContactModal();
+      APP.setupAuthModal();
+      APP.setupSecretRoomHover({
+        elementId: "room-of-requirement",
+        hiddenColor: "#7092BE",
+        hoverColor: "#7496C2",
+        openColor: "#FFFFFF",
+        requiredCount: 3,
+        withinMs: 1500,
+        resetMs: 1500
+      });
+      const preview = $("kakaoLinkPreview");
+      if (preview) preview.textContent = APP.getKakaoOpenChatUrl();
+
+      activateTabs();
+      setTabTitle();
+      renderMemoFiles();
+      setMemoEditorModeText();
+      setMemoRichEditor(false);
+
+      const { data } = await sbClient.auth.getSession();
+      await syncAuthUI(data.session);
+      sbClient.auth.onAuthStateChange(async (_event, session) => {
+        await syncAuthUI(session);
+        await loadList();
+      });
+
+      if (!data.session) APP.openAuth("login");
+      await loadList();
+    })();
+  </script>
+</body>
+</html>
