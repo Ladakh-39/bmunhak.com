@@ -1125,9 +1125,83 @@
   var __bmAuthMode = "login";
   var __bmAuthInitDone = false;
   var __bmAuthStateBound = false;
+  var __bmAuthBusy = false;
+  var __bmNicknameChecked = false;
+  var __bmNicknameCheckedLower = "";
 
   function bmById(id) {
     return document.getElementById(id);
+  }
+
+  function bmPasswordHintText() {
+    return "비밀번호 8~64자 / 영문 대문자+소문자+숫자 필수 / 특수문자 !@#$%^&*()_+=;:[]{} 사용 가능";
+  }
+
+  function bmNicknameHintText() {
+    return "닉네임 2~12자 (한/영/숫자/공백/_/-)";
+  }
+
+  function bmSetAuthError(message) {
+    var node = bmById("authError");
+    if (!node) return;
+    var msg = toStringSafe(message).trim();
+    if (!msg) {
+      node.classList.add("hidden");
+      node.textContent = "";
+      return;
+    }
+    node.textContent = msg;
+    node.classList.remove("hidden");
+  }
+
+  function bmSetNicknameStatus(message, isOk) {
+    var node = bmById("nicknameStatus");
+    if (!node) return;
+    node.textContent = toStringSafe(message).trim();
+    node.classList.remove("text-slate-500", "text-red-600", "text-green-700");
+    if (isOk === true) node.classList.add("text-green-700");
+    else if (isOk === false) node.classList.add("text-red-600");
+    else node.classList.add("text-slate-500");
+  }
+
+  function bmResetNicknameCheck() {
+    __bmNicknameChecked = false;
+    __bmNicknameCheckedLower = "";
+    bmSetNicknameStatus(bmNicknameHintText(), null);
+  }
+
+  function bmNormalizeNickname(raw) {
+    return toStringSafe(raw).trim();
+  }
+
+  function bmValidateNickname(raw) {
+    var nick = bmNormalizeNickname(raw);
+    if (nick.length < 2 || nick.length > 12) return { ok: false, msg: bmNicknameHintText(), value: "" };
+    if (!/^[0-9A-Za-z가-힣 _-]{2,12}$/.test(nick)) return { ok: false, msg: bmNicknameHintText(), value: "" };
+    return { ok: true, msg: "", value: nick };
+  }
+
+  function bmValidatePassword(pw) {
+    var password = toStringSafe(pw);
+    if (password.length < 8 || password.length > 64) return { ok: false, msg: bmPasswordHintText() };
+    if (!/^[A-Za-z0-9!@#$%^&*()_+=;:\[\]{}]+$/.test(password)) return { ok: false, msg: bmPasswordHintText() };
+    if (!/[a-z]/.test(password)) return { ok: false, msg: bmPasswordHintText() };
+    if (!/[A-Z]/.test(password)) return { ok: false, msg: bmPasswordHintText() };
+    if (!/[0-9]/.test(password)) return { ok: false, msg: bmPasswordHintText() };
+    return { ok: true, msg: "" };
+  }
+
+  function bmSetAuthBusy(loading) {
+    __bmAuthBusy = Boolean(loading);
+    var submit = bmById("authSubmitBtn");
+    var cancel = bmById("authCancelBtn");
+    var checkBtn = bmById("checkNicknameBtn");
+    if (submit) {
+      submit.disabled = __bmAuthBusy;
+      submit.textContent = __bmAuthBusy ? "처리 중..." : (__bmAuthMode === "signup" ? "회원가입" : "로그인");
+    }
+    if (cancel) cancel.disabled = __bmAuthBusy;
+    if (checkBtn) checkBtn.disabled = __bmAuthBusy;
   }
 
   function bmEnsureAuthModal() {
@@ -1137,7 +1211,7 @@
     var wrap = document.createElement("div");
     wrap.innerHTML = (
       '<div id="authModalOverlay" class="fixed inset-0 hidden items-center justify-center bg-black/50 z-[100]">' +
-      '  <div class="w-[92%] max-w-[420px] bg-white border border-slate-300 shadow-xl">' +
+      '  <div class="w-[92%] max-w-[460px] bg-white border border-slate-300 shadow-xl">' +
       '    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-300 bg-slate-100">' +
       '      <div class="text-sm font-black text-slate-800">계정</div>' +
       '      <button id="authModalClose" class="px-2 py-1 text-xl font-black text-slate-600 hover:text-black" aria-label="close" type="button">×</button>' +
@@ -1154,10 +1228,23 @@
       '      <div class="h-3"></div>' +
       '      <label class="block text-xs font-black text-slate-600 mb-1">비밀번호</label>' +
       '      <input id="authPassword" type="password" autocomplete="current-password" class="w-full border border-slate-300 px-3 py-2 text-sm font-semibold" placeholder="********" />' +
-      '      <div id="authHint" class="mt-2 text-[11px] font-bold text-slate-500">로그인 또는 회원가입을 진행하세요.</div>' +
+      '      <div id="authSignupOnly" class="hidden">' +
+      '        <div class="h-3"></div>' +
+      '        <label class="block text-xs font-black text-slate-600 mb-1">닉네임</label>' +
+      '        <div class="flex gap-2">' +
+      '          <input id="authNickname" type="text" maxlength="12" class="flex-1 border border-slate-300 px-3 py-2 text-sm font-semibold" placeholder="닉네임 입력" />' +
+      '          <button id="checkNicknameBtn" type="button" class="border border-slate-300 bg-white px-3 py-2 text-xs font-black hover:bg-slate-50">중복확인</button>' +
+      '        </div>' +
+      '        <div id="nicknameStatus" class="mt-2 text-[11px] font-bold text-slate-500">닉네임 2~12자 (한/영/숫자/공백/_/-)</div>' +
+      '        <div class="h-3"></div>' +
+      '        <label class="block text-xs font-black text-slate-600 mb-1">비밀번호 확인</label>' +
+      '        <input id="authPasswordConfirm" type="password" autocomplete="new-password" class="w-full border border-slate-300 px-3 py-2 text-sm font-semibold" placeholder="********" />' +
+      '        <div id="passwordPolicyHint" class="mt-2 text-[11px] font-bold text-slate-500">비밀번호 8~64자 / 영문 대문자+소문자+숫자 필수 / 특수문자 !@#$%^&*()_+=;:[]{} 사용 가능</div>' +
+      '      </div>' +
+      '      <div id="authHint" class="mt-2 text-[11px] font-bold text-slate-500">로그인 정보를 입력하세요.</div>' +
       '      <div id="authError" class="mt-2 hidden text-[11px] font-black text-red-600"></div>' +
       '      <div class="mt-4 flex gap-2">' +
-      '        <button id="authSubmitBtn" class="flex-1 border border-slate-300 bg-slate-900 text-white py-2 text-sm font-black hover:bg-black" type="button">계속</button>' +
+      '        <button id="authSubmitBtn" class="flex-1 border border-slate-300 bg-slate-900 text-white py-2 text-sm font-black hover:bg-black" type="button">로그인</button>' +
       '        <button id="authCancelBtn" class="flex-1 border border-slate-300 bg-white py-2 text-sm font-black hover:bg-slate-50" type="button">취소</button>' +
       '      </div>' +
       '    </div>' +
@@ -1176,27 +1263,50 @@
         if (event.target === overlay) bmCloseAuth();
       });
     }
+
     var tabLogin = bmById("authTabLogin");
-    if (tabLogin) {
-      tabLogin.addEventListener("click", function () { bmSetAuthMode("login"); });
-    }
+    if (tabLogin) tabLogin.addEventListener("click", function () { bmSetAuthMode("login"); });
     var tabSignup = bmById("authTabSignup");
-    if (tabSignup) {
-      tabSignup.addEventListener("click", function () { bmSetAuthMode("signup"); });
-    }
+    if (tabSignup) tabSignup.addEventListener("click", function () { bmSetAuthMode("signup"); });
+
     var submitBtn = bmById("authSubmitBtn");
-    if (submitBtn) {
-      submitBtn.addEventListener("click", function () { void bmSubmitAuth(); });
+    if (submitBtn) submitBtn.addEventListener("click", function () { void bmSubmitAuth(); });
+    var checkBtn = bmById("checkNicknameBtn");
+    if (checkBtn) checkBtn.addEventListener("click", function () { void bmCheckNickname(); });
+
+    var emailNode = bmById("authEmail");
+    if (emailNode) {
+      emailNode.addEventListener("keydown", function (event) {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        void bmSubmitAuth();
+      });
     }
     var passwordNode = bmById("authPassword");
     if (passwordNode) {
       passwordNode.addEventListener("keydown", function (event) {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          void bmSubmitAuth();
-        }
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        void bmSubmitAuth();
       });
     }
+    var confirmNode = bmById("authPasswordConfirm");
+    if (confirmNode) {
+      confirmNode.addEventListener("keydown", function (event) {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        void bmSubmitAuth();
+      });
+    }
+
+    var nickNode = bmById("authNickname");
+    if (nickNode) {
+      nickNode.addEventListener("input", function () {
+        bmResetNicknameCheck();
+      });
+    }
+
+    bmSetAuthMode("login");
   }
 
   function bmSetAuthMode(mode) {
@@ -1205,7 +1315,9 @@
     var tabLogin = bmById("authTabLogin");
     var tabSignup = bmById("authTabSignup");
     var hint = bmById("authHint");
-    var error = bmById("authError");
+    var signupOnly = bmById("authSignupOnly");
+    var passwordNode = bmById("authPassword");
+    var passwordPolicy = bmById("passwordPolicyHint");
 
     if (tabLogin) {
       tabLogin.classList.toggle("bg-slate-900", isLogin);
@@ -1219,14 +1331,20 @@
       tabSignup.classList.toggle("bg-white", isLogin);
       tabSignup.classList.toggle("text-slate-900", isLogin);
     }
+    if (signupOnly) signupOnly.classList.toggle("hidden", isLogin);
     if (hint) {
       hint.textContent = isLogin
         ? "로그인 정보를 입력하세요."
-        : "회원가입 정보를 입력하세요. (이메일 인증이 켜져 있으면 메일 확인 필요)";
+        : "회원가입 정보를 입력하세요.";
     }
-    if (error) {
-      error.classList.add("hidden");
-      error.textContent = "";
+    if (passwordNode) {
+      passwordNode.setAttribute("autocomplete", isLogin ? "current-password" : "new-password");
+    }
+    if (passwordPolicy) passwordPolicy.textContent = bmPasswordHintText();
+    bmSetAuthError("");
+    bmSetAuthBusy(false);
+    if (!isLogin) {
+      bmResetNicknameCheck();
     }
   }
 
@@ -1248,6 +1366,7 @@
     if (!overlay) return;
     overlay.classList.add("hidden");
     overlay.classList.remove("flex");
+    bmSetAuthError("");
   }
 
   function bmToast(message) {
@@ -1267,56 +1386,105 @@
     }, 1200);
   }
 
-  async function bmUpsertProfileByEmail(sb, userId, email) {
-    if (!userId) return;
-    var nickname = toStringSafe(email).split("@")[0].slice(0, 24);
-    if (!nickname) nickname = toStringSafe(userId).slice(0, 8);
+  async function bmCheckNickname() {
+    var raw = toStringSafe(bmById("authNickname") && bmById("authNickname").value);
+    var checked = bmValidateNickname(raw);
+    if (!checked.ok) {
+      __bmNicknameChecked = false;
+      __bmNicknameCheckedLower = "";
+      bmSetNicknameStatus(checked.msg, false);
+      return false;
+    }
+
+    var nick = checked.value;
+    var nickLower = nick.toLowerCase();
+    bmSetNicknameStatus("중복 확인 중...", null);
     try {
-      await sb.from("profiles").upsert({ user_id: userId, nickname: nickname }, { onConflict: "user_id" });
-    } catch (_a) {
-      // profiles table may not exist in early bootstrap stage.
+      var sb = getSb();
+      var _a = await sb.from("profiles").select("user_id,nickname").filter("nickname", "ilike", nick).limit(20), data = _a.data, error = _a.error;
+      if (error) throw error;
+      var rows = data || [];
+      var exists = rows.some(function (row) {
+        return toStringSafe(row && row.nickname).trim().toLowerCase() === nickLower;
+      });
+      if (exists) {
+        __bmNicknameChecked = false;
+        __bmNicknameCheckedLower = "";
+        bmSetNicknameStatus("이미 사용 중인 닉네임입니다.", false);
+        return false;
+      }
+      __bmNicknameChecked = true;
+      __bmNicknameCheckedLower = nickLower;
+      bmSetNicknameStatus("사용 가능한 닉네임입니다.", true);
+      return true;
+    } catch (_b) {
+      __bmNicknameChecked = false;
+      __bmNicknameCheckedLower = "";
+      bmSetNicknameStatus("닉네임 확인 중 오류가 발생했습니다.", false);
+      return false;
     }
   }
 
+  async function bmUpsertProfileNickname(sb, userId, nickname) {
+    if (!userId || !nickname) return;
+    var _a = await sb.from("profiles").upsert({ user_id: userId, nickname: nickname }, { onConflict: "user_id" }), error = _a.error;
+    if (!error) return;
+    var msg = toStringSafe(error.message).toLowerCase();
+    if (msg.includes("profiles_nickname_lower_unique") || msg.includes("duplicate key")) {
+      throw new Error("이미 사용 중인 닉네임입니다.");
+    }
+    throw error;
+  }
+
   async function bmSubmitAuth() {
+    if (__bmAuthBusy) return;
     var email = toStringSafe(bmById("authEmail") && bmById("authEmail").value).trim();
     var password = toStringSafe(bmById("authPassword") && bmById("authPassword").value);
-    var error = bmById("authError");
     if (!email || !password) {
-      if (error) {
-        error.classList.remove("hidden");
-        error.textContent = "이메일/비밀번호를 입력하세요.";
-      }
+      bmSetAuthError("이메일/비밀번호를 입력하세요.");
       return;
-    }
-    if (error) {
-      error.classList.add("hidden");
-      error.textContent = "";
     }
 
     var sb = getSb();
+    bmSetAuthError("");
+    bmSetAuthBusy(true);
     try {
       if (__bmAuthMode === "signup") {
+        var nickRaw = toStringSafe(bmById("authNickname") && bmById("authNickname").value);
+        var nickChecked = bmValidateNickname(nickRaw);
+        if (!nickChecked.ok) throw new Error(nickChecked.msg);
+        var nickLower = nickChecked.value.toLowerCase();
+        if (!__bmNicknameChecked || __bmNicknameCheckedLower !== nickLower) {
+          throw new Error("닉네임 중복확인을 먼저 진행하세요.");
+        }
+
+        var passwordCheck = bmValidatePassword(password);
+        if (!passwordCheck.ok) throw new Error(passwordCheck.msg);
+
+        var confirmPassword = toStringSafe(bmById("authPasswordConfirm") && bmById("authPasswordConfirm").value);
+        if (password !== confirmPassword) throw new Error("비밀번호 확인이 일치하지 않습니다.");
+
         var _a = await sb.auth.signUp({ email: email, password: password }), signupData = _a.data, signupError = _a.error;
         if (signupError) throw signupError;
-        var signupUid = signupData && signupData.user && signupData.user.id;
-        if (signupUid) await bmUpsertProfileByEmail(sb, signupUid, email);
+
+        var uid = signupData && signupData.user && signupData.user.id;
+        if (!uid && signupData && signupData.session && signupData.session.user) uid = signupData.session.user.id;
+        if (uid) {
+          await bmUpsertProfileNickname(sb, uid, nickChecked.value);
+        }
         bmCloseAuth();
         bmToast("회원가입 요청 완료");
         return;
       }
 
-      var _b = await sb.auth.signInWithPassword({ email: email, password: password }), loginData = _b.data, loginError = _b.error;
+      var _b = await sb.auth.signInWithPassword({ email: email, password: password }), loginError = _b.error;
       if (loginError) throw loginError;
-      var loginUid = loginData && loginData.user && loginData.user.id;
-      if (loginUid) await bmUpsertProfileByEmail(sb, loginUid, email);
       bmCloseAuth();
       bmToast("로그인 성공");
     } catch (e) {
-      if (error) {
-        error.classList.remove("hidden");
-        error.textContent = toStringSafe(e && e.message).trim() || "인증 실패";
-      }
+      bmSetAuthError(toStringSafe(e && e.message).trim() || "인증 실패");
+    } finally {
+      bmSetAuthBusy(false);
     }
   }
 
