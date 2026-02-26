@@ -1,7 +1,67 @@
+# =========================
+# Secrets / local env
+# =========================
 .env.local
 .env.*.local
+*.env.local
+*.secret
+*.secret.*
+
+# project-local scripts that may contain secrets
 scripts/*.local.ps1
 scripts/*.local.cmd
 scripts/*.secret.ps1
 scripts/*.secret.cmd
+
+# =========================
+# Node / JS
+# =========================
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npmrc.local
+
+# =========================
+# Netlify
+# =========================
+.netlify/
+netlify/.env*
+netlify/state.json
+netlify/functions-serve/
+
+# =========================
+# Build outputs
+# (keep if you use frameworks later)
+# =========================
+dist/
+build/
+out/
+.next/
+.nuxt/
+.svelte-kit/
+.parcel-cache/
+.turbo/
+.cache/
+
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.swp
+*.swo
+*.tmp
+*.log
+
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+.idea/
+*.iml
