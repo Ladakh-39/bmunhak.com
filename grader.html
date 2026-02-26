@@ -25,8 +25,10 @@
             <a href="/my.html" class="hover:underline">My Page</a>
         </nav>
         <div class="hidden items-center gap-3 text-lg font-semibold md:flex">
-            <a href="#" class="hover:underline">회원가입</a>
-            <a href="#" class="hover:underline">로그인</a>
+            <button id="btnSignupTop" type="button" class="hover:underline">회원가입</button>
+            <button id="btnLoginTop" type="button" class="hover:underline">로그인</button>
+            <span id="welcomeText" class="hidden text-sm font-bold"></span>
+            <button id="btnLogoutTop" type="button" class="hidden hover:underline">로그아웃</button>
         </div>
         <button id="btnMenu" class="rounded-lg px-3 py-2 text-2xl md:hidden" type="button">☰</button>
     </div>
@@ -38,6 +40,11 @@
             <a href="/board.html?b=qna" class="rounded px-2 py-1 hover:bg-white/10">질문</a>
             <a href="/grader.html" class="rounded px-2 py-1 hover:bg-white/10">채점하기</a>
             <a href="/my.html" class="rounded px-2 py-1 hover:bg-white/10">My Page</a>
+        </div>
+        <div class="flex items-center gap-3 px-3 pt-2">
+            <button id="btnSignupMobile" class="hover:underline" type="button">회원가입</button>
+            <button id="btnLoginMobile" class="hover:underline" type="button">로그인</button>
+            <button id="btnLogoutMobile" class="hidden hover:underline" type="button">로그아웃</button>
         </div>
     </div>
 </header>
@@ -415,6 +422,8 @@
     setDefaultRange();
     resetAll();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/app.js"></script>
 
 </body>
 </html>

@@ -1,8 +1,8 @@
 (function initJungdapCommunity(window) {
   "use strict";
 
-  var SUPABASE_URL = "https://nqdbahgdtplfuihfvtws.supabase.co";
-  var SUPABASE_ANON_KEY = "sb_publishable_Ee3DOwuN--i-wxWCzUTvxQ_k5acJuHf";
+  var SUPABASE_URL = "https://vbnbgigyfwfakpecetev.supabase.co";
+  var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZibmJnaWd5ZndmYWtwZWNldGV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNjY2ODgsImV4cCI6MjA4NzY0MjY4OH0.gkUreO2S0PSfHG8jtQH0G4wRGqraVLc2nTPOkhd1Lzk";
   var DEFAULT_KAKAO_OPEN_CHAT_URL = "https://open.kakao.com/";
   var URL_CACHE_BUFFER_MS = 60 * 1000;
   var DEFAULT_SIGNED_URL_EXPIRES_SEC = 3600;
@@ -1122,6 +1122,292 @@
     updateSignupButtonState();
   }
 
+  var __bmAuthMode = "login";
+  var __bmAuthInitDone = false;
+  var __bmAuthStateBound = false;
+
+  function bmById(id) {
+    return document.getElementById(id);
+  }
+
+  function bmEnsureAuthModal() {
+    if (!document.body) return;
+    if (bmById("authModalOverlay")) return;
+
+    var wrap = document.createElement("div");
+    wrap.innerHTML = (
+      '<div id="authModalOverlay" class="fixed inset-0 hidden items-center justify-center bg-black/50 z-[100]">' +
+      '  <div class="w-[92%] max-w-[420px] bg-white border border-slate-300 shadow-xl">' +
+      '    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-300 bg-slate-100">' +
+      '      <div class="text-sm font-black text-slate-800">계정</div>' +
+      '      <button id="authModalClose" class="px-2 py-1 text-xl font-black text-slate-600 hover:text-black" aria-label="close" type="button">×</button>' +
+      '    </div>' +
+      '    <div class="px-4 pt-4">' +
+      '      <div class="flex gap-2">' +
+      '        <button id="authTabLogin" class="flex-1 border border-slate-300 bg-slate-900 text-white py-2 text-sm font-black" type="button">로그인</button>' +
+      '        <button id="authTabSignup" class="flex-1 border border-slate-300 bg-white text-slate-900 py-2 text-sm font-black hover:bg-slate-50" type="button">회원가입</button>' +
+      '      </div>' +
+      '    </div>' +
+      '    <div class="px-4 py-4">' +
+      '      <label class="block text-xs font-black text-slate-600 mb-1">이메일</label>' +
+      '      <input id="authEmail" type="email" autocomplete="email" class="w-full border border-slate-300 px-3 py-2 text-sm font-semibold" placeholder="email@example.com" />' +
+      '      <div class="h-3"></div>' +
+      '      <label class="block text-xs font-black text-slate-600 mb-1">비밀번호</label>' +
+      '      <input id="authPassword" type="password" autocomplete="current-password" class="w-full border border-slate-300 px-3 py-2 text-sm font-semibold" placeholder="********" />' +
+      '      <div id="authHint" class="mt-2 text-[11px] font-bold text-slate-500">로그인 또는 회원가입을 진행하세요.</div>' +
+      '      <div id="authError" class="mt-2 hidden text-[11px] font-black text-red-600"></div>' +
+      '      <div class="mt-4 flex gap-2">' +
+      '        <button id="authSubmitBtn" class="flex-1 border border-slate-300 bg-slate-900 text-white py-2 text-sm font-black hover:bg-black" type="button">계속</button>' +
+      '        <button id="authCancelBtn" class="flex-1 border border-slate-300 bg-white py-2 text-sm font-black hover:bg-slate-50" type="button">취소</button>' +
+      '      </div>' +
+      '    </div>' +
+      '  </div>' +
+      '</div>'
+    );
+    if (wrap.firstElementChild) document.body.appendChild(wrap.firstElementChild);
+
+    var closeNode = bmById("authModalClose");
+    if (closeNode) closeNode.addEventListener("click", bmCloseAuth);
+    var cancelNode = bmById("authCancelBtn");
+    if (cancelNode) cancelNode.addEventListener("click", bmCloseAuth);
+    var overlay = bmById("authModalOverlay");
+    if (overlay) {
+      overlay.addEventListener("click", function (event) {
+        if (event.target === overlay) bmCloseAuth();
+      });
+    }
+    var tabLogin = bmById("authTabLogin");
+    if (tabLogin) {
+      tabLogin.addEventListener("click", function () { bmSetAuthMode("login"); });
+    }
+    var tabSignup = bmById("authTabSignup");
+    if (tabSignup) {
+      tabSignup.addEventListener("click", function () { bmSetAuthMode("signup"); });
+    }
+    var submitBtn = bmById("authSubmitBtn");
+    if (submitBtn) {
+      submitBtn.addEventListener("click", function () { void bmSubmitAuth(); });
+    }
+    var passwordNode = bmById("authPassword");
+    if (passwordNode) {
+      passwordNode.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          void bmSubmitAuth();
+        }
+      });
+    }
+  }
+
+  function bmSetAuthMode(mode) {
+    __bmAuthMode = mode === "signup" ? "signup" : "login";
+    var isLogin = __bmAuthMode === "login";
+    var tabLogin = bmById("authTabLogin");
+    var tabSignup = bmById("authTabSignup");
+    var hint = bmById("authHint");
+    var error = bmById("authError");
+
+    if (tabLogin) {
+      tabLogin.classList.toggle("bg-slate-900", isLogin);
+      tabLogin.classList.toggle("text-white", isLogin);
+      tabLogin.classList.toggle("bg-white", !isLogin);
+      tabLogin.classList.toggle("text-slate-900", !isLogin);
+    }
+    if (tabSignup) {
+      tabSignup.classList.toggle("bg-slate-900", !isLogin);
+      tabSignup.classList.toggle("text-white", !isLogin);
+      tabSignup.classList.toggle("bg-white", isLogin);
+      tabSignup.classList.toggle("text-slate-900", isLogin);
+    }
+    if (hint) {
+      hint.textContent = isLogin
+        ? "로그인 정보를 입력하세요."
+        : "회원가입 정보를 입력하세요. (이메일 인증이 켜져 있으면 메일 확인 필요)";
+    }
+    if (error) {
+      error.classList.add("hidden");
+      error.textContent = "";
+    }
+  }
+
+  function bmOpenAuth(mode) {
+    bmEnsureAuthModal();
+    bmSetAuthMode(mode || "login");
+    var overlay = bmById("authModalOverlay");
+    if (!overlay) return;
+    overlay.classList.remove("hidden");
+    overlay.classList.add("flex");
+    window.setTimeout(function () {
+      var emailNode = bmById("authEmail");
+      if (emailNode) emailNode.focus();
+    }, 0);
+  }
+
+  function bmCloseAuth() {
+    var overlay = bmById("authModalOverlay");
+    if (!overlay) return;
+    overlay.classList.add("hidden");
+    overlay.classList.remove("flex");
+  }
+
+  function bmToast(message) {
+    var toast = bmById("globalToast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "globalToast";
+      toast.className = "fixed hidden items-center justify-center bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-900 text-white text-sm font-black z-[120]";
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message || "";
+    toast.classList.remove("hidden");
+    toast.classList.add("flex");
+    window.setTimeout(function () {
+      toast.classList.add("hidden");
+      toast.classList.remove("flex");
+    }, 1200);
+  }
+
+  async function bmUpsertProfileByEmail(sb, userId, email) {
+    if (!userId) return;
+    var nickname = toStringSafe(email).split("@")[0].slice(0, 24);
+    if (!nickname) nickname = toStringSafe(userId).slice(0, 8);
+    try {
+      await sb.from("profiles").upsert({ user_id: userId, nickname: nickname }, { onConflict: "user_id" });
+    } catch (_a) {
+      // profiles table may not exist in early bootstrap stage.
+    }
+  }
+
+  async function bmSubmitAuth() {
+    var email = toStringSafe(bmById("authEmail") && bmById("authEmail").value).trim();
+    var password = toStringSafe(bmById("authPassword") && bmById("authPassword").value);
+    var error = bmById("authError");
+    if (!email || !password) {
+      if (error) {
+        error.classList.remove("hidden");
+        error.textContent = "이메일/비밀번호를 입력하세요.";
+      }
+      return;
+    }
+    if (error) {
+      error.classList.add("hidden");
+      error.textContent = "";
+    }
+
+    var sb = getSb();
+    try {
+      if (__bmAuthMode === "signup") {
+        var _a = await sb.auth.signUp({ email: email, password: password }), signupData = _a.data, signupError = _a.error;
+        if (signupError) throw signupError;
+        var signupUid = signupData && signupData.user && signupData.user.id;
+        if (signupUid) await bmUpsertProfileByEmail(sb, signupUid, email);
+        bmCloseAuth();
+        bmToast("회원가입 요청 완료");
+        return;
+      }
+
+      var _b = await sb.auth.signInWithPassword({ email: email, password: password }), loginData = _b.data, loginError = _b.error;
+      if (loginError) throw loginError;
+      var loginUid = loginData && loginData.user && loginData.user.id;
+      if (loginUid) await bmUpsertProfileByEmail(sb, loginUid, email);
+      bmCloseAuth();
+      bmToast("로그인 성공");
+    } catch (e) {
+      if (error) {
+        error.classList.remove("hidden");
+        error.textContent = toStringSafe(e && e.message).trim() || "인증 실패";
+      }
+    }
+  }
+
+  async function bmSignOut() {
+    try {
+      await hardSignOut(getSb());
+    } finally {
+      bmToast("로그아웃");
+    }
+  }
+
+  function bmSetHeaderUI(session) {
+    var signedIn = Boolean(session && session.user);
+    var userEmail = toStringSafe(session && session.user && session.user.email);
+    var welcomeText = bmById("welcomeText");
+    if (welcomeText) {
+      if (signedIn) {
+        welcomeText.textContent = userEmail;
+        welcomeText.classList.remove("hidden");
+      } else {
+        welcomeText.classList.add("hidden");
+        welcomeText.textContent = "";
+      }
+    }
+
+    function toggle(id, show) {
+      var node = bmById(id);
+      if (!node) return;
+      node.classList.toggle("hidden", !show);
+    }
+
+    toggle("btnLoginTop", !signedIn);
+    toggle("btnSignupTop", !signedIn);
+    toggle("btnLogoutTop", signedIn);
+    toggle("btnLoginMobile", !signedIn);
+    toggle("btnSignupMobile", !signedIn);
+    toggle("btnLogoutMobile", signedIn);
+  }
+
+  function bmBindAuthButtons() {
+    var bindings = [
+      ["btnLoginTop", function () { bmOpenAuth("login"); }],
+      ["btnSignupTop", function () { bmOpenAuth("signup"); }],
+      ["btnLogoutTop", function () { void bmSignOut(); }],
+      ["btnLoginMobile", function () { bmOpenAuth("login"); }],
+      ["btnSignupMobile", function () { bmOpenAuth("signup"); }],
+      ["btnLogoutMobile", function () { void bmSignOut(); }],
+      ["authGateLoginBtn", function () { bmOpenAuth("login"); }],
+      ["authGateSignupBtn", function () { bmOpenAuth("signup"); }]
+    ];
+
+    for (var i = 0; i < bindings.length; i += 1) {
+      var item = bindings[i];
+      var id = item[0];
+      var handler = item[1];
+      var node = bmById(id);
+      if (!node || node.__bmAuthBound) continue;
+      node.addEventListener("click", handler);
+      node.__bmAuthBound = true;
+    }
+  }
+
+  function bmShouldSkipAutoAuthInit() {
+    return Boolean(window.__bmunhakInlineAuthHandled);
+  }
+
+  async function bmInit(options) {
+    var force = Boolean(options && options.force);
+    if (!force && bmShouldSkipAutoAuthInit()) return;
+    if (__bmAuthInitDone) return;
+    __bmAuthInitDone = true;
+    bmEnsureAuthModal();
+    bmBindAuthButtons();
+
+    var sb = getSb();
+    try {
+      var _a = await sb.auth.getSession(), data = _a.data;
+      bmSetHeaderUI(data && data.session);
+    } catch (_b) {
+      bmSetHeaderUI(null);
+    }
+
+    if (!__bmAuthStateBound) {
+      __bmAuthStateBound = true;
+      sb.auth.onAuthStateChange(function (_event, session) {
+        bmBindAuthButtons();
+        bmSetHeaderUI(session);
+      });
+    }
+  }
+
   window.JungdapApp = Object.assign({}, window.JungdapApp || {}, {
     SUPABASE_URL: SUPABASE_URL,
     SUPABASE_ANON_KEY: SUPABASE_ANON_KEY,
@@ -1145,9 +1431,12 @@
     resolveAvatarUrl: resolveAvatarUrl,
     setupMobileMenu: setupMobileMenu,
     setupContactModal: setupContactModal,
-    setupAuthModal: setupAuthModal,
-    openAuth: openAuth,
-    closeAuth: closeAuth,
+    setupAuthModal: bmEnsureAuthModal,
+    openAuth: bmOpenAuth,
+    closeAuth: bmCloseAuth,
+    signOut: bmSignOut,
+    toast: bmToast,
+    init: bmInit,
     hardSignOut: hardSignOut,
     setupSecretRoomHover: setupSecretRoomHover,
     classifyRecentCommentPlus: classifyRecentCommentPlus
@@ -1160,4 +1449,10 @@
   window.escapeHtml = escapeHtml;
   window.getNicknameMap = getNicknameMap;
   window.getKakaoOpenChatUrl = getKakaoOpenChatUrl;
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () { void bmInit(); }, { once: true });
+  } else {
+    void bmInit();
+  }
 })(window);
