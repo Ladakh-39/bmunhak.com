@@ -349,13 +349,18 @@
     async function getMyDisplayName() {
       if (!currentUser) return "";
       if (profileNickname) return profileNickname;
-      const { data } = await sbClient.from("profiles").select("nickname").eq("user_id", currentUser.id).maybeSingle();
-      const nick = String(data?.nickname || "").trim();
+      let nick = "";
+      if (APP && typeof APP.getProfileNickname === "function") {
+        nick = String(await APP.getProfileNickname(currentUser.id)).trim();
+      } else {
+        const { data } = await sbClient.from("profiles").select("nickname").eq("user_id", currentUser.id).maybeSingle();
+        nick = String(data?.nickname || "").trim();
+      }
       if (nick) {
         profileNickname = nick;
         return nick;
       }
-      return String(currentUser.email || "").split("@")[0] || String(currentUser.id || "").slice(0, 8);
+      return "회원";
     }
 
     function showMemoEditor(visible) {
