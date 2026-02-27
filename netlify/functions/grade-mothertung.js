@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { createClient } from "@supabase/supabase-js";
 
 const SUBJECTS = new Set([
@@ -10,6 +12,8 @@ const SUBJECTS = new Set([
   "mock1",
   "mock2",
 ]);
+const ANSWER_CSV_PATH = path.join(process.cwd(), "netlify", "functions", "_private", "2027_mothertung_answers.csv");
+const ANSWER_CACHE = { bySubject: null };
 
 function json(statusCode, body) {
   return {
@@ -68,6 +72,77 @@ function normalizeAnswerMap(rawAnswers) {
   return out;
 }
 
+function parseCsvRow(line) {
+  const out = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+    if (ch === "\"") {
+      const next = line[i + 1];
+      if (inQuotes && next === "\"") {
+        cur += "\"";
+        i += 1;
+        continue;
+      }
+      inQuotes = !inQuotes;
+      continue;
+    }
+    if (ch === "," && !inQuotes) {
+      out.push(cur);
+      cur = "";
+      continue;
+    }
+    cur += ch;
+  }
+  out.push(cur);
+  return out.map((v) => String(v || "").replace(/^\uFEFF/, "").trim());
+}
+
+function loadAnswerDbFromCsv() {
+  if (ANSWER_CACHE.bySubject) return ANSWER_CACHE.bySubject;
+  if (!fs.existsSync(ANSWER_CSV_PATH)) throw new Error("ANSWER_CSV_NOT_FOUND");
+
+  const text = fs.readFileSync(ANSWER_CSV_PATH, "utf-8").replace(/^\uFEFF/, "").replace(/\r/g, "");
+  const lines = text.split("\n").filter(Boolean);
+  if (lines.length < 2) throw new Error("ANSWER_CSV_EMPTY");
+
+  const header = parseCsvRow(lines[0]);
+  const idxCategory = header.indexOf("category");
+  const idxQuestion = header.indexOf("question_id");
+  const idxAnswer = header.indexOf("correct_answer");
+  if (idxCategory < 0 || idxQuestion < 0 || idxAnswer < 0) throw new Error("ANSWER_CSV_BAD_HEADER");
+
+  const bySubject = {};
+  for (const subject of SUBJECTS) bySubject[subject] = new Map();
+
+  for (let i = 1; i < lines.length; i += 1) {
+    const cols = parseCsvRow(lines[i]);
+    const subject = String(cols[idxCategory] || "").trim();
+    const qnum = toSafeInt(cols[idxQuestion]);
+    const answer = toSafeInt(cols[idxAnswer]);
+    if (!SUBJECTS.has(subject)) continue;
+    if (!Number.isFinite(qnum) || qnum <= 0) continue;
+    if (!Number.isFinite(answer) || answer < 1 || answer > 5) continue;
+    bySubject[subject].set(qnum, answer);
+  }
+
+  ANSWER_CACHE.bySubject = bySubject;
+  return bySubject;
+}
+
+function getAnswerRowsFromCsv(subject, startQ, endQ) {
+  const bySubject = loadAnswerDbFromCsv();
+  const answerMap = bySubject[subject];
+  if (!answerMap || !answerMap.size) return [];
+  const rows = [];
+  for (let qnum = startQ; qnum <= endQ; qnum += 1) {
+    const answer = answerMap.get(qnum);
+    if (!Number.isFinite(answer)) continue;
+    rows.push({ qnum, answer });
+  }
+  return rows;
+}
 export async function handler(event) {
   try {
     if (event.httpMethod !== "POST") return json(405, { ok: false, error: "METHOD_NOT_ALLOWED" });
@@ -102,16 +177,12 @@ export async function handler(event) {
     if (startQ <= 0 || endQ <= 0 || startQ > endQ) return json(400, { ok: false, error: "INVALID_RANGE" });
     if (userId !== authedUserId) return json(403, { ok: false, error: "USER_MISMATCH" });
 
-    const { data: rows, error: qerr } = await sb
-      .from("mothertung_answers")
-      .select("qnum,answer")
-      .eq("year", year)
-      .eq("subject", subject)
-      .gte("qnum", startQ)
-      .lte("qnum", endQ)
-      .order("qnum", { ascending: true });
-
-    if (qerr) return json(500, { ok: false, error: "ANSWER_QUERY_FAILED", detail: qerr.message });
+    let rows = [];
+    try {
+      rows = getAnswerRowsFromCsv(subject, startQ, endQ);
+    } catch (e) {
+      return json(500, { ok: false, error: "ANSWER_SOURCE_FAILED", detail: String(e?.message || e) });
+    }
     if (!rows?.length) return json(404, { ok: false, error: "ANSWER_NOT_FOUND" });
 
     let correct = 0;

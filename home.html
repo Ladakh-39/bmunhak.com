@@ -35,7 +35,7 @@
         <a href="/index.html" class="text-[34px] leading-none font-black tracking-tight text-[var(--bm-text)]">bmunhak</a>
 
         <nav class="hidden md:flex flex-1 items-center justify-center gap-8 text-[18px] leading-none font-semibold whitespace-nowrap">
-          <a href="/board.html?b=room" class="hover:underline">필요의 방</a>
+          <a id="room-of-requirement" href="/board.html?b=room" class="room-secret-prehide hover:underline" style="visibility:hidden;pointer-events:none;">필요의 방</a>
           <a href="/board.html?b=notice" class="hover:underline">공지사항</a>
           <a href="/board.html?b=intro" class="hover:underline">가입인사</a>
           <a href="/board.html?b=free" class="hover:underline">자유게시판</a>
@@ -56,7 +56,7 @@
 
       <div id="mobileMenu" class="md:hidden hidden pb-3">
         <div class="grid gap-1 text-xl font-semibold">
-          <a href="/board.html?b=room" class="rounded px-2 py-1 hover:bg-white/10">필요의 방</a>
+          <a id="room-of-requirement-mobile" href="/board.html?b=room" class="room-secret-prehide rounded px-2 py-1 hover:bg-white/10" style="visibility:hidden;pointer-events:none;">필요의 방</a>
           <a href="/board.html?b=notice" class="rounded px-2 py-1 hover:bg-white/10">공지사항</a>
           <a href="/board.html?b=intro" class="rounded px-2 py-1 hover:bg-white/10">가입인사</a>
           <a href="/board.html?b=free" class="rounded px-2 py-1 hover:bg-white/10">자유게시판</a>
@@ -173,5 +173,16 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/app.js?v=20260226-1"></script>
+  <script>
+    window.JungdapApp?.setupSecretRoomHover({
+      elementId: "room-of-requirement",
+      hiddenColor: "#7092BE",
+      hoverColor: "#7496C2",
+      openColor: "#FFFFFF",
+      requiredCount: 3,
+      withinMs: 1500,
+      resetMs: 1500
+    });
+  </script>
 </body>
 </html>

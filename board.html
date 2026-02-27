@@ -109,13 +109,13 @@
       <div class="flex h-16 items-center gap-4 overflow-hidden">
         <div class="flex items-center min-w-[160px]">
           <a href="/" class="block">
-            <span class="block text-[34px] leading-none font-black tracking-tight text-white">bmunhak</span>
+            <span class="block text-[34px] leading-none font-black tracking-tight text-[#33506a]">bmunhak</span>
           </a>
         </div>
 
-        <nav class="hidden md:flex flex-1 items-center justify-center gap-5 text-[18px] leading-none min-w-0 flex-nowrap whitespace-nowrap">
+        <nav class="hidden md:flex flex-1 items-center justify-center gap-5 text-[18px] leading-none font-semibold min-w-0 flex-nowrap whitespace-nowrap">
           <span class="room-secret-slot inline-flex items-center justify-center w-[104px] whitespace-nowrap">
-            <a id="room-of-requirement" href="/board.html?b=room" class="leading-none transition-colors whitespace-nowrap">필요의 방</a>
+            <a id="room-of-requirement" href="/board.html?b=room" class="room-secret-prehide leading-none transition-colors whitespace-nowrap" style="visibility:hidden;pointer-events:none;">필요의 방</a>
           </span>
           <a href="/board.html?b=notice" class="leading-none hover:underline whitespace-nowrap">공지사항</a>
           <a href="/board.html?b=intro" class="leading-none hover:underline whitespace-nowrap">가입인사</a>
@@ -139,7 +139,7 @@
 
       <div id="mobileMenu" class="md:hidden hidden pb-3">
         <div class="flex flex-col gap-2 text-base font-bold">
-          <a id="room-of-requirement-mobile" href="/board.html?b=room" class="hidden px-3 py-2 rounded-lg transition-colors">필요의 방</a>
+          <a id="room-of-requirement-mobile" href="/board.html?b=room" class="room-secret-prehide hidden px-3 py-2 rounded-lg transition-colors" style="visibility:hidden;pointer-events:none;">필요의 방</a>
           <a href="/board.html?b=notice" class="px-3 py-2 rounded-lg hover:bg-white/10">공지사항</a>
           <a href="/board.html?b=intro" class="px-3 py-2 rounded-lg hover:bg-white/10">가입인사</a>
           <a href="/board.html?b=free" class="px-3 py-2 rounded-lg hover:bg-white/10">자유게시판</a>
@@ -303,9 +303,9 @@
   </div>
   <div id="copyToast" class="fixed hidden items-center justify-center bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-900 text-white text-sm font-black z-[70]">복사됨</div>
 
+  <script>window.__bmunhakInlineAuthHandled = true;</script>
   <script src="/app.js?v=20260226-1"></script>
   <script>
-    window.__bmunhakInlineAuthHandled = true;
     const APP = window.JungdapApp;
     const sbClient = APP.getSb();
 
@@ -2173,5 +2173,4 @@
   </script>
 </body>
 </html>
-
 
