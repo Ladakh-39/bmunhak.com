@@ -498,8 +498,6 @@
       var node = resolveNode(target);
       if (!node) return;
       node.classList.remove("room-secret-prehide");
-      node.style.removeProperty("visibility");
-      node.style.removeProperty("pointer-events");
 
       var isTouchOnly = false;
       try {
@@ -510,6 +508,12 @@
 
       var targetId = typeof target === "string" ? target : node.id;
       node.style.userSelect = "none";
+      node.style.transition = "none";
+      node.style.setProperty("color", config.hiddenColor, "important");
+      node.style.setProperty("cursor", "default", "important");
+      node.style.setProperty("visibility", "visible", "important");
+      node.style.setProperty("pointer-events", "auto", "important");
+      void node.offsetWidth;
       node.style.transition = "color 0.3s ease";
 
       if (isTouchOnly && targetId === "room-of-requirement-mobile") {
@@ -524,18 +528,24 @@
         if (!element) return;
         element.style.setProperty("color", config.hiddenColor, "important");
         element.style.setProperty("cursor", "default", "important");
+        element.style.setProperty("visibility", "visible", "important");
+        element.style.setProperty("pointer-events", "auto", "important");
       }
 
       function applyHoverState(element) {
         if (!element) return;
         element.style.setProperty("color", config.hoverColor, "important");
         element.style.setProperty("cursor", "default", "important");
+        element.style.setProperty("visibility", "visible", "important");
+        element.style.setProperty("pointer-events", "auto", "important");
       }
 
       function applyOpenState(element) {
         if (!element) return;
         element.style.setProperty("color", config.openColor, "important");
         element.style.setProperty("cursor", "pointer", "important");
+        element.style.setProperty("visibility", "visible", "important");
+        element.style.setProperty("pointer-events", "auto", "important");
         element.style.transition = "color 0.5s ease";
       }
 
