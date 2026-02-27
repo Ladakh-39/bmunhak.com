@@ -1663,6 +1663,16 @@
           options: { data: { nickname: nickChecked.value } }
         }), signupData = _a.data, signupError = _a.error;
         if (signupError) throw signupError;
+        if (signupData && signupData.session) {
+          try {
+            var signupUserId = toStringSafe(signupData.session.user && signupData.session.user.id).trim();
+            if (signupUserId) {
+              await bmUpsertProfileNickname(sb, signupUserId, nickChecked.value);
+            }
+          } catch (_c) {
+            // best-effort only
+          }
+        }
         bmCloseAuth();
         if (signupData && signupData.session) {
           bmToast("회원가입 요청 완료");
@@ -1705,6 +1715,24 @@
     }
   }
 
+  async function bmResolveDisplayName(session) {
+    if (!session || !session.user) return "";
+    var user = session.user;
+    var userId = toStringSafe(user.id).trim();
+    if (!userId) return "";
+
+    var fromProfile = await bmGetProfileNickname(userId);
+    if (fromProfile) return fromProfile;
+
+    var metaNick = toStringSafe(user.user_metadata && user.user_metadata.nickname).trim();
+    if (metaNick) {
+      try { await bmUpsertProfileNickname(getSb(), userId, metaNick); } catch (_a) {}
+      return metaNick;
+    }
+
+    return "";
+  }
+
   async function bmSetHeaderUI(session) {
     var token = __bmHeaderUiToken + 1;
     __bmHeaderUiToken = token;
@@ -1712,16 +1740,14 @@
     var welcomeText = bmById("welcomeText");
     var displayName = "";
     if (signedIn) {
-      var userId = toStringSafe(session && session.user && session.user.id).trim();
-      displayName = await bmGetProfileNickname(userId);
+      displayName = await bmResolveDisplayName(session);
       if (token !== __bmHeaderUiToken) return;
-      if (!displayName) displayName = "회원";
     }
 
     if (welcomeText) {
       welcomeText.classList.add("font-bold");
 
-      if (signedIn) {
+      if (signedIn && displayName) {
         welcomeText.textContent = displayName + "님";
         welcomeText.classList.remove("hidden");
         welcomeText.classList.add("text-[var(--bm-text)]");
