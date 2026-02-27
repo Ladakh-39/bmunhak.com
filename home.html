@@ -76,6 +76,7 @@
   <main class="py-6">
     <section class="shell">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- 공지사항 -->
         <div class="border border-slate-300 bg-white">
           <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <div class="text-[18px] font-black text-[var(--bm-text)]">공지사항</div>
@@ -84,6 +85,7 @@
           <div id="pv_notice" class="px-4 py-3 text-sm text-slate-700">불러오는 중…</div>
         </div>
 
+        <!-- 가입인사 -->
         <div class="border border-slate-300 bg-white">
           <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <div class="text-[18px] font-black text-[var(--bm-text)]">가입인사</div>
@@ -92,6 +94,7 @@
           <div id="pv_intro" class="px-4 py-3 text-sm text-slate-700">불러오는 중…</div>
         </div>
 
+        <!-- 자유게시판 -->
         <div class="border border-slate-300 bg-white">
           <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <div class="text-[18px] font-black text-[var(--bm-text)]">질문/답변</div>
@@ -100,6 +103,7 @@
           <div id="pv_free" class="px-4 py-3 text-sm text-slate-700">불러오는 중…</div>
         </div>
 
+        <!-- 시험후기 -->
         <div class="border border-slate-300 bg-white">
           <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <div class="text-[18px] font-black text-[var(--bm-text)]">시험후기</div>
@@ -128,102 +132,14 @@
   <script>
     const btnMobileMenu = document.getElementById("btnMobileMenu");
     const mobileMenu = document.getElementById("mobileMenu");
-    btnMobileMenu?.addEventListener("click", () => mobileMenu.classList.toggle("hidden"));
+    btnMobileMenu?.addEventListener("click", () => {
+      mobileMenu.classList.toggle("hidden");
+    });
   </script>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/app.js?v=20260226-1"></script>
-  <script>
-    (function setupHomePreview() {
-      var APP = window.JungdapApp;
-      var targets = {
-        notice: document.getElementById("pv_notice"),
-        intro: document.getElementById("pv_intro"),
-        free: document.getElementById("pv_free"),
-        review: document.getElementById("pv_review"),
-        latest: document.getElementById("pv_latest")
-      };
 
-      function esc(s) {
-        return String(s == null ? "" : s)
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll("\"", "&quot;")
-          .replaceAll("'", "&#039;");
-      }
-
-      function setError(message) {
-        var msg = message || "미리보기를 불러오지 못했습니다.";
-        Object.keys(targets).forEach(function (key) {
-          if (!targets[key]) return;
-          targets[key].innerHTML = '<div class="text-rose-600 font-black">오류: ' + esc(msg) + "</div>";
-        });
-      }
-
-      function renderList(node, rows) {
-        if (!node) return;
-        if (!rows || !rows.length) {
-          node.innerHTML = '<div class="text-slate-500">게시글이 없습니다.</div>';
-          return;
-        }
-        node.innerHTML = rows.map(function (row) {
-          var id = Number(row && row.id) || 0;
-          var title = esc(row && row.title || "(제목 없음)");
-          var date = APP && typeof APP.formatYmd === "function" ? APP.formatYmd(row && row.created_at) : "-";
-          var comments = Number(row && row.comment_count || 0);
-          return '' +
-            '<a class="block py-1 hover:underline" href="/post.html?id=' + id + '">' +
-            '<span class="text-slate-800">' + title + '</span>' +
-            '<span class="ml-2 text-xs text-slate-500">[' + comments + "]</span>" +
-            '<span class="ml-2 text-xs text-slate-400">' + esc(date) + "</span>" +
-            "</a>";
-        }).join("");
-      }
-
-      async function run() {
-        try {
-          if (!APP || typeof APP.getSb !== "function") {
-            throw new Error("APP_NOT_READY");
-          }
-
-          var sb = APP.getSb();
-          var _a = await sb
-            .from("board_posts_active")
-            .select("id,section_slug,title,comment_count,created_at")
-            .order("created_at", { ascending: false })
-            .limit(120), rows = _a.data, error = _a.error;
-          if (error) throw error;
-
-          var list = Array.isArray(rows) ? rows : [];
-          var by = {
-            notice: [],
-            welcome: [],
-            free: [],
-            review: []
-          };
-
-          for (var i = 0; i < list.length; i += 1) {
-            var row = list[i];
-            if (by.notice.length < 3 && String(row && row.section_slug || "").toLowerCase() === "notice") by.notice.push(row);
-            if (by.welcome.length < 3 && String(row && row.section_slug || "").toLowerCase() === "welcome") by.welcome.push(row);
-            if (by.free.length < 3 && String(row && row.section_slug || "").toLowerCase() === "free") by.free.push(row);
-            if (by.review.length < 3 && String(row && row.section_slug || "").toLowerCase() === "review") by.review.push(row);
-          }
-
-          renderList(targets.notice, by.notice);
-          renderList(targets.intro, by.welcome);
-          renderList(targets.free, by.free);
-          renderList(targets.review, by.review);
-          renderList(targets.latest, list.slice(0, 3));
-        } catch (e) {
-          console.error("[home-preview]", e);
-          setError(String(e && e.message || e || "UNKNOWN_ERROR"));
-        }
-      }
-
-      void run();
-    })();
-  </script>
   <script>
     window.JungdapApp?.setupSecretRoomHover({
       elementId: "room-of-requirement",
@@ -234,6 +150,71 @@
       withinMs: 1500,
       resetMs: 1500
     });
+  </script>
+
+  <!-- 홈 프리뷰 로딩 스크립트 (공지/가입/자유/시험후기 최신 3개) -->
+  <script>
+    (function () {
+      const APP = window.JungdapApp;
+      if (!APP) return;
+
+      // pv_* 영역이 페이지에 있어야 함:
+      // pv_notice / pv_intro / pv_free / pv_review
+      const sb = APP.getSb();
+
+      // 시험후기 slug가 review가 아닐 수 있음.
+      // 실제 slug가 다르면 여기 slug만 교체하면 끝.
+      const sections = [
+        { slug: "notice", el: "pv_notice" },
+        { slug: "intro", el: "pv_intro" },
+        { slug: "free", el: "pv_free" },
+        { slug: "review", el: "pv_review" },
+      ];
+
+      const escape = (s) => (APP.escapeHtml ? APP.escapeHtml(String(s ?? "")) : String(s ?? ""));
+      const fmtDate = (iso) => (APP.formatYmd ? APP.formatYmd(iso) : String(iso || "").slice(0, 10));
+
+      function renderList(el, rows, slug) {
+        if (!rows || rows.length === 0) {
+          el.innerHTML = '<div class="text-slate-400">게시글이 없습니다.</div>';
+          return;
+        }
+        el.innerHTML = `
+          <ul class="space-y-2">
+            ${rows.map(r => `
+              <li class="flex items-center justify-between gap-3">
+                <a class="min-w-0 flex-1 truncate hover:underline"
+                   href="/post.html?b=${encodeURIComponent(slug)}&id=${encodeURIComponent(r.id)}">
+                  ${escape(r.title || "(제목 없음)")}
+                </a>
+                <span class="shrink-0 text-xs text-slate-400">${escape(fmtDate(r.created_at))}</span>
+              </li>
+            `).join("")}
+          </ul>
+        `;
+      }
+
+      async function loadPreview(slug, elId) {
+        const el = document.getElementById(elId);
+        if (!el) return;
+
+        const { data, error } = await sb
+          .from("board_posts_active")
+          .select("id,title,created_at")
+          .eq("is_deleted", false)
+          .eq("section_slug", slug)
+          .order("id", { ascending: false })
+          .limit(3);
+
+        if (error) {
+          el.innerHTML = `<div class="text-rose-600 text-sm">불러오기 실패: ${escape(error.message)}</div>`;
+          return;
+        }
+        renderList(el, data || [], slug);
+      }
+
+      sections.forEach(s => loadPreview(s.slug, s.el));
+    })();
   </script>
 </body>
 </html>
