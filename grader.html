@@ -5,26 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>bmunhak 채점하기</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.css" rel="stylesheet" />
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap');
-        body { font-family: 'Pretendard', sans-serif; background-color: #e5e7eb; }
+        body { font-family: "SUIT Variable", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; background-color: #e5e7eb; }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .mono { font-variant-numeric: tabular-nums; }
     </style>
 </head>
 <body class="min-h-screen">
-<header class="border-b border-slate-400 bg-[#7b90b8] text-white">
-    <div class="mx-auto flex h-16 max-w-[1180px] items-center gap-4 px-4">
-        <a href="/index.html" class="text-[34px] leading-none font-black tracking-tight text-[#33506a]">bmunhak</a>
-        <nav class="hidden flex-1 items-center justify-center gap-7 text-[18px] font-semibold md:flex">
-            <a href="/board.html?b=notice" class="hover:underline">공지사항</a>
-            <a href="/board.html?b=intro" class="hover:underline">가입인사</a>
-            <a href="/board.html?b=free" class="hover:underline">자유게시판</a>
-            <a href="/board.html?b=qna" class="hover:underline">질문</a>
-            <a href="/grader.html" class="hover:underline">채점하기</a>
-            <a href="/my.html" class="hover:underline">My Page</a>
+<header class="border-b border-slate-400 bg-[#7092BE] text-white overflow-hidden">
+    <div class="mx-auto flex h-16 max-w-[1440px] items-center gap-4 overflow-hidden px-4">
+        <div class="flex items-center min-w-[160px]">
+            <a href="/index.html" class="block">
+                <span class="block text-[34px] leading-none font-black tracking-tight text-[#33506a]">bmunhak</span>
+            </a>
+        </div>
+        <nav class="hidden md:flex flex-1 items-center justify-center gap-5 text-[18px] leading-none font-semibold min-w-0 flex-nowrap whitespace-nowrap">
+            <span class="room-secret-slot inline-flex items-center justify-center w-[104px] whitespace-nowrap">
+                <a id="room-of-requirement" href="/board.html?b=room" class="room-secret-prehide leading-none transition-colors whitespace-nowrap" style="visibility:hidden;pointer-events:none;">필요의 방</a>
+            </span>
+            <a href="/board.html?b=notice" class="leading-none hover:underline whitespace-nowrap">공지사항</a>
+            <a href="/board.html?b=intro" class="leading-none hover:underline whitespace-nowrap">가입인사</a>
+            <a href="/board.html?b=free" class="leading-none hover:underline whitespace-nowrap">자유게시판</a>
+            <a href="/board.html?b=qna" class="leading-none hover:underline whitespace-nowrap">질문</a>
+            <a href="/grader.html" class="leading-none hover:underline whitespace-nowrap">채점하기</a>
+            <a href="/my.html" class="leading-none hover:underline whitespace-nowrap">My Page</a>
         </nav>
-        <div class="hidden items-center gap-3 text-sm font-semibold md:flex">
+        <div class="hidden md:flex items-center justify-end gap-3 min-w-[140px] text-sm font-semibold">
             <button id="btnSignupTop" type="button" class="hover:underline">회원가입</button>
             <button id="btnLoginTop" type="button" class="hover:underline">로그인</button>
             <span id="welcomeText" class="hidden text-sm font-bold"></span>
@@ -32,8 +39,9 @@
         </div>
         <button id="btnMenu" class="rounded-lg px-3 py-2 text-2xl md:hidden" type="button">☰</button>
     </div>
-    <div id="mobileMenu" class="mx-auto hidden max-w-[1180px] px-4 pb-3 md:hidden">
-        <div class="grid gap-1 text-xl font-semibold">
+    <div id="mobileMenu" class="mx-auto hidden max-w-[1440px] px-4 pb-3 md:hidden">
+        <div class="flex flex-col gap-2 text-base font-bold">
+            <a id="room-of-requirement-mobile" href="/board.html?b=room" class="room-secret-prehide hidden px-3 py-2 rounded-lg transition-colors whitespace-nowrap" style="visibility:hidden;pointer-events:none;">필요의 방</a>
             <a href="/board.html?b=notice" class="rounded px-2 py-1 hover:bg-white/10">공지사항</a>
             <a href="/board.html?b=intro" class="rounded px-2 py-1 hover:bg-white/10">가입인사</a>
             <a href="/board.html?b=free" class="rounded px-2 py-1 hover:bg-white/10">자유게시판</a>
@@ -530,6 +538,17 @@
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/app.js?v=20260226-1"></script>
+<script>
+    window.JungdapApp?.setupSecretRoomHover({
+        elementId: "room-of-requirement",
+        hiddenColor: "#7092BE",
+        hoverColor: "#7496C2",
+        openColor: "#FFFFFF",
+        requiredCount: 3,
+        withinMs: 1500,
+        resetMs: 1500
+    });
+</script>
 
 </body>
 </html>
