@@ -23,6 +23,20 @@
       margin: 0 auto;
       padding: 0 16px;
     }
+    /* splash overlay */
+    #splashOverlay {
+      opacity: 1;
+      transition: opacity 320ms ease;
+    }
+    #splashOverlay.is-hide {
+      opacity: 0;
+      pointer-events: none;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #splashOverlay {
+        transition: none;
+      }
+    }
   </style>
 </head>
 <body class="min-h-screen">
@@ -70,12 +84,61 @@
     </div>
   </header>
 
-  <main class="py-3">
-    <section class="shell border border-slate-300 bg-[#efefef] pt-3">
+  <div id="splashOverlay" class="fixed inset-0 z-[9999] bg-[var(--bm-bg)] flex items-start justify-center">
+    <div class="shell border border-slate-300 bg-[#efefef] pt-3 w-full">
       <div class="border-y border-slate-300 bg-white">
-        <a href="/home.html" class="block cursor-pointer">
-          <img src="/image/bmunhak.png" alt="bmunhak 대문" class="block h-auto w-full" />
-        </a>
+        <img src="/image/bmunhak.png" alt="bmunhak 대문" class="block h-auto w-full" />
+      </div>
+    </div>
+  </div>
+
+  <main class="py-6">
+    <section class="shell">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- 공지사항 -->
+        <div class="border border-slate-300 bg-white">
+          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div class="text-[18px] font-black text-[var(--bm-text)]">공지사항</div>
+            <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=notice">더보기</a>
+          </div>
+          <div id="pv_notice" class="px-4 py-3 text-sm text-slate-700">불러오는 중…</div>
+        </div>
+
+        <!-- 가입인사 -->
+        <div class="border border-slate-300 bg-white">
+          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div class="text-[18px] font-black text-[var(--bm-text)]">가입인사</div>
+            <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=intro">더보기</a>
+          </div>
+          <div id="pv_intro" class="px-4 py-3 text-sm text-slate-700">불러오는 중…</div>
+        </div>
+
+        <!-- 자유게시판 -->
+        <div class="border border-slate-300 bg-white">
+          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div class="text-[18px] font-black text-[var(--bm-text)]">자유게시판</div>
+            <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=free">더보기</a>
+          </div>
+          <div id="pv_free" class="px-4 py-3 text-sm text-slate-700">불러오는 중…</div>
+        </div>
+
+        <!-- 시험후기 -->
+        <div class="border border-slate-300 bg-white">
+          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div class="text-[18px] font-black text-[var(--bm-text)]">시험후기</div>
+            <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=review">더보기</a>
+          </div>
+          <div id="pv_review" class="px-4 py-3 text-sm text-slate-700">불러오는 중…</div>
+        </div>
+      </div>
+
+      <!-- 긴 박스: 질문/답변 -->
+      <div class="mt-4 border border-slate-300 bg-white">
+        <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+          <div class="text-[18px] font-black text-[var(--bm-text)]">질문/답변</div>
+          <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=qna">더보기</a>
+        </div>
+        <div id="pv_qna" class="px-4 py-3 text-sm text-slate-700">불러오는 중…</div>
       </div>
     </section>
   </main>
@@ -96,6 +159,65 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/app.js?v=20260226-1"></script>
   <script>
+    (function () {
+      const APP = window.JungdapApp;
+      if (!APP) return;
+
+      const sb = APP.getSb();
+      const sections = [
+        { slug: "notice", el: "pv_notice" },
+        { slug: "intro",  el: "pv_intro" },
+        { slug: "free",   el: "pv_free" },
+        { slug: "review", el: "pv_review" },
+        { slug: "qna",    el: "pv_qna" },
+      ];
+
+      const escape = (s) => (APP.escapeHtml ? APP.escapeHtml(String(s ?? "")) : String(s ?? ""));
+      const fmtDate = (iso) => (APP.formatYmd ? APP.formatYmd(iso) : String(iso || "").slice(0, 10));
+
+      function renderList(el, rows, slug) {
+        if (!rows || rows.length === 0) {
+          el.innerHTML = '<div class="text-slate-400">게시글이 없습니다.</div>';
+          return;
+        }
+        el.innerHTML = `
+          <ul class="space-y-2">
+            ${rows.map(r => `
+              <li class="flex items-center justify-between gap-3">
+                <a class="min-w-0 flex-1 truncate hover:underline"
+                   href="/post.html?b=${encodeURIComponent(slug)}&id=${encodeURIComponent(r.id)}">
+                  ${escape(r.title || "(제목 없음)")}
+                </a>
+                <span class="shrink-0 text-xs text-slate-400">${escape(fmtDate(r.created_at))}</span>
+              </li>
+            `).join("")}
+          </ul>
+        `;
+      }
+
+      async function loadPreview(slug, elId) {
+        const el = document.getElementById(elId);
+        if (!el) return;
+
+        const { data, error } = await sb
+          .from("board_posts_active")
+          .select("id,title,created_at")
+          .eq("is_deleted", false)
+          .eq("section_slug", slug)
+          .order("id", { ascending: false })
+          .limit(3);
+
+        if (error) {
+          el.innerHTML = `<div class="text-rose-600 text-sm">불러오기 실패: ${escape(error.message)}</div>`;
+          return;
+        }
+        renderList(el, data || [], slug);
+      }
+
+      sections.forEach(s => loadPreview(s.slug, s.el));
+    })();
+  </script>
+  <script>
     window.JungdapApp?.setupSecretRoomHover({
       elementId: "room-of-requirement",
       hiddenColor: "#7092BE",
@@ -105,6 +227,24 @@
       withinMs: 1500,
       resetMs: 1500
     });
+  </script>
+  <script>
+    (function () {
+      const splash = document.getElementById("splashOverlay");
+      if (!splash) return;
+
+      const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const SHOW_MS = 1500;
+
+      setTimeout(() => {
+        if (reduce) {
+          splash.remove();
+          return;
+        }
+        splash.classList.add("is-hide");
+        setTimeout(() => splash.remove(), 380);
+      }, SHOW_MS);
+    })();
   </script>
 </body>
 </html>
