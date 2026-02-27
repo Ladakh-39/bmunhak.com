@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>bmunhak.com</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.css" rel="stylesheet">
+  <style>
+    :root{
+      --bm-header:#7a90b8;
+      --bm-bg:#d7d7da;
+      --bm-text:#33506a;
+    }
+    body{
+      margin:0;
+      font-family:"SUIT Variable","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+      background:var(--bm-bg);
+      color:#1f2937;
+    }
+    .shell{max-width:1180px;margin:0 auto;padding:0 16px;}
+    .card{background:#fff;border:1px solid #cbd5e1;border-radius:14px;}
+    .card-h{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #e2e8f0;}
+    .card-b{padding:14px 16px;}
+    .card-title{font-weight:900;color:#334155;font-size:22px;}
+    .more{font-weight:800;color:#64748b;}
+  </style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.fixed{position:fixed}.inset-0{inset:0px}.z-\[100\]{z-index:100}.mt-0{margin-top:0px}.mt-4{margin-top:1rem}.mb-1{margin-bottom:0.25rem}.mt-2{margin-top:0.5rem}.block{display:block}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-16{height:4rem}.h-3{height:0.75rem}.min-h-screen{min-height:100vh}.w-\[92\%\]{width:92%}.w-full{width:100%}.max-w-\[460px\]{max-width:460px}.flex-1{flex:1 1 0%}.grid-cols-1{grid-template-columns:repeat(1, minmax(0, 1fr))}.items-center{align-items:center}.justify-end{justify-content:flex-end}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-1{gap:0.25rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.gap-8{gap:2rem}.gap-2{gap:0.5rem}.whitespace-nowrap{white-space:nowrap}.rounded{border-radius:0.25rem}.border{border-width:1px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-slate-200{--tw-border-opacity:1;border-color:rgb(226 232 240 / var(--tw-border-opacity, 1))}.border-slate-300{--tw-border-opacity:1;border-color:rgb(203 213 225 / var(--tw-border-opacity, 1))}.border-slate-400{--tw-border-opacity:1;border-color:rgb(148 163 184 / var(--tw-border-opacity, 1))}.bg-\[var\(--bm-bg\)\]{background-color:var(--bm-bg)}.bg-\[var\(--bm-header\)\]{background-color:var(--bm-header)}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.bg-black\/50{background-color:rgb(0 0 0 / 0.5)}.bg-slate-100{--tw-bg-opacity:1;background-color:rgb(241 245 249 / var(--tw-bg-opacity, 1))}.bg-slate-900{--tw-bg-opacity:1;background-color:rgb(15 23 42 / var(--tw-bg-opacity, 1))}.px-2{padding-left:0.5rem;padding-right:0.5rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-4{padding-left:1rem;padding-right:1rem}.py-1{padding-top:0.25rem;padding-bottom:0.25rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.py-6{padding-top:1.5rem;padding-bottom:1.5rem}.py-8{padding-top:2rem;padding-bottom:2rem}.py-4{padding-top:1rem;padding-bottom:1rem}.pb-3{padding-bottom:0.75rem}.pt-2{padding-top:0.5rem}.pt-4{padding-top:1rem}.text-center{text-align:center}.text-2xl{font-size:1.5rem;line-height:2rem}.text-\[18px\]{font-size:18px}.text-\[34px\]{font-size:34px}.text-\[44px\]{font-size:44px}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-\[11px\]{font-size:11px}.text-xs{font-size:0.75rem;line-height:1rem}.font-black{font-weight:900}.font-bold{font-weight:700}.font-semibold{font-weight:600}.leading-none{line-height:1}.tracking-tight{letter-spacing:-0.025em}.text-\[var\(--bm-text\)\]{color:var(--bm-text)}.text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105 / var(--tw-text-opacity, 1))}.text-slate-700{--tw-text-opacity:1;color:rgb(51 65 85 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.text-red-600{--tw-text-opacity:1;color:rgb(220 38 38 / var(--tw-text-opacity, 1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139 / var(--tw-text-opacity, 1))}.text-slate-800{--tw-text-opacity:1;color:rgb(30 41 59 / var(--tw-text-opacity, 1))}.text-slate-900{--tw-text-opacity:1;color:rgb(15 23 42 / var(--tw-text-opacity, 1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184 / var(--tw-text-opacity, 1))}.shadow-xl{--tw-shadow:0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.hover\:bg-white\/10:hover{background-color:rgb(255 255 255 / 0.1)}.hover\:bg-black:hover{--tw-bg-opacity:1;background-color:rgb(0 0 0 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-50:hover{--tw-bg-opacity:1;background-color:rgb(248 250 252 / var(--tw-bg-opacity, 1))}.hover\:text-black:hover{--tw-text-opacity:1;color:rgb(0 0 0 / var(--tw-text-opacity, 1))}.hover\:underline:hover{-webkit-text-decoration-line:underline;text-decoration-line:underline}@media (min-width: 768px){.md\:flex{display:flex}.md\:hidden{display:none}.md\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}}</style></head>
+
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="border-b border-slate-400 bg-[var(--bm-header)] text-white">
+    <div class="shell">
+      <div class="flex h-16 items-center gap-4">
+        <a href="/index.html" class="text-[34px] leading-none font-black tracking-tight text-[var(--bm-text)]">bmunhak</a>
+
+        <nav class="hidden md:flex flex-1 items-center justify-center gap-8 text-[18px] leading-none font-semibold whitespace-nowrap">
+          <a id="room-of-requirement" href="/board.html?b=room" class="hover:underline" style="visibility: visible !important; pointer-events: auto !important; user-select: none; transition: color 0.3s; color: rgb(112, 146, 190) !important; cursor: default !important;">필요의 방</a>
+          <a href="/board.html?b=notice" class="hover:underline">공지사항</a>
+          <a href="/board.html?b=intro" class="hover:underline">가입인사</a>
+          <a href="/board.html?b=free" class="hover:underline">자유게시판</a>
+          <a href="/board.html?b=qna" class="hover:underline">질문</a>
+          <a href="/grader.html" class="hover:underline">채점하기</a>
+          <a href="/my.html" class="hover:underline">My Page</a>
+        </nav>
+
+        <div class="hidden md:flex items-center justify-end gap-3 text-sm font-semibold whitespace-nowrap">
+          <button id="btnSignupTop" type="button" class="hover:underline">회원가입</button>
+          <button id="btnLoginTop" type="button" class="hover:underline">로그인</button>
+          <span id="welcomeText" class="hidden text-sm font-bold"></span>
+          <button id="btnLogoutTop" type="button" class="hidden hover:underline">로그아웃</button>
+        </div>
+
+        <button id="btnMobileMenu" class="md:hidden rounded px-3 py-2 text-2xl" type="button" aria-label="menu">☰</button>
+      </div>
+
+      <div id="mobileMenu" class="md:hidden hidden pb-3">
+        <div class="grid gap-1 text-xl font-semibold">
+          <a id="room-of-requirement-mobile" href="/board.html?b=room" class="rounded px-2 py-1 hover:bg-white/10" style="visibility: visible !important; pointer-events: auto !important; user-select: none; transition: color 0.3s; color: rgb(112, 146, 190) !important; cursor: default !important;">필요의 방</a>
+          <a href="/board.html?b=notice" class="rounded px-2 py-1 hover:bg-white/10">공지사항</a>
+          <a href="/board.html?b=intro" class="rounded px-2 py-1 hover:bg-white/10">가입인사</a>
+          <a href="/board.html?b=free" class="rounded px-2 py-1 hover:bg-white/10">자유게시판</a>
+          <a href="/board.html?b=qna" class="rounded px-2 py-1 hover:bg-white/10">질문</a>
+          <a href="/grader.html" class="rounded px-2 py-1 hover:bg-white/10">채점하기</a>
+          <a href="/my.html" class="rounded px-2 py-1 hover:bg-white/10">My Page</a>
+        </div>
+        <div class="flex items-center gap-3 px-3 pt-2">
+          <button id="btnSignupMobile" class="hover:underline" type="button">회원가입</button>
+          <button id="btnLoginMobile" class="hover:underline" type="button">로그인</button>
+          <button id="btnLogoutMobile" class="hidden hover:underline" type="button">로그아웃</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="py-6">
+    <section class="shell">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- 공지사항 -->
+        <div class="border border-slate-300 bg-white">
+          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div class="text-[18px] font-black text-[var(--bm-text)]">공지사항</div>
+            <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=notice">더보기</a>
+          </div>
+          <div id="pv_notice" class="px-4 py-3 text-sm text-slate-700"><div class="text-slate-400">게시글이 없습니다.</div></div>
+        </div>
+
+        <!-- 가입인사 -->
+        <div class="border border-slate-300 bg-white">
+          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div class="text-[18px] font-black text-[var(--bm-text)]">가입인사</div>
+            <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=intro">더보기</a>
+          </div>
+          <div id="pv_intro" class="px-4 py-3 text-sm text-slate-700"><div class="text-slate-400">게시글이 없습니다.</div></div>
+        </div>
+
+        <!-- 자유게시판 -->
+        <div class="border border-slate-300 bg-white">
+          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div class="text-[18px] font-black text-[var(--bm-text)]">자유게시판</div>
+            <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=free">더보기</a>
+          </div>
+          <div id="pv_free" class="px-4 py-3 text-sm text-slate-700"><div class="text-slate-400">게시글이 없습니다.</div></div>
+        </div>
+
+        <!-- 시험후기 -->
+        <div class="border border-slate-300 bg-white">
+          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div class="text-[18px] font-black text-[var(--bm-text)]">시험후기</div>
+            <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=review">더보기</a>
+          </div>
+          <div id="pv_review" class="px-4 py-3 text-sm text-slate-700"><div class="text-slate-400">게시글이 없습니다.</div></div>
+        </div>
+      </div>
+
+      <div class="mt-4 border border-slate-300 bg-white">
+        <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+          <div class="text-[18px] font-black text-[var(--bm-text)]">질문/답변</div>
+          <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=qna">더보기</a>
+        </div>
+        <div id="pv_qna" class="px-4 py-3 text-sm text-slate-700"><div class="text-slate-400">게시글이 없습니다.</div></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="mt-0 border-t border-slate-300 bg-[var(--bm-bg)] py-8">
+    <div class="shell text-center text-[44px] leading-none font-semibold tracking-tight text-[var(--bm-text)]">
+      bmunhak.com
+    </div>
+  </footer>
+
+  <script>
+    const btnMobileMenu = document.getElementById("btnMobileMenu");
+    const mobileMenu = document.getElementById("mobileMenu");
+    btnMobileMenu?.addEventListener("click", () => {
+      mobileMenu.classList.toggle("hidden");
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/app.js?v=20260226-1"></script>
+
+  <script>
+    window.JungdapApp?.setupSecretRoomHover({
+      elementId: "room-of-requirement",
+      hiddenColor: "#7092BE",
+      hoverColor: "#7496C2",
+      openColor: "#FFFFFF",
+      requiredCount: 3,
+      withinMs: 1500,
+      resetMs: 1500
+    });
+  </script>
+
+  <!-- 홈 프리뷰 로딩 스크립트 (공지/가입/자유/시험후기 최신 3개) -->
+  <script>
+    (function () {
+      const APP = window.JungdapApp;
+      if (!APP) return;
+
+      // pv_* 영역이 페이지에 있어야 함:
+      // pv_notice / pv_intro / pv_free / pv_review / pv_qna
+      const sb = APP.getSb();
+
+      // 시험후기 slug가 review가 아닐 수 있음.
+      // 실제 slug가 다르면 여기 slug만 교체하면 끝.
+      const sections = [
+        { slug: "notice", el: "pv_notice" },
+        { slug: "intro", el: "pv_intro" },
+        { slug: "free", el: "pv_free" },
+        { slug: "review", el: "pv_review" },
+        { slug: "qna", el: "pv_qna" },
+      ];
+
+      const escape = (s) => (APP.escapeHtml ? APP.escapeHtml(String(s ?? "")) : String(s ?? ""));
+      const fmtDate = (iso) => (APP.formatYmd ? APP.formatYmd(iso) : String(iso || "").slice(0, 10));
+
+      function renderList(el, rows, slug) {
+        if (!rows || rows.length === 0) {
+          el.innerHTML = '<div class="text-slate-400">게시글이 없습니다.</div>';
+          return;
+        }
+        el.innerHTML = `
+          <ul class="space-y-2">
+            ${rows.map(r => `
+              <li class="flex items-center justify-between gap-3">
+                <a class="min-w-0 flex-1 truncate hover:underline"
+                   href="/post.html?b=${encodeURIComponent(slug)}&id=${encodeURIComponent(r.id)}">
+                  ${escape(r.title || "(제목 없음)")}
+                </a>
+                <span class="shrink-0 text-xs text-slate-400">${escape(fmtDate(r.created_at))}</span>
+              </li>
+            `).join("")}
+          </ul>
+        `;
+      }
+
+      async function loadPreview(slug, elId) {
+        const el = document.getElementById(elId);
+        if (!el) return;
+
+        const { data, error } = await sb
+          .from("board_posts_active")
+          .select("id,title,created_at")
+          .eq("is_deleted", false)
+          .eq("section_slug", slug)
+          .order("id", { ascending: false })
+          .limit(3);
+
+        if (error) {
+          el.innerHTML = `<div class="text-rose-600 text-sm">불러오기 실패: ${escape(error.message)}</div>`;
+          return;
+        }
+        renderList(el, data || [], slug);
+      }
+
+      sections.forEach(s => loadPreview(s.slug, s.el));
+    })();
+  </script>
+
+
+<div id="authModalOverlay" class="fixed inset-0 hidden items-center justify-center bg-black/50 z-[100]">  <div class="w-[92%] max-w-[460px] bg-white border border-slate-300 shadow-xl">    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-300 bg-slate-100">      <div class="text-sm font-black text-slate-800">계정</div>      <button id="authModalClose" class="px-2 py-1 text-xl font-black text-slate-600 hover:text-black" aria-label="close" type="button">×</button>    </div>    <div class="px-4 pt-4">      <div class="flex gap-2">        <button id="authTabLogin" class="flex-1 border border-slate-300 bg-slate-900 text-white py-2 text-sm font-black" type="button">로그인</button>        <button id="authTabSignup" class="flex-1 border border-slate-300 bg-white text-slate-900 py-2 text-sm font-black hover:bg-slate-50" type="button">회원가입</button>      </div>    </div>    <div class="px-4 py-4">      <label class="block text-xs font-black text-slate-600 mb-1">이메일</label>      <input id="authEmail" type="email" autocomplete="email" class="w-full border border-slate-300 px-3 py-2 text-sm font-semibold" placeholder="email@example.com">      <div class="h-3"></div>      <label class="block text-xs font-black text-slate-600 mb-1">비밀번호</label>      <input id="authPassword" type="password" autocomplete="current-password" class="w-full border border-slate-300 px-3 py-2 text-sm font-semibold" placeholder="********">      <div id="authSignupOnly" class="hidden">        <div class="h-3"></div>        <label class="block text-xs font-black text-slate-600 mb-1">비밀번호 확인</label>        <input id="authPasswordConfirm" type="password" autocomplete="new-password" class="w-full border border-slate-300 px-3 py-2 text-sm font-semibold" placeholder="********">        <div id="passwordPolicyHint" class="mt-2 text-[11px] font-bold text-slate-500">비밀번호 8~64자 / 영문 대문자+소문자+숫자 필수 / 특수문자 !@#$%^&amp;*()_+=;:[]{} 사용 가능</div>        <div class="h-3"></div>        <label class="block text-xs font-black text-slate-600 mb-1">닉네임</label>        <div class="flex gap-2">          <input id="authNickname" type="text" maxlength="12" class="flex-1 border border-slate-300 px-3 py-2 text-sm font-semibold" placeholder="닉네임 입력">          <button id="checkNicknameBtn" type="button" class="border border-slate-300 bg-white px-3 py-2 text-xs font-black hover:bg-slate-50">중복확인</button>        </div>        <div id="nicknameStatus" class="mt-2 text-[11px] font-bold text-slate-500">닉네임 2~12자 (한/영/숫자/공백/_/-)</div>      </div>      <div id="authHint" class="mt-2 text-[11px] font-bold text-slate-500">로그인 정보를 입력하세요.</div>      <div id="authError" class="mt-2 hidden text-[11px] font-black text-red-600"></div>      <div class="mt-4 flex gap-2">        <button id="authSubmitBtn" class="flex-1 border border-slate-300 bg-slate-900 text-white py-2 text-sm font-black hover:bg-black" type="button">로그인</button>        <button id="authCancelBtn" class="flex-1 border border-slate-300 bg-white py-2 text-sm font-black hover:bg-slate-50" type="button">취소</button>      </div>    </div>  </div></div></body></html>

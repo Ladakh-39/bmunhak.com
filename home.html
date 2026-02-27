@@ -73,91 +73,54 @@
     </div>
   </header>
 
-  <!-- Main -->
-  <main class="shell py-6">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Left: boards -->
-      <section class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+  <main class="py-6">
+    <section class="shell">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- 공지사항 -->
+        <div class="border border-slate-300 bg-white">
+          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div class="text-[18px] font-black text-[var(--bm-text)]">공지사항</div>
+            <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=notice">더보기</a>
+          </div>
+          <div id="pv_notice" class="px-4 py-3 text-sm text-slate-700">불러오는 중…</div>
+        </div>
 
-        <article class="card">
-          <div class="card-h">
-            <div class="card-title">공지사항</div>
-            <a class="more hover:underline" href="/board.html?b=notice">더보기</a>
+        <!-- 가입인사 -->
+        <div class="border border-slate-300 bg-white">
+          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div class="text-[18px] font-black text-[var(--bm-text)]">가입인사</div>
+            <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=intro">더보기</a>
           </div>
-          <div class="card-b text-slate-500 font-bold">게시글이 없습니다.</div>
-        </article>
+          <div id="pv_intro" class="px-4 py-3 text-sm text-slate-700">불러오는 중…</div>
+        </div>
 
-        <article class="card">
-          <div class="card-h">
-            <div class="card-title">가입인사</div>
-            <a class="more hover:underline" href="/board.html?b=intro">더보기</a>
+        <!-- 자유게시판 -->
+        <div class="border border-slate-300 bg-white">
+          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div class="text-[18px] font-black text-[var(--bm-text)]">자유게시판</div>
+            <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=free">더보기</a>
           </div>
-          <div class="card-b text-slate-500 font-bold">게시글이 없습니다.</div>
-        </article>
+          <div id="pv_free" class="px-4 py-3 text-sm text-slate-700">불러오는 중…</div>
+        </div>
 
-        <article class="card">
-          <div class="card-h">
-            <div class="card-title">자유게시판</div>
-            <a class="more hover:underline" href="/board.html?b=free">더보기</a>
+        <!-- 시험후기 -->
+        <div class="border border-slate-300 bg-white">
+          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div class="text-[18px] font-black text-[var(--bm-text)]">시험후기</div>
+            <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=review">더보기</a>
           </div>
-          <div class="card-b text-slate-500 font-bold">게시글이 없습니다.</div>
-        </article>
+          <div id="pv_review" class="px-4 py-3 text-sm text-slate-700">불러오는 중…</div>
+        </div>
+      </div>
 
-        <article class="card">
-          <div class="card-h">
-            <div class="card-title">필요의 방</div>
-            <a class="more hover:underline" href="/board.html?b=room">더보기</a>
-          </div>
-          <div class="card-b text-slate-500 font-bold">익명/비공개 느낌의 특별 게시판(컨셉 유지 가능).</div>
-        </article>
-
-        <article class="card">
-          <div class="card-h">
-            <div class="card-title">언어이해</div>
-            <a class="more hover:underline" href="/board.html?b=lang">더보기</a>
-          </div>
-          <div class="card-b text-slate-500 font-bold">게시글이 없습니다.</div>
-        </article>
-
-        <article class="card">
-          <div class="card-h">
-            <div class="card-title">추리논증</div>
-            <a class="more hover:underline" href="/board.html?b=logic">더보기</a>
-          </div>
-          <div class="card-b text-slate-500 font-bold">게시글이 없습니다.</div>
-        </article>
-
-      </section>
-
-      <!-- Right: latest + login -->
-      <aside class="grid gap-6">
-        <article class="card">
-          <div class="card-h">
-            <div class="card-title">최신글 보기</div>
-          </div>
-          <div class="card-b text-slate-500 font-bold">
-            아직은 정적(placeholder).<br/>
-            다음 단계에서 Supabase로 “최신 N개”만 끌어오면 jungdap처럼 바로 됨.
-          </div>
-        </article>
-
-        <article class="card">
-          <div class="card-h">
-            <div class="card-title">로그인</div>
-          </div>
-          <div class="card-b">
-            <div class="text-slate-700 font-black mb-3">로그인이 필요합니다.</div>
-            <div class="flex gap-2">
-              <button class="flex-1 border border-slate-300 bg-white hover:bg-slate-50 py-2 font-black">로그인</button>
-              <button class="flex-1 border border-slate-300 bg-white hover:bg-slate-50 py-2 font-black">회원가입</button>
-            </div>
-            <div class="mt-3">
-              <a href="/records.html" class="block text-center border border-slate-300 bg-white hover:bg-slate-50 py-2 font-black">내 기록</a>
-            </div>
-          </div>
-        </article>
-      </aside>
-    </div>
+      <div class="mt-4 border border-slate-300 bg-white">
+        <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+          <div class="text-[18px] font-black text-[var(--bm-text)]">질문/답변</div>
+          <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=qna">더보기</a>
+        </div>
+        <div id="pv_qna" class="px-4 py-3 text-sm text-slate-700">불러오는 중…</div>
+      </div>
+    </section>
   </main>
 
   <footer class="mt-0 border-t border-slate-300 bg-[var(--bm-bg)] py-8">
@@ -169,10 +132,14 @@
   <script>
     const btnMobileMenu = document.getElementById("btnMobileMenu");
     const mobileMenu = document.getElementById("mobileMenu");
-    btnMobileMenu?.addEventListener("click", () => mobileMenu.classList.toggle("hidden"));
+    btnMobileMenu?.addEventListener("click", () => {
+      mobileMenu.classList.toggle("hidden");
+    });
   </script>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/app.js?v=20260226-1"></script>
+
   <script>
     window.JungdapApp?.setupSecretRoomHover({
       elementId: "room-of-requirement",
@@ -183,6 +150,72 @@
       withinMs: 1500,
       resetMs: 1500
     });
+  </script>
+
+  <!-- 홈 프리뷰 로딩 스크립트 (공지/가입/자유/시험후기 최신 3개) -->
+  <script>
+    (function () {
+      const APP = window.JungdapApp;
+      if (!APP) return;
+
+      // pv_* 영역이 페이지에 있어야 함:
+      // pv_notice / pv_intro / pv_free / pv_review / pv_qna
+      const sb = APP.getSb();
+
+      // 시험후기 slug가 review가 아닐 수 있음.
+      // 실제 slug가 다르면 여기 slug만 교체하면 끝.
+      const sections = [
+        { slug: "notice", el: "pv_notice" },
+        { slug: "intro", el: "pv_intro" },
+        { slug: "free", el: "pv_free" },
+        { slug: "review", el: "pv_review" },
+        { slug: "qna", el: "pv_qna" },
+      ];
+
+      const escape = (s) => (APP.escapeHtml ? APP.escapeHtml(String(s ?? "")) : String(s ?? ""));
+      const fmtDate = (iso) => (APP.formatYmd ? APP.formatYmd(iso) : String(iso || "").slice(0, 10));
+
+      function renderList(el, rows, slug) {
+        if (!rows || rows.length === 0) {
+          el.innerHTML = '<div class="text-slate-400">게시글이 없습니다.</div>';
+          return;
+        }
+        el.innerHTML = `
+          <ul class="space-y-2">
+            ${rows.map(r => `
+              <li class="flex items-center justify-between gap-3">
+                <a class="min-w-0 flex-1 truncate hover:underline"
+                   href="/post.html?b=${encodeURIComponent(slug)}&id=${encodeURIComponent(r.id)}">
+                  ${escape(r.title || "(제목 없음)")}
+                </a>
+                <span class="shrink-0 text-xs text-slate-400">${escape(fmtDate(r.created_at))}</span>
+              </li>
+            `).join("")}
+          </ul>
+        `;
+      }
+
+      async function loadPreview(slug, elId) {
+        const el = document.getElementById(elId);
+        if (!el) return;
+
+        const { data, error } = await sb
+          .from("board_posts_active")
+          .select("id,title,created_at")
+          .eq("is_deleted", false)
+          .eq("section_slug", slug)
+          .order("id", { ascending: false })
+          .limit(3);
+
+        if (error) {
+          el.innerHTML = `<div class="text-rose-600 text-sm">불러오기 실패: ${escape(error.message)}</div>`;
+          return;
+        }
+        renderList(el, data || [], slug);
+      }
+
+      sections.forEach(s => loadPreview(s.slug, s.el));
+    })();
   </script>
 </body>
 </html>

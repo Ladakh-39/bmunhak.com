@@ -3,7 +3,9 @@
 
   var SUPABASE_URL = "https://vbnbgigyfwfakpecetev.supabase.co";
   var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZibmJnaWd5ZndmYWtwZWNldGV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNjY2ODgsImV4cCI6MjA4NzY0MjY4OH0.gkUreO2S0PSfHG8jtQH0G4wRGqraVLc2nTPOkhd1Lzk";
-  var DEFAULT_KAKAO_OPEN_CHAT_URL = "https://open.kakao.com/";
+  // Kakao OpenChat SSOT
+  var KAKAO_OPENCHAT_URL = "https://open.kakao.com/o/s9SKsU1g";
+  var KAKAO_QR_SRC = "/assets/SocLadakh_qr.jpg";
   var URL_CACHE_BUFFER_MS = 60 * 1000;
   var DEFAULT_SIGNED_URL_EXPIRES_SEC = 3600;
 
@@ -119,7 +121,65 @@
 
   function getKakaoOpenChatUrl() {
     var fromGlobal = toStringSafe(window.__kakaoOpenChatUrl).trim();
-    return fromGlobal || DEFAULT_KAKAO_OPEN_CHAT_URL;
+    return fromGlobal || KAKAO_OPENCHAT_URL;
+  }
+
+  async function copyText(text) {
+    var value = toStringSafe(text);
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(value);
+        return true;
+      }
+    } catch (_a) {
+      // fallback below
+    }
+
+    try {
+      var ta = document.createElement("textarea");
+      ta.value = value;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      ta.style.top = "-9999px";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      var ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return Boolean(ok);
+    } catch (_b) {
+      return false;
+    }
+  }
+
+  function showToastNear(anchorEl, msg) {
+    if (!anchorEl) return;
+    var message = toStringSafe(msg || "복사됨");
+    var rect = anchorEl.getBoundingClientRect();
+    var toast = document.createElement("div");
+    toast.textContent = message;
+    toast.style.position = "fixed";
+    toast.style.zIndex = "99999";
+    toast.style.left = String(Math.max(8, Math.round(rect.left))) + "px";
+    toast.style.top = String(Math.max(8, Math.round(rect.top - 28))) + "px";
+    toast.style.padding = "6px 10px";
+    toast.style.fontSize = "12px";
+    toast.style.borderRadius = "10px";
+    toast.style.background = "rgba(15, 23, 42, 0.92)";
+    toast.style.color = "#fff";
+    toast.style.boxShadow = "0 6px 16px rgba(0,0,0,.18)";
+    toast.style.opacity = "0";
+    toast.style.transition = "opacity 160ms ease";
+    document.body.appendChild(toast);
+    window.requestAnimationFrame(function () {
+      toast.style.opacity = "1";
+    });
+    window.setTimeout(function () {
+      toast.style.opacity = "0";
+      window.setTimeout(function () {
+        if (toast && toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 180);
+    }, 1200);
   }
 
   function sanitizeFilename(name) {
@@ -382,20 +442,79 @@
     window.addEventListener("touchend", function () { setDown(false); }, { passive: true });
   }
 
+  function setupFooterQrCopy(options) {
+    var config = Object.assign({
+      footerSelector: "footer",
+      footerCopyButtonId: "btnCopyKakaoLink"
+    }, options || {});
+
+    var footer = document.querySelector(config.footerSelector);
+    if (!footer) return;
+
+    var qrImg = footer.querySelector('img[data-role="kakao-qr"]')
+      || footer.querySelector('img[alt*="kakao"]')
+      || footer.querySelector('img[src*="kakao-qr"], img[src*="SocLadakh_qr"]');
+
+    if (qrImg && qrImg.tagName === "IMG") {
+      qrImg.setAttribute("src", KAKAO_QR_SRC);
+      qrImg.style.cursor = "pointer";
+      if (qrImg.dataset.bmBound !== "1") {
+        qrImg.addEventListener("click", async function () {
+          var ok = await copyText(getKakaoOpenChatUrl());
+          showToastNear(qrImg, ok ? "복사됨" : "복사 실패");
+        });
+        qrImg.dataset.bmBound = "1";
+      }
+    }
+
+    var idButton = document.getElementById(config.footerCopyButtonId);
+    if (idButton && footer.contains(idButton)) idButton.remove();
+
+    var roleButton = footer.querySelector('button[data-role="kakao-copy"]');
+    if (roleButton) roleButton.remove();
+
+    var footerButtons = footer.querySelectorAll("button");
+    footerButtons.forEach(function (button) {
+      var label = toStringSafe(button && button.textContent).replace(/\s+/g, "");
+      if (label.indexOf("링크복사") !== -1) button.remove();
+    });
+  }
+
   function setupContactModal(options) {
     var config = Object.assign({
       openButtonId: "btnContactOpen",
       modalId: "contactModal",
       closeButtonId: "btnCloseContact",
-      copyButtons: ["btnCopyKakaoLink", "btnCopyKakaoLink2"],
-      toastId: "copyToast"
+      modalCopyButtons: ["btnCopyKakaoLink2"],
+      footerCopyButtonId: "btnCopyKakaoLink",
+      linkTextIds: ["kakaoLinkPreview", "kakaoUrlText"]
     }, options || {});
 
     var modal = document.getElementById(config.modalId);
     var openBtn = document.getElementById(config.openButtonId);
     var closeBtn = document.getElementById(config.closeButtonId);
-    var toast = document.getElementById(config.toastId);
     if (!modal || !openBtn || !closeBtn) return;
+
+    function setQrImageSource(node) {
+      if (!node || node.tagName !== "IMG") return;
+      node.setAttribute("src", KAKAO_QR_SRC);
+    }
+
+    var allQrImages = document.querySelectorAll('img[src*="kakao-qr"], img[src*="SocLadakh_qr"], img[alt*="kakao qr"], img[alt*="Kakao qr"]');
+    allQrImages.forEach(setQrImageSource);
+
+    (config.linkTextIds || []).forEach(function (id) {
+      var node = document.getElementById(id);
+      if (!node) return;
+      node.textContent = getKakaoOpenChatUrl();
+    });
+
+    setupFooterQrCopy({
+      footerCopyButtonId: config.footerCopyButtonId
+    });
+
+    var modalQrImages = modal.querySelectorAll("img");
+    modalQrImages.forEach(setQrImageSource);
 
     function showModal() {
       modal.classList.remove("hidden");
@@ -407,47 +526,39 @@
       modal.classList.remove("flex");
     }
 
-    function showToast(message) {
-      if (!toast) return;
-      toast.textContent = message || "복사됨";
-      toast.classList.remove("hidden");
-      toast.classList.add("flex");
-      window.setTimeout(function () {
-        toast.classList.add("hidden");
-        toast.classList.remove("flex");
-      }, 1500);
+    async function copyUrl(anchor) {
+      var ok = await copyText(getKakaoOpenChatUrl());
+      showToastNear(anchor, ok ? "복사됨" : "복사 실패");
     }
 
-    async function copyUrl() {
-      var url = getKakaoOpenChatUrl();
-      try {
-        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-          await navigator.clipboard.writeText(url);
-        } else {
-          var input = document.createElement("input");
-          input.value = url;
-          document.body.appendChild(input);
-          input.select();
-          document.execCommand("copy");
-          document.body.removeChild(input);
-        }
-        showToast("복사됨");
-      } catch (_a) {
-        showToast("복사 실패");
-      }
+    if (!openBtn.__contactOpenBound) {
+      openBtn.addEventListener("click", showModal);
+      openBtn.__contactOpenBound = true;
+    }
+    if (!closeBtn.__contactCloseBound) {
+      closeBtn.addEventListener("click", hideModal);
+      closeBtn.__contactCloseBound = true;
+    }
+    if (!modal.__contactBackdropBound) {
+      modal.addEventListener("click", function (event) {
+        if (event.target === modal) hideModal();
+      });
+      modal.__contactBackdropBound = true;
     }
 
-    openBtn.addEventListener("click", showModal);
-    closeBtn.addEventListener("click", hideModal);
-    modal.addEventListener("click", function (event) {
-      if (event.target === modal) hideModal();
-    });
-
-    (config.copyButtons || []).forEach(function (id) {
+    (config.modalCopyButtons || []).forEach(function (id) {
       var node = document.getElementById(id);
       if (!node) return;
-      node.addEventListener("click", copyUrl);
+      if (node.__kakaoModalCopyBound) return;
+      node.addEventListener("click", function () {
+        void copyUrl(node);
+      });
+      node.__kakaoModalCopyBound = true;
     });
+  }
+
+  function setupKakaoContactModal(options) {
+    setupContactModal(options);
   }
 
   function classifyRecentCommentPlus(lastCommentAt, nowTs) {
@@ -1515,6 +1626,16 @@
     if (msg.includes("profiles_nickname_lower_unique") || msg.includes("duplicate key")) {
       throw new Error("이미 사용 중인 닉네임입니다.");
     }
+    var userIdColumnMissing = msg.includes("user_id") && (msg.includes("column") || msg.includes("not exist"));
+    if (userIdColumnMissing) {
+      var _b = await sb.from("profiles").upsert({ id: userId, nickname: nickname }, { onConflict: "id" }), legacyError = _b.error;
+      if (!legacyError) return;
+      var legacyMsg = toStringSafe(legacyError.message).toLowerCase();
+      if (legacyMsg.includes("profiles_nickname_lower_unique") || legacyMsg.includes("duplicate key")) {
+        throw new Error("이미 사용 중인 닉네임입니다.");
+      }
+      throw legacyError;
+    }
     throw error;
   }
 
@@ -1552,6 +1673,16 @@
           options: { data: { nickname: nickChecked.value } }
         }), signupData = _a.data, signupError = _a.error;
         if (signupError) throw signupError;
+        if (signupData && signupData.session) {
+          try {
+            var signupUserId = toStringSafe(signupData.session.user && signupData.session.user.id).trim();
+            if (signupUserId) {
+              await bmUpsertProfileNickname(sb, signupUserId, nickChecked.value);
+            }
+          } catch (_c) {
+            // best-effort only
+          }
+        }
         bmCloseAuth();
         if (signupData && signupData.session) {
           bmToast("회원가입 요청 완료");
@@ -1586,11 +1717,61 @@
     try {
       var sb = getSb();
       var _a = await sb.from("profiles").select("nickname").eq("user_id", uid).maybeSingle(), data = _a.data, error = _a.error;
-      if (error) return "";
-      return toStringSafe(data && data.nickname).trim();
+      if (!error) {
+        var nickname = toStringSafe(data && data.nickname).trim();
+        if (nickname) return nickname;
+      }
+
+      var msg = toStringSafe(error && error.message).toLowerCase();
+      var shouldTryLegacy = !error || (msg.includes("user_id") && (msg.includes("column") || msg.includes("not exist")));
+      if (!shouldTryLegacy) return "";
+
+      var _b = await sb.from("profiles").select("nickname").eq("id", uid).maybeSingle(), legacyData = _b.data, legacyError = _b.error;
+      if (legacyError) return "";
+      var legacyNickname = toStringSafe(legacyData && legacyData.nickname).trim();
+      return legacyNickname || "";
     } catch (_b) {
       return "";
     }
+  }
+
+  async function bmResolveDisplayName(session) {
+    if (!session || !session.user) return "";
+    var user = session.user;
+    var userId = toStringSafe(user.id).trim();
+    if (!userId) return "";
+
+    var fromProfile = await bmGetProfileNickname(userId);
+    if (fromProfile) return fromProfile;
+
+    function pickDisplayName(source) {
+      if (!source) return "";
+      var keys = ["nickname", "nick", "display_name", "name", "full_name"];
+      for (var i = 0; i < keys.length; i += 1) {
+        var key = keys[i];
+        var value = toStringSafe(source[key]).trim();
+        if (!value) continue;
+        if (value.indexOf("@") !== -1) continue;
+        return value;
+      }
+      return "";
+    }
+
+    var metaNick = pickDisplayName(user.user_metadata) || pickDisplayName(user.app_metadata);
+    if (!metaNick && Array.isArray(user.identities)) {
+      for (var j = 0; j < user.identities.length; j += 1) {
+        var identity = user.identities[j];
+        metaNick = pickDisplayName(identity && identity.identity_data);
+        if (metaNick) break;
+      }
+    }
+
+    if (metaNick) {
+      try { await bmUpsertProfileNickname(getSb(), userId, metaNick); } catch (_a) {}
+      return metaNick;
+    }
+
+    return "";
   }
 
   async function bmSetHeaderUI(session) {
@@ -1600,19 +1781,22 @@
     var welcomeText = bmById("welcomeText");
     var displayName = "";
     if (signedIn) {
-      var userId = toStringSafe(session && session.user && session.user.id).trim();
-      displayName = await bmGetProfileNickname(userId);
+      displayName = await bmResolveDisplayName(session);
       if (token !== __bmHeaderUiToken) return;
-      if (!displayName) displayName = "회원";
     }
 
     if (welcomeText) {
-      if (signedIn) {
+      welcomeText.classList.add("font-bold");
+
+      if (signedIn && displayName) {
         welcomeText.textContent = displayName + "님";
         welcomeText.classList.remove("hidden");
+        welcomeText.classList.add("text-[var(--bm-text)]");
+        welcomeText.classList.remove("text-white");
       } else {
-        welcomeText.classList.add("hidden");
         welcomeText.textContent = "";
+        welcomeText.classList.add("hidden");
+        welcomeText.classList.remove("text-[var(--bm-text)]", "text-white");
       }
     }
 
@@ -1659,17 +1843,34 @@
 
   async function bmInit(options) {
     var force = Boolean(options && options.force);
-    if (!force && bmShouldSkipAutoAuthInit()) return;
+    if (!force && bmShouldSkipAutoAuthInit()) {
+      var sbHeaderOnly = getSb();
+      try {
+        var _a = await sbHeaderOnly.auth.getSession(), data = _a.data;
+        await bmSetHeaderUI(data && data.session);
+      } catch (_b) {
+        await bmSetHeaderUI(null);
+      }
+      if (!__bmAuthStateBound) {
+        __bmAuthStateBound = true;
+        sbHeaderOnly.auth.onAuthStateChange(function (_event, session) {
+          void bmSetHeaderUI(session);
+        });
+      }
+      return;
+    }
     if (__bmAuthInitDone) return;
     __bmAuthInitDone = true;
     bmEnsureAuthModal();
     bmBindAuthButtons();
+    setupKakaoContactModal();
+    setupFooterQrCopy();
 
     var sb = getSb();
     try {
-      var _a = await sb.auth.getSession(), data = _a.data;
+      var _c = await sb.auth.getSession(), data = _c.data;
       await bmSetHeaderUI(data && data.session);
-    } catch (_b) {
+    } catch (_d) {
       await bmSetHeaderUI(null);
     }
 
@@ -1685,6 +1886,8 @@
   window.JungdapApp = Object.assign({}, window.JungdapApp || {}, {
     SUPABASE_URL: SUPABASE_URL,
     SUPABASE_ANON_KEY: SUPABASE_ANON_KEY,
+    KAKAO_OPENCHAT_URL: KAKAO_OPENCHAT_URL,
+    KAKAO_QR_SRC: KAKAO_QR_SRC,
     VALID_SECTIONS: VALID_SECTIONS,
     SECTION_META: SECTION_META,
     getSb: getSb,
@@ -1698,6 +1901,8 @@
     isMissingColumnError: isMissingColumnError,
     isNoticePost: isNoticePost,
     getKakaoOpenChatUrl: getKakaoOpenChatUrl,
+    copyText: copyText,
+    showToastNear: showToastNear,
     sanitizeFilename: sanitizeFilename,
     formatFileSize: formatFileSize,
     urlCache: urlCache,
@@ -1705,7 +1910,9 @@
     resolveBoardUploadUrl: resolveBoardUploadUrl,
     resolveAvatarUrl: resolveAvatarUrl,
     setupMobileMenu: setupMobileMenu,
+    setupFooterQrCopy: setupFooterQrCopy,
     setupContactModal: setupContactModal,
+    setupKakaoContactModal: setupKakaoContactModal,
     setupAuthModal: bmEnsureAuthModal,
     openAuth: bmOpenAuth,
     closeAuth: bmCloseAuth,

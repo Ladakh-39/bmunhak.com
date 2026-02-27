@@ -61,7 +61,7 @@
     <section class="mx-auto max-w-[1180px] border border-slate-300 bg-white p-5 shadow-sm md:p-7">
         <div class="mb-5 flex flex-wrap items-end gap-4">
             <div>
-                <h1 class="text-3xl font-black text-slate-900 md:text-4xl">마더텅 독서 채점기</h1>
+                <h1 class="text-3xl font-black text-slate-900 md:text-4xl">2027 마더텅 수능기출문제집<br />국어 독서 채점기</h1>
             </div>
             <div id="statusMsg" class="ml-auto text-xs font-black text-slate-500"></div>
         </div>
@@ -69,7 +69,7 @@
         <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
             <div>
                 <label for="subjectSelect" class="mb-1 ml-1 block text-xs font-black text-slate-400">과목 선택</label>
-                <select id="subjectSelect" class="w-full border-2 border-slate-200 bg-slate-50 p-3 text-base font-black outline-none focus:border-blue-500">
+                <select id="subjectSelect" class="h-14 w-full border-2 border-slate-200 bg-slate-50 px-3 text-base font-black outline-none focus:border-blue-500">
                     <option value="humanities">Ⅰ. 인문 (001~218)</option>
                     <option value="social">Ⅱ. 사회 (001~157)</option>
                     <option value="science">Ⅲ. 과학 (001~099)</option>
@@ -82,16 +82,16 @@
             </div>
             <div>
                 <label for="startQ" class="mb-1 ml-1 block text-xs font-black text-slate-400">시작 번호</label>
-                <input id="startQ" type="number" inputmode="numeric" class="mono w-full border-2 border-slate-200 bg-slate-50 p-3 text-center text-lg font-black outline-none focus:border-blue-500" />
+                <input id="startQ" type="number" inputmode="numeric" class="mono h-14 w-full border-2 border-slate-200 bg-slate-50 px-3 text-center text-lg font-black outline-none focus:border-blue-500" />
             </div>
             <div>
                 <label for="endQ" class="mb-1 ml-1 block text-xs font-black text-slate-400">끝 번호</label>
-                <input id="endQ" type="number" inputmode="numeric" class="mono w-full border-2 border-slate-200 bg-slate-50 p-3 text-center text-lg font-black outline-none focus:border-blue-500" />
+                <input id="endQ" type="number" inputmode="numeric" class="mono h-14 w-full border-2 border-slate-200 bg-slate-50 px-3 text-center text-lg font-black outline-none focus:border-blue-500" />
             </div>
             <div class="grid grid-cols-3 gap-2">
-                <button id="btnBuild" type="button" class="bg-blue-600 px-3 h-[52px] text-sm font-black text-white hover:bg-blue-700">생성</button>
-                <button id="btnClear" type="button" class="bg-slate-200 px-3 h-[52px] text-sm font-black text-slate-700 hover:bg-slate-300">초기화</button>
-                <button id="btnGrade" type="button" class="bg-slate-900 px-3 h-[52px] text-sm font-black text-white hover:bg-black" disabled>채점</button>
+                <button id="btnBuild" type="button" class="h-14 bg-blue-600 px-3 text-sm font-black text-white hover:bg-blue-700">생성</button>
+                <button id="btnClear" type="button" class="h-14 bg-slate-200 px-3 text-sm font-black text-slate-700 hover:bg-slate-300">초기화</button>
+                <button id="btnGrade" type="button" class="h-14 bg-slate-900 px-3 text-sm font-black text-white hover:bg-black" disabled>채점</button>
             </div>
         </div>
 

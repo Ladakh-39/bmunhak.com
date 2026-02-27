@@ -276,7 +276,7 @@
           </a>
         </div>
         <div class="flex items-center justify-center md:justify-end gap-3 md:self-end">
-          <img src="/assets/kakao-qr.png" alt="kakao qr" class="h-14 w-14 border border-slate-300 bg-white p-1" />
+          <img src="/assets/kakao-qr.png" alt="kakao qr" data-role="kakao-qr" class="h-14 w-14 border border-slate-300 bg-white p-1" />
           <button id="btnCopyKakaoLink" class="px-3 py-1 border border-slate-300 bg-white hover:bg-slate-100">링크복사</button>
         </div>
       </div>
@@ -2061,14 +2061,10 @@
       if (signedIn) {
         state.isAdmin = await detectBoardAdmin();
         $("adminHiddenWrap").classList.toggle("hidden", !state.isAdmin);
-        const display = await getMyDisplayName();
-        $("welcomeText").textContent = `${display}님`;
-        $("welcomeText").style.color = "#212d2b";
       } else {
         state.isAdmin = false;
         state.includeHidden = false;
         $("chkIncludeHidden").checked = false;
-        $("welcomeText").style.color = "";
       }
     }
 
@@ -2173,4 +2169,3 @@
   </script>
 </body>
 </html>
-
