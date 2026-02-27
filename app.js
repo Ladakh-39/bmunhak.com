@@ -1626,6 +1626,16 @@
     if (msg.includes("profiles_nickname_lower_unique") || msg.includes("duplicate key")) {
       throw new Error("이미 사용 중인 닉네임입니다.");
     }
+    var userIdColumnMissing = msg.includes("user_id") && (msg.includes("column") || msg.includes("not exist"));
+    if (userIdColumnMissing) {
+      var _b = await sb.from("profiles").upsert({ id: userId, nickname: nickname }, { onConflict: "id" }), legacyError = _b.error;
+      if (!legacyError) return;
+      var legacyMsg = toStringSafe(legacyError.message).toLowerCase();
+      if (legacyMsg.includes("profiles_nickname_lower_unique") || legacyMsg.includes("duplicate key")) {
+        throw new Error("이미 사용 중인 닉네임입니다.");
+      }
+      throw legacyError;
+    }
     throw error;
   }
 
@@ -1707,9 +1717,19 @@
     try {
       var sb = getSb();
       var _a = await sb.from("profiles").select("nickname").eq("user_id", uid).maybeSingle(), data = _a.data, error = _a.error;
-      if (error) return "";
-      var nickname = toStringSafe(data && data.nickname).trim();
-      return nickname || "";
+      if (!error) {
+        var nickname = toStringSafe(data && data.nickname).trim();
+        if (nickname) return nickname;
+      }
+
+      var msg = toStringSafe(error && error.message).toLowerCase();
+      var shouldTryLegacy = !error || (msg.includes("user_id") && (msg.includes("column") || msg.includes("not exist")));
+      if (!shouldTryLegacy) return "";
+
+      var _b = await sb.from("profiles").select("nickname").eq("id", uid).maybeSingle(), legacyData = _b.data, legacyError = _b.error;
+      if (legacyError) return "";
+      var legacyNickname = toStringSafe(legacyData && legacyData.nickname).trim();
+      return legacyNickname || "";
     } catch (_b) {
       return "";
     }
@@ -1724,7 +1744,28 @@
     var fromProfile = await bmGetProfileNickname(userId);
     if (fromProfile) return fromProfile;
 
-    var metaNick = toStringSafe(user.user_metadata && user.user_metadata.nickname).trim();
+    function pickDisplayName(source) {
+      if (!source) return "";
+      var keys = ["nickname", "nick", "display_name", "name", "full_name"];
+      for (var i = 0; i < keys.length; i += 1) {
+        var key = keys[i];
+        var value = toStringSafe(source[key]).trim();
+        if (!value) continue;
+        if (value.indexOf("@") !== -1) continue;
+        return value;
+      }
+      return "";
+    }
+
+    var metaNick = pickDisplayName(user.user_metadata) || pickDisplayName(user.app_metadata);
+    if (!metaNick && Array.isArray(user.identities)) {
+      for (var j = 0; j < user.identities.length; j += 1) {
+        var identity = user.identities[j];
+        metaNick = pickDisplayName(identity && identity.identity_data);
+        if (metaNick) break;
+      }
+    }
+
     if (metaNick) {
       try { await bmUpsertProfileNickname(getSb(), userId, metaNick); } catch (_a) {}
       return metaNick;
@@ -1802,7 +1843,22 @@
 
   async function bmInit(options) {
     var force = Boolean(options && options.force);
-    if (!force && bmShouldSkipAutoAuthInit()) return;
+    if (!force && bmShouldSkipAutoAuthInit()) {
+      var sbHeaderOnly = getSb();
+      try {
+        var _a = await sbHeaderOnly.auth.getSession(), data = _a.data;
+        await bmSetHeaderUI(data && data.session);
+      } catch (_b) {
+        await bmSetHeaderUI(null);
+      }
+      if (!__bmAuthStateBound) {
+        __bmAuthStateBound = true;
+        sbHeaderOnly.auth.onAuthStateChange(function (_event, session) {
+          void bmSetHeaderUI(session);
+        });
+      }
+      return;
+    }
     if (__bmAuthInitDone) return;
     __bmAuthInitDone = true;
     bmEnsureAuthModal();
@@ -1812,9 +1868,9 @@
 
     var sb = getSb();
     try {
-      var _a = await sb.auth.getSession(), data = _a.data;
+      var _c = await sb.auth.getSession(), data = _c.data;
       await bmSetHeaderUI(data && data.session);
-    } catch (_b) {
+    } catch (_d) {
       await bmSetHeaderUI(null);
     }
 
