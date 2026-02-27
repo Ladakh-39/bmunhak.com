@@ -341,6 +341,47 @@
     });
   }
 
+  function bindStrictBackdropClose(overlay, onClose) {
+    if (!overlay || typeof onClose !== "function") return;
+    var downAttr = "data-backdrop-down";
+
+    function setDown(value) {
+      if (value) {
+        overlay.setAttribute(downAttr, "1");
+      } else {
+        overlay.removeAttribute(downAttr);
+      }
+    }
+
+    function isDown() {
+      return overlay.getAttribute(downAttr) === "1";
+    }
+
+    function handleDown(event) {
+      setDown(event.target === overlay);
+    }
+
+    function handleUp(event) {
+      var shouldClose = isDown() && event.target === overlay;
+      setDown(false);
+      if (shouldClose) onClose();
+    }
+
+    overlay.addEventListener("mousedown", handleDown);
+    overlay.addEventListener("mouseup", handleUp);
+    overlay.addEventListener("touchstart", handleDown, { passive: true });
+    overlay.addEventListener("touchend", handleUp);
+    overlay.addEventListener("touchcancel", function () { setDown(false); });
+    overlay.addEventListener("click", function (event) {
+      if (event.target !== overlay) return;
+      event.preventDefault();
+      event.stopPropagation();
+    });
+
+    window.addEventListener("mouseup", function () { setDown(false); });
+    window.addEventListener("touchend", function () { setDown(false); }, { passive: true });
+  }
+
   function setupContactModal(options) {
     var config = Object.assign({
       openButtonId: "btnContactOpen",
@@ -591,14 +632,6 @@
         '        <div id="inviteHint" class="text-[11px] font-bold text-slate-500 mt-1"></div>' +
         '      </div>' +
         '      <div>' +
-        '        <label class="block text-xs font-black text-slate-400 mb-1 ml-1">닉네임</label>' +
-        '        <div class="flex gap-2">' +
-        '          <input id="signupNickname" type="text" class="flex-1 w-full p-4 text-base font-black border-2 border-slate-200 rounded-none bg-slate-50 outline-none" placeholder="2~12자 (한/영/숫자/_/공백)" autocomplete="off" />' +
-        '          <button id="btnCheckNickname" type="button" class="px-4 py-3 rounded-none font-black bg-slate-900 text-white hover:bg-black">중복확인</button>' +
-        '        </div>' +
-        '        <div id="nickHint" class="text-[11px] font-bold text-slate-500 mt-1"></div>' +
-        '      </div>' +
-        '      <div>' +
         '        <label class="block text-xs font-black text-slate-400 mb-1 ml-1">비밀번호 만들기</label>' +
         '        <input id="signupPassword" type="password" class="w-full p-4 text-base font-black border-2 border-slate-200 rounded-none bg-slate-50 outline-none" autocomplete="new-password" disabled />' +
         '      </div>' +
@@ -606,6 +639,14 @@
         '        <label class="block text-xs font-black text-slate-400 mb-1 ml-1">비밀번호 확인</label>' +
         '        <input id="signupPassword2" type="password" class="w-full p-4 text-base font-black border-2 border-slate-200 rounded-none bg-slate-50 outline-none" autocomplete="new-password" disabled />' +
         '        <div id="pwHint" class="text-[11px] font-bold text-slate-500 mt-1"></div>' +
+        '      </div>' +
+        '      <div>' +
+        '        <label class="block text-xs font-black text-slate-400 mb-1 ml-1">닉네임</label>' +
+        '        <div class="flex gap-2">' +
+        '          <input id="signupNickname" type="text" class="flex-1 w-full p-4 text-base font-black border-2 border-slate-200 rounded-none bg-slate-50 outline-none" placeholder="2~12자 (한/영/숫자/_/공백)" autocomplete="off" />' +
+        '          <button id="btnCheckNickname" type="button" class="px-4 py-3 rounded-none font-black bg-slate-900 text-white hover:bg-black">중복확인</button>' +
+        '        </div>' +
+        '        <div id="nickHint" class="text-[11px] font-bold text-slate-500 mt-1"></div>' +
         '      </div>' +
         '      <button id="btnDoSignup" type="submit" class="mt-2 px-4 py-3 rounded-none font-black bg-slate-900 text-white hover:bg-black" disabled>회원가입</button>' +
         '      <div id="signupMsg" class="text-xs font-bold text-slate-500"></div>' +
@@ -1029,9 +1070,7 @@
       __authBound = true;
 
       refs.btnCloseAuth && refs.btnCloseAuth.addEventListener("click", closeAuth);
-      refs.authModal.addEventListener("click", function (event) {
-        if (event.target === refs.authModal) closeAuth();
-      });
+      bindStrictBackdropClose(refs.authModal, closeAuth);
       refs.tabLogin && refs.tabLogin.addEventListener("click", function () { setAuthTab("login"); });
       refs.tabSignup && refs.tabSignup.addEventListener("click", function () { setAuthTab("signup"); });
 
@@ -1128,6 +1167,7 @@
   var __bmAuthBusy = false;
   var __bmNicknameChecked = false;
   var __bmNicknameCheckedLower = "";
+  var __bmHeaderUiToken = 0;
 
   function bmById(id) {
     return document.getElementById(id);
@@ -1230,16 +1270,16 @@
       '      <input id="authPassword" type="password" autocomplete="current-password" class="w-full border border-slate-300 px-3 py-2 text-sm font-semibold" placeholder="********" />' +
       '      <div id="authSignupOnly" class="hidden">' +
       '        <div class="h-3"></div>' +
+      '        <label class="block text-xs font-black text-slate-600 mb-1">비밀번호 확인</label>' +
+      '        <input id="authPasswordConfirm" type="password" autocomplete="new-password" class="w-full border border-slate-300 px-3 py-2 text-sm font-semibold" placeholder="********" />' +
+      '        <div id="passwordPolicyHint" class="mt-2 text-[11px] font-bold text-slate-500">비밀번호 8~64자 / 영문 대문자+소문자+숫자 필수 / 특수문자 !@#$%^&*()_+=;:[]{} 사용 가능</div>' +
+      '        <div class="h-3"></div>' +
       '        <label class="block text-xs font-black text-slate-600 mb-1">닉네임</label>' +
       '        <div class="flex gap-2">' +
       '          <input id="authNickname" type="text" maxlength="12" class="flex-1 border border-slate-300 px-3 py-2 text-sm font-semibold" placeholder="닉네임 입력" />' +
       '          <button id="checkNicknameBtn" type="button" class="border border-slate-300 bg-white px-3 py-2 text-xs font-black hover:bg-slate-50">중복확인</button>' +
       '        </div>' +
       '        <div id="nicknameStatus" class="mt-2 text-[11px] font-bold text-slate-500">닉네임 2~12자 (한/영/숫자/공백/_/-)</div>' +
-      '        <div class="h-3"></div>' +
-      '        <label class="block text-xs font-black text-slate-600 mb-1">비밀번호 확인</label>' +
-      '        <input id="authPasswordConfirm" type="password" autocomplete="new-password" class="w-full border border-slate-300 px-3 py-2 text-sm font-semibold" placeholder="********" />' +
-      '        <div id="passwordPolicyHint" class="mt-2 text-[11px] font-bold text-slate-500">비밀번호 8~64자 / 영문 대문자+소문자+숫자 필수 / 특수문자 !@#$%^&*()_+=;:[]{} 사용 가능</div>' +
       '      </div>' +
       '      <div id="authHint" class="mt-2 text-[11px] font-bold text-slate-500">로그인 정보를 입력하세요.</div>' +
       '      <div id="authError" class="mt-2 hidden text-[11px] font-black text-red-600"></div>' +
@@ -1258,11 +1298,7 @@
     var cancelNode = bmById("authCancelBtn");
     if (cancelNode) cancelNode.addEventListener("click", bmCloseAuth);
     var overlay = bmById("authModalOverlay");
-    if (overlay) {
-      overlay.addEventListener("click", function (event) {
-        if (event.target === overlay) bmCloseAuth();
-      });
-    }
+    bindStrictBackdropClose(overlay, bmCloseAuth);
 
     var tabLogin = bmById("authTabLogin");
     if (tabLogin) tabLogin.addEventListener("click", function () { bmSetAuthMode("login"); });
@@ -1303,6 +1339,11 @@
     if (nickNode) {
       nickNode.addEventListener("input", function () {
         bmResetNicknameCheck();
+      });
+      nickNode.addEventListener("keydown", function (event) {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        void bmCheckNickname();
       });
     }
 
@@ -1369,7 +1410,7 @@
     bmSetAuthError("");
   }
 
-  function bmToast(message) {
+  function bmToast(message, durationMs) {
     var toast = bmById("globalToast");
     if (!toast) {
       toast = document.createElement("div");
@@ -1377,13 +1418,14 @@
       toast.className = "fixed hidden items-center justify-center bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-900 text-white text-sm font-black z-[120]";
       document.body.appendChild(toast);
     }
+    var duration = Math.max(800, Number(durationMs) || 1200);
     toast.textContent = message || "";
     toast.classList.remove("hidden");
     toast.classList.add("flex");
     window.setTimeout(function () {
       toast.classList.add("hidden");
       toast.classList.remove("flex");
-    }, 1200);
+    }, duration);
   }
 
   async function bmCheckNickname() {
@@ -1464,16 +1506,18 @@
         var confirmPassword = toStringSafe(bmById("authPasswordConfirm") && bmById("authPasswordConfirm").value);
         if (password !== confirmPassword) throw new Error("비밀번호 확인이 일치하지 않습니다.");
 
-        var _a = await sb.auth.signUp({ email: email, password: password }), signupData = _a.data, signupError = _a.error;
+        var _a = await sb.auth.signUp({
+          email: email,
+          password: password,
+          options: { data: { nickname: nickChecked.value } }
+        }), signupData = _a.data, signupError = _a.error;
         if (signupError) throw signupError;
-
-        var uid = signupData && signupData.user && signupData.user.id;
-        if (!uid && signupData && signupData.session && signupData.session.user) uid = signupData.session.user.id;
-        if (uid) {
-          await bmUpsertProfileNickname(sb, uid, nickChecked.value);
-        }
         bmCloseAuth();
-        bmToast("회원가입 요청 완료");
+        if (signupData && signupData.session) {
+          bmToast("회원가입 요청 완료");
+        } else {
+          bmToast("회원가입 요청 완료. 이메일 인증 메일 확인 후 로그인하세요.", 5000);
+        }
         return;
       }
 
@@ -1496,13 +1540,35 @@
     }
   }
 
-  function bmSetHeaderUI(session) {
+  async function bmGetProfileNickname(userId) {
+    var uid = toStringSafe(userId).trim();
+    if (!uid) return "";
+    try {
+      var sb = getSb();
+      var _a = await sb.from("profiles").select("nickname").eq("user_id", uid).maybeSingle(), data = _a.data, error = _a.error;
+      if (error) return "";
+      return toStringSafe(data && data.nickname).trim();
+    } catch (_b) {
+      return "";
+    }
+  }
+
+  async function bmSetHeaderUI(session) {
+    var token = __bmHeaderUiToken + 1;
+    __bmHeaderUiToken = token;
     var signedIn = Boolean(session && session.user);
-    var userEmail = toStringSafe(session && session.user && session.user.email);
     var welcomeText = bmById("welcomeText");
+    var displayName = "";
+    if (signedIn) {
+      var userId = toStringSafe(session && session.user && session.user.id).trim();
+      displayName = await bmGetProfileNickname(userId);
+      if (token !== __bmHeaderUiToken) return;
+      if (!displayName) displayName = "회원";
+    }
+
     if (welcomeText) {
       if (signedIn) {
-        welcomeText.textContent = userEmail;
+        welcomeText.textContent = displayName + "님";
         welcomeText.classList.remove("hidden");
       } else {
         welcomeText.classList.add("hidden");
@@ -1562,16 +1628,16 @@
     var sb = getSb();
     try {
       var _a = await sb.auth.getSession(), data = _a.data;
-      bmSetHeaderUI(data && data.session);
+      await bmSetHeaderUI(data && data.session);
     } catch (_b) {
-      bmSetHeaderUI(null);
+      await bmSetHeaderUI(null);
     }
 
     if (!__bmAuthStateBound) {
       __bmAuthStateBound = true;
       sb.auth.onAuthStateChange(function (_event, session) {
         bmBindAuthButtons();
-        bmSetHeaderUI(session);
+        void bmSetHeaderUI(session);
       });
     }
   }
@@ -1587,6 +1653,7 @@
     formatYmd: formatYmd,
     escapeHtml: escapeHtml,
     getNicknameMap: getNicknameMap,
+    getProfileNickname: bmGetProfileNickname,
     parseSectionSlug: parseSectionSlug,
     isMissingColumnError: isMissingColumnError,
     isNoticePost: isNoticePost,
@@ -1616,6 +1683,7 @@
   window.formatYmd = formatYmd;
   window.escapeHtml = escapeHtml;
   window.getNicknameMap = getNicknameMap;
+  window.getProfileNickname = bmGetProfileNickname;
   window.getKakaoOpenChatUrl = getKakaoOpenChatUrl;
 
   if (document.readyState === "loading") {

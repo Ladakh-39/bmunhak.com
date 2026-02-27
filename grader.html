@@ -132,6 +132,7 @@
     const mobileMenu = document.getElementById('mobileMenu');
 
     let questionIds = [];
+    let gradeBusy = false;
 
     function getSubjectRange(subject) {
         const keys = Object.keys(db[subject] || {}).map(Number).sort((a, b) => a - b);
@@ -149,6 +150,67 @@
 
     function setStatus(message) {
         statusMsg.textContent = message;
+    }
+
+    async function getAuthedUser() {
+        const app = window.JungdapApp || null;
+        const sbClient = typeof app?.getSb === "function" ? app.getSb() : null;
+        if (!sbClient?.auth) {
+            alert("로그인 모듈이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.");
+            return null;
+        }
+
+        const [{ data: sessionData }, { data: userData, error: userError }] = await Promise.all([
+            sbClient.auth.getSession(),
+            sbClient.auth.getUser()
+        ]);
+
+        const accessToken = sessionData?.session?.access_token || "";
+        const user = userData?.user || null;
+        if (userError || !user || !accessToken) {
+            if (typeof app?.openAuth === "function") app.openAuth("login");
+            setStatus("로그인이 필요합니다.");
+            return null;
+        }
+
+        return { user, accessToken };
+    }
+
+    function buildAnswerPayload() {
+        const payload = {};
+        for (const qNum of questionIds) {
+            const input = document.getElementById(`q-${qNum}`);
+            if (!input) continue;
+            const value = Number.parseInt(input.value, 10);
+            if (!Number.isFinite(value) || value < 1 || value > 5) continue;
+            payload[qNum] = value;
+        }
+        return payload;
+    }
+
+    async function submitServerGrade({ year, subject, startQ, endQ, answers, userId, accessToken }) {
+        const res = await fetch("/.netlify/functions/grade-mothertung", {
+            method: "POST",
+            headers: {
+                "content-type": "application/json",
+                authorization: `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({
+                year,
+                subject,
+                startQ,
+                endQ,
+                answers,
+                user_id: userId
+            })
+        });
+
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok || !payload?.ok) {
+            const message = payload?.detail || payload?.error || `HTTP_${res.status}`;
+            throw new Error(String(message));
+        }
+        return payload;
     }
 
     function resetAll(message = "범위를 설정하고 생성 버튼을 눌러주세요.") {
@@ -360,8 +422,12 @@
         focusPos(0);
     }
 
-    function gradeExam() {
-        if (!questionIds.length) return;
+    async function gradeExam() {
+        if (!questionIds.length || gradeBusy) return;
+
+        const auth = await getAuthedUser();
+        if (!auth) return;
+        const { user, accessToken } = auth;
 
         const subject = subjectSelect.value;
         const answerDB = db[subject] || {};
@@ -402,7 +468,46 @@
             wrongWrap.classList.add("hidden");
             wrongList.innerHTML = "";
         }
-        setStatus("채점 완료");
+
+        gradeBusy = true;
+        btnGrade.disabled = true;
+        setStatus("서버 채점/저장 중...");
+
+        try {
+            const payload = await submitServerGrade({
+                year: 2026,
+                subject,
+                startQ: questionIds[0],
+                endQ: questionIds[questionIds.length - 1],
+                answers: buildAnswerPayload(),
+                userId: user.id,
+                accessToken
+            });
+
+            const s = payload.summary || {};
+            const total = Number(s.total || 0);
+            const serverAttempted = Number(s.attempted || 0);
+            const serverCorrect = Number(s.correct || 0);
+            const serverWrong = Number(s.wrong || 0);
+            const serverUnanswered = Number(s.unanswered || 0);
+            const attemptId = payload.attempt_id;
+            const recordHref = `/records.html?year=2026&section=${encodeURIComponent(subject)}`;
+            summary.innerHTML = `
+                ${serverAttempted}문제 채점 · ${serverCorrect}정답 · ${serverWrong}오답 · ${serverUnanswered}미입력 (총 ${total}문항)
+                <div class="mt-1 text-sm">
+                    저장 완료 (시도 #${attemptId})
+                    <a href="${recordHref}" class="ml-2 underline">기록 보기</a>
+                </div>
+            `;
+            setStatus("채점 및 저장 완료");
+        } catch (error) {
+            console.error("[grader] grade-mothertung failed:", error);
+            setStatus("로컬 채점 완료 · 서버 저장 실패");
+            alert(`서버 채점/저장에 실패했습니다: ${String(error?.message || error)}`);
+        } finally {
+            gradeBusy = false;
+            btnGrade.disabled = false;
+        }
     }
 
     btnBuild.addEventListener("click", createInputs);
@@ -423,7 +528,7 @@
     resetAll();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/app.js"></script>
+<script src="/app.js?v=20260226-1"></script>
 
 </body>
 </html>

@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.97.0"
+  },
+  "dependencies": {
+    "busboy": "^1.6.0",
+    "file-type": "^21.3.0",
+    "sharp": "^0.34.5"
+  }
+}
