@@ -1719,13 +1719,17 @@
     }
 
     if (welcomeText) {
-      welcomeText.classList.add("text-[var(--bm-text)]", "font-bold");
+      welcomeText.classList.add("font-bold");
+
       if (signedIn) {
         welcomeText.textContent = displayName + "님";
         welcomeText.classList.remove("hidden");
+        welcomeText.classList.add("text-[var(--bm-text)]");
+        welcomeText.classList.remove("text-white");
       } else {
-        welcomeText.classList.add("hidden");
         welcomeText.textContent = "";
+        welcomeText.classList.add("hidden");
+        welcomeText.classList.remove("text-[var(--bm-text)]", "text-white");
       }
     }
 

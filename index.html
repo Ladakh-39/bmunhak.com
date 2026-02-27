@@ -23,18 +23,33 @@
       margin: 0 auto;
       padding: 0 16px;
     }
-    /* splash overlay */
-    #splashOverlay {
+    #splashOverlay{
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: var(--bm-bg);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+
       opacity: 1;
-      transition: opacity 320ms ease;
+      transform: scale(1);
+      will-change: opacity, transform;
+
+      animation: splashScaleFade 1.2s cubic-bezier(0.65,0,0.35,1) forwards;
+      animation-delay: 0.6s;
     }
-    #splashOverlay.is-hide {
-      opacity: 0;
-      pointer-events: none;
+
+    @keyframes splashScaleFade{
+      from { opacity: 1; transform: scale(1); }
+      to   { opacity: 0; transform: scale(1.05); visibility: hidden; }
     }
-    @media (prefers-reduced-motion: reduce) {
-      #splashOverlay {
-        transition: none;
+
+    @media (prefers-reduced-motion: reduce){
+      #splashOverlay{
+        animation: none;
+        visibility: hidden;
+        opacity: 0;
       }
     }
   </style>
@@ -229,21 +244,15 @@
     });
   </script>
   <script>
-    (function () {
-      const splash = document.getElementById("splashOverlay");
+    (function(){
+      var splash = document.getElementById("splashOverlay");
       if (!splash) return;
 
-      const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const SHOW_MS = 1500;
+      var reduce = false;
+      try { reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch(_) {}
+      if (reduce) { splash.remove(); return; }
 
-      setTimeout(() => {
-        if (reduce) {
-          splash.remove();
-          return;
-        }
-        splash.classList.add("is-hide");
-        setTimeout(() => splash.remove(), 380);
-      }, SHOW_MS);
+      window.setTimeout(function(){ splash.remove(); }, 1900);
     })();
   </script>
 </body>
