@@ -23,6 +23,11 @@
       margin: 0 auto;
       padding: 0 16px;
     }
+    /* main flicker guard */
+    body.splash-active main { opacity: 0; }
+    body.splash-done main { opacity: 1; transition: opacity 180ms ease; }
+
+    /* splash: scale-up + blur fade (total 1.8s) */
     #splashOverlay{
       position: fixed;
       inset: 0;
@@ -34,22 +39,26 @@
 
       opacity: 1;
       transform: scale(1);
-      will-change: opacity, transform;
+      filter: blur(0);
+      will-change: opacity, transform, filter;
 
-      animation: splashScaleFade 1.2s cubic-bezier(0.65,0,0.35,1) forwards;
-      animation-delay: 0.6s;
+      animation: splashScaleBlurFade 1.2s cubic-bezier(0.65,0,0.35,1) forwards;
+      animation-delay: 0.6s; /* 0.6 + 1.2 = 1.8s */
     }
 
-    @keyframes splashScaleFade{
-      from { opacity: 1; transform: scale(1); }
-      to   { opacity: 0; transform: scale(1.05); visibility: hidden; }
+    @keyframes splashScaleBlurFade{
+      from { opacity: 1; transform: scale(1); filter: blur(0); }
+      to   { opacity: 0; transform: scale(1.05); filter: blur(10px); visibility: hidden; }
     }
 
     @media (prefers-reduced-motion: reduce){
+      body.splash-active main { opacity: 1; }
       #splashOverlay{
         animation: none;
         visibility: hidden;
         opacity: 0;
+        filter: none;
+        transform: none;
       }
     }
   </style>
@@ -248,11 +257,23 @@
       var splash = document.getElementById("splashOverlay");
       if (!splash) return;
 
+      document.body.classList.add("splash-active");
+
       var reduce = false;
       try { reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch(_) {}
-      if (reduce) { splash.remove(); return; }
+      if (reduce) {
+        document.body.classList.remove("splash-active");
+        document.body.classList.add("splash-done");
+        splash.remove();
+        return;
+      }
 
-      window.setTimeout(function(){ splash.remove(); }, 1900);
+      // 0.6s delay + 1.2s anim + 0.1s buffer = 1.9s
+      window.setTimeout(function(){
+        document.body.classList.remove("splash-active");
+        document.body.classList.add("splash-done");
+        splash.remove();
+      }, 1900);
     })();
   </script>
 </body>
