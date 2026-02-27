@@ -498,6 +498,8 @@
       var node = resolveNode(target);
       if (!node) return;
       node.classList.remove("room-secret-prehide");
+      node.style.removeProperty("visibility");
+      node.style.removeProperty("pointer-events");
 
       var isTouchOnly = false;
       try {
