@@ -395,10 +395,6 @@
       $("btnSignupTop").classList.toggle("hidden", signedIn);
       if (signedIn) {
         profileNickname = await getProfileNicknameByUserId(currentUser.id);
-        $("welcomeText").textContent = `${await getMyDisplayName()}님`;
-        $("welcomeText").style.color = "#212d2b";
-      } else {
-        $("welcomeText").style.color = "";
       }
     }
 

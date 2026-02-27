@@ -693,14 +693,8 @@
       if (signedIn) {
         profileNickname = await getProfileNicknameByUserId(currentUser.id);
         isBoardAdmin = await detectBoardAdmin();
-        const viewName = await getMyDisplayName();
-        if ($("welcomeText")) {
-          $("welcomeText").textContent = `${viewName}님`;
-          $("welcomeText").style.color = "#212d2b";
-        }
       } else {
         isBoardAdmin = false;
-        if ($("welcomeText")) $("welcomeText").style.color = "";
       }
       applyOwnerButtons();
     }

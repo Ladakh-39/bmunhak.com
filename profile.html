@@ -235,12 +235,6 @@
       $("btnLogoutTop").classList.toggle("hidden", !signedIn);
       $("btnLoginTop").classList.toggle("hidden", signedIn);
       $("btnSignupTop").classList.toggle("hidden", signedIn);
-      if (signedIn) {
-        $("welcomeText").textContent = `${await getMyDisplayName()}님`;
-        $("welcomeText").style.color = "#212d2b";
-      } else {
-        $("welcomeText").style.color = "";
-      }
     }
 
     async function loadPointSummary() {

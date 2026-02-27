@@ -2061,14 +2061,10 @@
       if (signedIn) {
         state.isAdmin = await detectBoardAdmin();
         $("adminHiddenWrap").classList.toggle("hidden", !state.isAdmin);
-        const display = await getMyDisplayName();
-        $("welcomeText").textContent = `${display}님`;
-        $("welcomeText").style.color = "#212d2b";
       } else {
         state.isAdmin = false;
         state.includeHidden = false;
         $("chkIncludeHidden").checked = false;
-        $("welcomeText").style.color = "";
       }
     }
 

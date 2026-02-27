@@ -780,11 +780,7 @@
 
       if (signedIn) {
         profileNickname = "";
-        const displayName = await getMyDisplayName();
-        $("welcomeText").textContent = `${displayName}님`;
-        $("welcomeText").style.color = "#212d2b";
-      } else {
-        $("welcomeText").style.color = "";
+        await getMyDisplayName();
       }
     }
 

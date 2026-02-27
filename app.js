@@ -1698,7 +1698,8 @@
       var sb = getSb();
       var _a = await sb.from("profiles").select("nickname").eq("user_id", uid).maybeSingle(), data = _a.data, error = _a.error;
       if (error) return "";
-      return toStringSafe(data && data.nickname).trim();
+      var nickname = toStringSafe(data && data.nickname).trim();
+      return nickname || "";
     } catch (_b) {
       return "";
     }
@@ -1718,6 +1719,7 @@
     }
 
     if (welcomeText) {
+      welcomeText.classList.add("text-[var(--bm-text)]", "font-bold");
       if (signedIn) {
         welcomeText.textContent = displayName + "님";
         welcomeText.classList.remove("hidden");
