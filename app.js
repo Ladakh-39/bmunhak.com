@@ -467,12 +467,17 @@
       elementId: "room-of-requirement",
       elementIds: null,
       hiddenColor: "#7092BE",
-      hoverColor: "#7496C2",
+      hoverColor: "#FFFFFF",
       openColor: "#FFFFFF",
       requiredCount: 3,
       withinMs: 1500,
       resetMs: 1500
     }, options || {});
+    config.hiddenColor = "#7092BE";
+    config.hoverColor = "#7496C2";
+    config.openColor = "#FFFFFF";
+    config.requiredCount = 3;
+    config.withinMs = 1500;
 
     var nodeTargets = [];
     if (Array.isArray(config.elementIds) && config.elementIds.length) {
@@ -507,17 +512,37 @@
 
       if (isTouchOnly && targetId === "room-of-requirement-mobile") {
         node.classList.add("hidden");
-        node.style.color = config.hiddenColor;
-        node.style.cursor = "default";
+        node.style.setProperty("color", config.hiddenColor, "important");
+        node.style.setProperty("cursor", "default", "important");
         return;
       }
       node.classList.remove("hidden");
 
+      function applyHiddenState(element) {
+        if (!element) return;
+        element.style.setProperty("color", config.hiddenColor, "important");
+        element.style.setProperty("cursor", "default", "important");
+      }
+
+      function applyHoverState(element) {
+        if (!element) return;
+        element.style.setProperty("color", config.hoverColor, "important");
+        element.style.setProperty("cursor", "default", "important");
+      }
+
+      function applyOpenState(element) {
+        if (!element) return;
+        element.style.setProperty("color", config.openColor, "important");
+        element.style.setProperty("cursor", "pointer", "important");
+        element.style.transition = "color 0.5s ease";
+      }
+
       var hoverCount = 0;
       var firstHoverAt = 0;
-      var unlocked = false;
       var timer = null;
-      var windowMs = 1500;
+      var unlocked = false;
+      var windowMs = Math.max(1, Number.parseInt(String(config.withinMs || 1500), 10) || 1500);
+      var requiredCount = Math.max(1, Number.parseInt(String(config.requiredCount || 3), 10) || 3);
 
       function clearTimer() {
         if (!timer) return;
@@ -525,55 +550,58 @@
         timer = null;
       }
 
-      function resetHidden() {
+      function resetLockedState() {
         if (unlocked) return;
         hoverCount = 0;
         firstHoverAt = 0;
         clearTimer();
-        node.style.color = config.hiddenColor;
-        node.style.cursor = "default";
+        applyHiddenState(node);
       }
 
-      function armResetTimer() {
+      function armWindow(now) {
+        firstHoverAt = now;
         clearTimer();
         timer = window.setTimeout(function () {
-          if (!unlocked) resetHidden();
+          if (unlocked) return;
+          hoverCount = 0;
+          firstHoverAt = 0;
+          applyHiddenState(node);
+          clearTimer();
         }, windowMs);
       }
 
-      function handleHover() {
-        if (unlocked) return;
-        var now = Date.now();
-        if (!firstHoverAt || now - firstHoverAt > windowMs) {
-          firstHoverAt = now;
-          hoverCount = 0;
-          armResetTimer();
-        }
-
-        hoverCount += 1;
-
-        if (hoverCount < config.requiredCount) {
-          node.style.color = config.hoverColor;
-          node.style.cursor = "default";
-        } else {
-          unlocked = true;
-          clearTimer();
-          node.style.color = config.openColor;
-          node.style.cursor = "pointer";
-          node.style.transition = "color 0.5s ease";
-        }
-      }
-
-      node.style.color = config.hiddenColor;
-      node.style.cursor = "default";
-      node.addEventListener("mouseenter", handleHover);
-      node.addEventListener("mouseleave", function () {
+      applyHiddenState(node);
+      node.addEventListener("mouseenter", function () {
+        if (!unlocked) node.style.setProperty("cursor", "default", "important");
         if (unlocked) {
-          node.style.cursor = "pointer";
+          applyOpenState(node);
           return;
         }
-        node.style.color = config.hiddenColor;
-        node.style.cursor = "default";
+        var now = Date.now();
+        if (hoverCount === 0) armWindow(now);
+        hoverCount += 1;
+        var elapsed = now - firstHoverAt;
+
+        if (hoverCount >= requiredCount && elapsed <= windowMs) {
+          unlocked = true;
+          clearTimer();
+          applyOpenState(node);
+          return;
+        }
+
+        if (elapsed > windowMs) {
+          resetLockedState();
+          return;
+        }
+
+        applyHoverState(node);
+      });
+      node.addEventListener("mouseleave", function () {
+        if (unlocked) {
+          applyOpenState(node);
+          return;
+        }
+        applyHiddenState(node);
       });
     });
   }
