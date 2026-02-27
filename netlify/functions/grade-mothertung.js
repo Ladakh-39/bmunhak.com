@@ -143,7 +143,6 @@ function getAnswerRowsFromCsv(subject, startQ, endQ) {
   }
   return rows;
 }
-
 export async function handler(event) {
   try {
     if (event.httpMethod !== "POST") return json(405, { ok: false, error: "METHOD_NOT_ALLOWED" });
