@@ -73,91 +73,50 @@
     </div>
   </header>
 
-  <!-- Main -->
-  <main class="shell py-6">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Left: boards -->
-      <section class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+  <main class="py-6">
+    <section class="shell">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="border border-slate-300 bg-white">
+          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div class="text-[18px] font-black text-[var(--bm-text)]">공지사항</div>
+            <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=notice">더보기</a>
+          </div>
+          <div id="pv_notice" class="px-4 py-3 text-sm text-slate-700">불러오는 중…</div>
+        </div>
 
-        <article class="card">
-          <div class="card-h">
-            <div class="card-title">공지사항</div>
-            <a class="more hover:underline" href="/board.html?b=notice">더보기</a>
+        <div class="border border-slate-300 bg-white">
+          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div class="text-[18px] font-black text-[var(--bm-text)]">가입인사</div>
+            <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=intro">더보기</a>
           </div>
-          <div class="card-b text-slate-500 font-bold">게시글이 없습니다.</div>
-        </article>
+          <div id="pv_intro" class="px-4 py-3 text-sm text-slate-700">불러오는 중…</div>
+        </div>
 
-        <article class="card">
-          <div class="card-h">
-            <div class="card-title">가입인사</div>
-            <a class="more hover:underline" href="/board.html?b=intro">더보기</a>
+        <div class="border border-slate-300 bg-white">
+          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div class="text-[18px] font-black text-[var(--bm-text)]">질문/답변</div>
+            <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=free">더보기</a>
           </div>
-          <div class="card-b text-slate-500 font-bold">게시글이 없습니다.</div>
-        </article>
+          <div id="pv_free" class="px-4 py-3 text-sm text-slate-700">불러오는 중…</div>
+        </div>
 
-        <article class="card">
-          <div class="card-h">
-            <div class="card-title">자유게시판</div>
-            <a class="more hover:underline" href="/board.html?b=free">더보기</a>
+        <div class="border border-slate-300 bg-white">
+          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div class="text-[18px] font-black text-[var(--bm-text)]">시험후기</div>
+            <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=review">더보기</a>
           </div>
-          <div class="card-b text-slate-500 font-bold">게시글이 없습니다.</div>
-        </article>
+          <div id="pv_review" class="px-4 py-3 text-sm text-slate-700">불러오는 중…</div>
+        </div>
+      </div>
 
-        <article class="card">
-          <div class="card-h">
-            <div class="card-title">필요의 방</div>
-            <a class="more hover:underline" href="/board.html?b=room">더보기</a>
-          </div>
-          <div class="card-b text-slate-500 font-bold">익명/비공개 느낌의 특별 게시판(컨셉 유지 가능).</div>
-        </article>
-
-        <article class="card">
-          <div class="card-h">
-            <div class="card-title">언어이해</div>
-            <a class="more hover:underline" href="/board.html?b=lang">더보기</a>
-          </div>
-          <div class="card-b text-slate-500 font-bold">게시글이 없습니다.</div>
-        </article>
-
-        <article class="card">
-          <div class="card-h">
-            <div class="card-title">추리논증</div>
-            <a class="more hover:underline" href="/board.html?b=logic">더보기</a>
-          </div>
-          <div class="card-b text-slate-500 font-bold">게시글이 없습니다.</div>
-        </article>
-
-      </section>
-
-      <!-- Right: latest + login -->
-      <aside class="grid gap-6">
-        <article class="card">
-          <div class="card-h">
-            <div class="card-title">최신글 보기</div>
-          </div>
-          <div class="card-b text-slate-500 font-bold">
-            아직은 정적(placeholder).<br/>
-            다음 단계에서 Supabase로 “최신 N개”만 끌어오면 jungdap처럼 바로 됨.
-          </div>
-        </article>
-
-        <article class="card">
-          <div class="card-h">
-            <div class="card-title">로그인</div>
-          </div>
-          <div class="card-b">
-            <div class="text-slate-700 font-black mb-3">로그인이 필요합니다.</div>
-            <div class="flex gap-2">
-              <button class="flex-1 border border-slate-300 bg-white hover:bg-slate-50 py-2 font-black">로그인</button>
-              <button class="flex-1 border border-slate-300 bg-white hover:bg-slate-50 py-2 font-black">회원가입</button>
-            </div>
-            <div class="mt-3">
-              <a href="/records.html" class="block text-center border border-slate-300 bg-white hover:bg-slate-50 py-2 font-black">내 기록</a>
-            </div>
-          </div>
-        </article>
-      </aside>
-    </div>
+      <div class="mt-4 border border-slate-300 bg-white">
+        <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+          <div class="text-[18px] font-black text-[var(--bm-text)]">최신글</div>
+          <a class="text-sm font-semibold text-slate-600 hover:underline" href="/board.html?b=free">더보기</a>
+        </div>
+        <div id="pv_latest" class="px-4 py-3 text-sm text-slate-700">불러오는 중…</div>
+      </div>
+    </section>
   </main>
 
   <footer class="mt-0 border-t border-slate-300 bg-[var(--bm-bg)] py-8">
@@ -173,6 +132,98 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/app.js?v=20260226-1"></script>
+  <script>
+    (function setupHomePreview() {
+      var APP = window.JungdapApp;
+      var targets = {
+        notice: document.getElementById("pv_notice"),
+        intro: document.getElementById("pv_intro"),
+        free: document.getElementById("pv_free"),
+        review: document.getElementById("pv_review"),
+        latest: document.getElementById("pv_latest")
+      };
+
+      function esc(s) {
+        return String(s == null ? "" : s)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll("\"", "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function setError(message) {
+        var msg = message || "미리보기를 불러오지 못했습니다.";
+        Object.keys(targets).forEach(function (key) {
+          if (!targets[key]) return;
+          targets[key].innerHTML = '<div class="text-rose-600 font-black">오류: ' + esc(msg) + "</div>";
+        });
+      }
+
+      function renderList(node, rows) {
+        if (!node) return;
+        if (!rows || !rows.length) {
+          node.innerHTML = '<div class="text-slate-500">게시글이 없습니다.</div>';
+          return;
+        }
+        node.innerHTML = rows.map(function (row) {
+          var id = Number(row && row.id) || 0;
+          var title = esc(row && row.title || "(제목 없음)");
+          var date = APP && typeof APP.formatYmd === "function" ? APP.formatYmd(row && row.created_at) : "-";
+          var comments = Number(row && row.comment_count || 0);
+          return '' +
+            '<a class="block py-1 hover:underline" href="/post.html?id=' + id + '">' +
+            '<span class="text-slate-800">' + title + '</span>' +
+            '<span class="ml-2 text-xs text-slate-500">[' + comments + "]</span>" +
+            '<span class="ml-2 text-xs text-slate-400">' + esc(date) + "</span>" +
+            "</a>";
+        }).join("");
+      }
+
+      async function run() {
+        try {
+          if (!APP || typeof APP.getSb !== "function") {
+            throw new Error("APP_NOT_READY");
+          }
+
+          var sb = APP.getSb();
+          var _a = await sb
+            .from("board_posts_active")
+            .select("id,section_slug,title,comment_count,created_at")
+            .order("created_at", { ascending: false })
+            .limit(120), rows = _a.data, error = _a.error;
+          if (error) throw error;
+
+          var list = Array.isArray(rows) ? rows : [];
+          var by = {
+            notice: [],
+            welcome: [],
+            free: [],
+            review: []
+          };
+
+          for (var i = 0; i < list.length; i += 1) {
+            var row = list[i];
+            if (by.notice.length < 3 && String(row && row.section_slug || "").toLowerCase() === "notice") by.notice.push(row);
+            if (by.welcome.length < 3 && String(row && row.section_slug || "").toLowerCase() === "welcome") by.welcome.push(row);
+            if (by.free.length < 3 && String(row && row.section_slug || "").toLowerCase() === "free") by.free.push(row);
+            if (by.review.length < 3 && String(row && row.section_slug || "").toLowerCase() === "review") by.review.push(row);
+          }
+
+          renderList(targets.notice, by.notice);
+          renderList(targets.intro, by.welcome);
+          renderList(targets.free, by.free);
+          renderList(targets.review, by.review);
+          renderList(targets.latest, list.slice(0, 3));
+        } catch (e) {
+          console.error("[home-preview]", e);
+          setError(String(e && e.message || e || "UNKNOWN_ERROR"));
+        }
+      }
+
+      void run();
+    })();
+  </script>
   <script>
     window.JungdapApp?.setupSecretRoomHover({
       elementId: "room-of-requirement",
