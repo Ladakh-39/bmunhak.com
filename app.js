@@ -1735,6 +1735,35 @@
     }
   }
 
+  async function bmEnsureNicknameInteractive(sb, userId) {
+    var uid = toStringSafe(userId).trim();
+    if (!uid) return "";
+    try {
+      var promptKey = "bm_nick_prompted_v1:" + uid;
+      try {
+        if (sessionStorage.getItem(promptKey) === "1") return "";
+        sessionStorage.setItem(promptKey, "1");
+      } catch (_a) {
+        // ignore storage errors
+      }
+
+      var raw = window.prompt("닉네임을 설정하세요 (2~12자)");
+      if (raw == null) return "";
+      var checked = bmValidateNickname(raw);
+      if (!checked.ok) {
+        try { window.alert("닉네임 형식이 올바르지 않습니다."); } catch (_b) {}
+        return "";
+      }
+
+      var nick = checked.value;
+      try { await bmUpsertProfileNickname(sb, uid, nick); } catch (_c) {}
+      try { await sb.auth.updateUser({ data: { nickname: nick } }); } catch (_d) {}
+      return nick;
+    } catch (_e) {
+      return "";
+    }
+  }
+
   async function bmResolveDisplayName(session) {
     if (!session || !session.user) return "";
     var user = session.user;
@@ -1770,6 +1799,9 @@
       try { await bmUpsertProfileNickname(getSb(), userId, metaNick); } catch (_a) {}
       return metaNick;
     }
+
+    var forced = await bmEnsureNicknameInteractive(getSb(), userId);
+    if (forced) return forced;
 
     return "";
   }
