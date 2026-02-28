@@ -1825,10 +1825,13 @@
         welcomeText.classList.remove("hidden");
         welcomeText.classList.add("text-[var(--bm-text)]");
         welcomeText.classList.remove("text-white");
+        // Force a single color source across pages that inherit text-white in header.
+        welcomeText.style.setProperty("color", "var(--bm-text)", "important");
       } else {
         welcomeText.textContent = "";
         welcomeText.classList.add("hidden");
         welcomeText.classList.remove("text-[var(--bm-text)]", "text-white");
+        welcomeText.style.removeProperty("color");
       }
     }
 
