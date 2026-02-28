@@ -1324,6 +1324,26 @@
     return document.getElementById(id);
   }
 
+  function bmEnsureAuthFoucGuardStyle() {
+    if (!document || !document.head) return;
+    var id = "bm-auth-fouc-guard";
+    if (document.getElementById(id)) return;
+    var style = document.createElement("style");
+    style.id = id;
+    style.textContent = [
+      "body.bm-auth-pending #btnSignupTop,",
+      "body.bm-auth-pending #btnLoginTop,",
+      "body.bm-auth-pending #btnLogoutTop,",
+      "body.bm-auth-pending #welcomeText,",
+      "body.bm-auth-pending #btnSignupMobile,",
+      "body.bm-auth-pending #btnLoginMobile,",
+      "body.bm-auth-pending #btnLogoutMobile {",
+      "  visibility: hidden !important;",
+      "}"
+    ].join("\n");
+    document.head.appendChild(style);
+  }
+
   function bmPasswordHintText() {
     return "비밀번호 8~64자 / 영문 대문자+소문자+숫자 필수 / 특수문자 !@#$%^&*()_+=;:[]{} 사용 가능";
   }
@@ -1847,6 +1867,7 @@
     toggle("btnLoginMobile", !signedIn);
     toggle("btnSignupMobile", !signedIn);
     toggle("btnLogoutMobile", signedIn);
+    try { document.body.classList.remove("bm-auth-pending"); } catch (_a) {}
   }
 
   function bmBindAuthButtons() {
@@ -1877,13 +1898,15 @@
   }
 
   async function bmInit(options) {
+    bmEnsureAuthFoucGuardStyle();
+    try { document.body.classList.add("bm-auth-pending"); } catch (_a) {}
     var force = Boolean(options && options.force);
     if (!force && bmShouldSkipAutoAuthInit()) {
       var sbHeaderOnly = getSb();
       try {
-        var _a = await sbHeaderOnly.auth.getSession(), data = _a.data;
+        var _b = await sbHeaderOnly.auth.getSession(), data = _b.data;
         await bmSetHeaderUI(data && data.session);
-      } catch (_b) {
+      } catch (_c) {
         await bmSetHeaderUI(null);
       }
       if (!__bmAuthStateBound) {
@@ -1903,9 +1926,9 @@
 
     var sb = getSb();
     try {
-      var _c = await sb.auth.getSession(), data = _c.data;
+      var _d = await sb.auth.getSession(), data = _d.data;
       await bmSetHeaderUI(data && data.session);
-    } catch (_d) {
+    } catch (_e) {
       await bmSetHeaderUI(null);
     }
 
