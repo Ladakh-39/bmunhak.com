@@ -1826,7 +1826,7 @@
         welcomeText.classList.add("text-[var(--bm-text)]");
         welcomeText.classList.remove("text-white");
         // Force a single color source across pages that inherit text-white in header.
-        welcomeText.style.setProperty("color", "var(--bm-text)", "important");
+        welcomeText.style.setProperty("color", "var(--bm-text, #33506a)", "important");
       } else {
         welcomeText.textContent = "";
         welcomeText.classList.add("hidden");
