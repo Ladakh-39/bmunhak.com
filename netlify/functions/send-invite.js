@@ -44,7 +44,7 @@ export async function handler(event) {
       return fail(500, "ALLOWLIST_UPSERT_FAILED", upsertErr.message || "allowlist upsert failed");
     }
 
-    const siteUrl = String(process.env.SITE_URL || "https://jungdap.com").replace(/\/+$/, "");
+    const siteUrl = String(process.env.SITE_URL || "https://bmunhak.com").replace(/\/+$/, "");
     const redirectTo = `${siteUrl}/#`;
     const { data: inviteData, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(e, {
       redirectTo,
