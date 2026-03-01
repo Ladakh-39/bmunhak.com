@@ -1,0 +1,15 @@
+# Pretty URLs -> html
+/grader        /grader.html        200
+/home          /home.html          200
+/board         /board.html         200
+/post          /post.html          200
+/my            /my.html            200
+/profile       /profile.html       200
+/records       /records.html       200
+/write         /write.html         200
+/accumulated   /accumulated.html   200
+/privacy       /privacy.html       200
+/terms         /terms.html         200
+
+# Root
+/              /index.html         200
