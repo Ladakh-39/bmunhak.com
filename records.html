@@ -96,20 +96,33 @@
   <main class="hc-shell py-6">
     <section class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
       <h1 class="text-[26px] leading-[1.05] font-extrabold text-slate-900 tracking-tight">내 기록</h1>
-      <p class="mt-2 text-sm font-bold text-slate-500">학년도/영역을 선택하면 해당 시도 목록을 확인할 수 있습니다.</p>
+      <p class="mt-2 text-sm font-bold text-slate-500">학년도/학년/영역을 선택하면 해당 시도 목록을 확인할 수 있습니다.</p>
 
-      <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
         <div>
           <label for="yearSelect" class="block text-xs font-black text-slate-400 mb-1 ml-1">학년도</label>
           <select id="yearSelect" class="w-full p-3 rounded-2xl border-2 border-slate-200 bg-slate-50 font-black"></select>
         </div>
         <div>
+          <label for="gradeSelect" class="block text-xs font-black text-slate-400 mb-1 ml-1">학년</label>
+          <select id="gradeSelect" class="w-full p-3 rounded-2xl border-2 border-slate-200 bg-slate-50 font-black">
+            <option value="all">전체</option>
+            <option value="1">고1</option>
+            <option value="2">고2</option>
+            <option value="3">고3</option>
+          </select>
+        </div>
+        <div>
           <label for="sectionSelect" class="block text-xs font-black text-slate-400 mb-1 ml-1">영역</label>
           <select id="sectionSelect" class="w-full p-3 rounded-2xl border-2 border-slate-200 bg-slate-50 font-black">
             <option value="all">전체</option>
-            <option value="both">언어이해+추리논증</option>
+            <option value="korean">국어</option>
+            <option value="math">수학</option>
+            <option value="english">영어</option>
+            <option value="history">한국사</option>
+            <option value="social_studies">사회탐구</option>
+            <option value="science_studies">과학탐구</option>
             <option value="lang">언어이해</option>
-            <option value="logic">추리논증</option>
             <option value="humanities">마더텅 인문</option>
             <option value="social">마더텅 사회</option>
             <option value="science">마더텅 과학</option>
@@ -198,12 +211,13 @@
 
     const $ = (id) => document.getElementById(id);
     const qs = new URLSearchParams(location.search);
-    const yearFromQs = String(qs.get("year") || "");
+    const yearFromQs = String(qs.get("year") || "all");
+    const gradeFromQs = String(qs.get("grade") || "all");
     const sectionFromQs = String(qs.get("section") || "all");
     const YEARS = (() => {
-      const arr = ["2009_pre"];
-      for (let y = 2010; y <= 2026; y += 1) arr.push(String(y));
-      return arr.reverse();
+      const arr = ["all"];
+      for (let y = 2026; y >= 1994; y -= 1) arr.push(String(y));
+      return arr;
     })();
     const PAGE_SIZE = 10;
     const GROUP_SIZE = 5;
@@ -213,6 +227,12 @@
     const state = { page: 1, totalPages: 1, totalCount: 0, rows: [] };
 
     function sectionLabel(section) {
+      if (section === "korean") return "국어";
+      if (section === "math") return "수학";
+      if (section === "english") return "영어";
+      if (section === "history") return "한국사";
+      if (section === "social_studies") return "사회탐구";
+      if (section === "science_studies") return "과학탐구";
       if (section === "logic") return "추리논증";
       if (section === "lang") return "언어이해";
       if (section === "both") return "언어+추리";
@@ -272,13 +292,19 @@
     }
 
     function fillYearOptions() {
-      $("yearSelect").innerHTML = YEARS.map((y) => `<option value="${y}">${y === "2009_pre" ? "2009 예비" : y}</option>`).join("");
-      $("yearSelect").value = YEARS.includes(yearFromQs) ? yearFromQs : "2026";
+      $("yearSelect").innerHTML = YEARS.map((y) => `<option value="${y}">${y === "all" ? "전체" : y}</option>`).join("");
+      $("yearSelect").value = YEARS.includes(yearFromQs) ? yearFromQs : "all";
+      const allowedGrades = new Set(["all", "1", "2", "3"]);
+      $("gradeSelect").value = allowedGrades.has(gradeFromQs) ? gradeFromQs : "all";
       const allowedSections = new Set([
         "all",
-        "both",
+        "korean",
+        "math",
+        "english",
+        "history",
+        "social_studies",
+        "science_studies",
         "lang",
-        "logic",
         "humanities",
         "social",
         "science",
@@ -356,42 +382,57 @@
       clearRows("조회 중...");
 
       const year = $("yearSelect").value;
+      const grade = $("gradeSelect").value;
       const section = $("sectionSelect").value;
       const from = (state.page - 1) * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
+      const missingColumn = (err, column) => {
+        const msg = String(err?.message || "").toLowerCase();
+        if (!msg) return false;
+        return msg.includes(column.toLowerCase()) && (msg.includes("column") || msg.includes("schema cache") || msg.includes("does not exist"));
+      };
       const applySectionFilter = (query) => {
         if (section === "all") return query;
-        if (section === "both") return query.in("section", ["lang", "logic"]);
         return query.eq("section", section);
       };
-
-      const buildCountQuery = () => {
+      const applyGradeFilter = (query, gradeColumn) => {
+        if (grade === "all" || !gradeColumn) return query;
+        return query.eq(gradeColumn, grade);
+      };
+      const buildCountQuery = (gradeColumn) => {
         let query = sbClient
           .from("exam_attempts")
           .select("id", { head: true, count: "exact" })
           .eq("user_id", currentUser.id)
-          .eq("year", year)
           .eq("is_deleted", false);
+        if (year !== "all") query = query.eq("year", Number(year));
         query = applySectionFilter(query);
+        query = applyGradeFilter(query, gradeColumn);
         return query;
       };
-      const buildRowsQuery = () => {
+      const buildRowsQuery = (gradeColumn) => {
         let query = sbClient
           .from("exam_attempts")
           .select("id,created_at,year,section,form,raw_score,official_total,standard_score,percentile")
           .eq("user_id", currentUser.id)
-          .eq("year", year)
           .eq("is_deleted", false);
+        if (year !== "all") query = query.eq("year", Number(year));
         query = applySectionFilter(query);
+        query = applyGradeFilter(query, gradeColumn);
         return query
           .order("created_at", { ascending: false })
           .range(from, to);
       };
 
-      const [{ count, error: countError }, { data, error }] = await Promise.all([
-        buildCountQuery(),
-        buildRowsQuery()
-      ]);
+      const runQueries = (gradeColumn) => Promise.all([buildCountQuery(gradeColumn), buildRowsQuery(gradeColumn)]);
+
+      let [{ count, error: countError }, { data, error }] = await runQueries(grade === "all" ? null : "grade");
+      if (grade !== "all" && (missingColumn(countError, "grade") || missingColumn(error, "grade"))) {
+        [{ count, error: countError }, { data, error }] = await runQueries("school_grade");
+        if (missingColumn(countError, "school_grade") || missingColumn(error, "school_grade")) {
+          [{ count, error: countError }, { data, error }] = await runQueries(null);
+        }
+      }
 
       if (error || countError) {
         clearRows(`오류: ${(error || countError).message}`);
