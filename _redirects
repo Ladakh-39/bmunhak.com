@@ -1,5 +1,7 @@
 # Pretty URLs -> html
 /grader        /grader.html        200
+/grader1       /grader1.html       200
+/grader2       /grader2.html       200
 /home          /home.html          200
 /board         /board.html         200
 /post          /post.html          200

@@ -96,7 +96,7 @@
   <main class="hc-shell py-6">
     <section class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
       <h1 class="text-[26px] leading-[1.05] font-extrabold text-slate-900 tracking-tight">내 기록</h1>
-      <p class="mt-2 text-sm font-bold text-slate-500">학년도/학년/영역을 선택하면 해당 시도 목록을 확인할 수 있습니다.</p>
+      <p class="mt-2 text-sm font-bold text-slate-500">학년도/학년/월/영역을 선택하면 해당 시도 목록을 확인할 수 있습니다.</p>
 
       <div class="mt-4 grid grid-cols-1 gap-3 md:flex md:flex-wrap md:items-end md:gap-2">
         <div class="md:w-[132px]">
@@ -112,6 +112,19 @@
             <option value="3">고3</option>
           </select>
         </div>
+        <div class="md:w-[110px]">
+          <label for="monthSelect" class="block text-xs font-black text-slate-400 mb-1 ml-1">월</label>
+          <select id="monthSelect" class="w-full p-3 rounded-2xl border-2 border-slate-200 bg-slate-50 font-black">
+            <option value="all">전체</option>
+            <option value="3">3월</option>
+            <option value="4">4월</option>
+            <option value="6">6월</option>
+            <option value="7">7월</option>
+            <option value="9">9월</option>
+            <option value="10">10월</option>
+            <option value="11">11월</option>
+          </select>
+        </div>
         <div class="md:min-w-[260px] md:flex-1">
           <label for="sectionSelect" class="block text-xs font-black text-slate-400 mb-1 ml-1">영역</label>
           <select id="sectionSelect" class="w-full p-3 rounded-2xl border-2 border-slate-200 bg-slate-50 font-black">
@@ -123,12 +136,12 @@
             <option value="social_studies">사회탐구</option>
             <option value="science_studies">과학탐구</option>
             <option value="lang">언어이해</option>
-            <option value="humanities">마더텅 인문</option>
-            <option value="social">마더텅 사회</option>
-            <option value="science">마더텅 과학</option>
-            <option value="tech">마더텅 기술</option>
-            <option value="art">마더텅 예술</option>
-            <option value="mixed">마더텅 복합</option>
+            <option value="humanities">마더텅 Ⅰ. 인문</option>
+            <option value="social">마더텅 Ⅱ. 사회</option>
+            <option value="science">마더텅 Ⅲ. 과학</option>
+            <option value="tech">마더텅 Ⅳ. 기술</option>
+            <option value="art">마더텅 Ⅴ. 예술</option>
+            <option value="mixed">마더텅 Ⅵ. 복합 지문</option>
             <option value="mock1">마더텅 미니모의 1회</option>
             <option value="mock2">마더텅 미니모의 2회</option>
           </select>
@@ -146,11 +159,9 @@
           <thead class="bg-slate-50 border-b border-slate-200">
             <tr class="text-slate-500 font-black">
               <th class="px-3 py-3 text-left w-[70px]">번호</th>
-              <th class="px-3 py-3 text-left w-[100px]">영역</th>
+              <th class="px-3 py-3 text-left w-[280px]">영역</th>
               <th class="px-3 py-3 text-left">시험</th>
               <th class="px-3 py-3 text-left w-[120px]">점수</th>
-              <th class="px-3 py-3 text-left w-[110px]">표준점수</th>
-              <th class="px-3 py-3 text-left w-[90px]">백분위</th>
               <th class="px-3 py-3 text-left w-[100px]">채점일</th>
               <th class="px-3 py-3 text-center w-[90px]">삭제</th>
             </tr>
@@ -257,6 +268,7 @@
     const qs = new URLSearchParams(location.search);
     const yearFromQs = String(qs.get("year") || "all");
     const gradeFromQs = String(qs.get("grade") || "all");
+    const monthFromQs = String(qs.get("month") || "all");
     const sectionFromQs = String(qs.get("section") || "all");
     const YEARS = (() => {
       const arr = ["all"];
@@ -268,8 +280,9 @@
 
     let currentUser = null;
     let profileNickname = "";
-    const state = { page: 1, totalPages: 1, totalCount: 0, rows: [] };
+    const state = { page: 1, totalPages: 1, totalCount: 0, rows: [], rangesByAttempt: {} };
     let toastTimer = null;
+    const MOTHERTUNG_SECTIONS = new Set(["humanities", "social", "science", "tech", "art", "mixed", "mock1", "mock2"]);
 
     function isMissingColumn(error, column) {
       const msg = String(error?.message || "").toLowerCase();
@@ -333,12 +346,12 @@
       if (section === "logic") return "추리논증";
       if (section === "lang") return "언어이해";
       if (section === "both") return "언어+추리";
-      if (section === "humanities") return "마더텅 인문";
-      if (section === "social") return "마더텅 사회";
-      if (section === "science") return "마더텅 과학";
-      if (section === "tech") return "마더텅 기술";
-      if (section === "art") return "마더텅 예술";
-      if (section === "mixed") return "마더텅 복합";
+      if (section === "humanities") return "마더텅 Ⅰ. 인문";
+      if (section === "social") return "마더텅 Ⅱ. 사회";
+      if (section === "science") return "마더텅 Ⅲ. 과학";
+      if (section === "tech") return "마더텅 Ⅳ. 기술";
+      if (section === "art") return "마더텅 Ⅴ. 예술";
+      if (section === "mixed") return "마더텅 Ⅵ. 복합 지문";
       if (section === "mock1") return "마더텅 미니모의 1회";
       if (section === "mock2") return "마더텅 미니모의 2회";
       return "-";
@@ -346,6 +359,14 @@
     function formLabel(form) {
       if (form === "na" || form == null || form === "") return "-";
       return form === "even" ? "짝수형" : "홀수형";
+    }
+
+    function sectionLabelWithRange(row) {
+      const base = sectionLabel(row?.section);
+      if (!MOTHERTUNG_SECTIONS.has(String(row?.section || ""))) return base;
+      const range = state.rangesByAttempt[String(row?.id)] || null;
+      if (!range || !Number.isFinite(range.min) || !Number.isFinite(range.max)) return base;
+      return `${base} ${range.min} ~ ${range.max}번`;
     }
     function fmtDate(ts) {
       const d = new Date(ts);
@@ -393,6 +414,8 @@
       $("yearSelect").value = YEARS.includes(yearFromQs) ? yearFromQs : "all";
       const allowedGrades = new Set(["all", "1", "2", "3"]);
       $("gradeSelect").value = allowedGrades.has(gradeFromQs) ? gradeFromQs : "all";
+      const allowedMonths = new Set(["all", "3", "4", "6", "7", "9", "10", "11"]);
+      $("monthSelect").value = allowedMonths.has(monthFromQs) ? monthFromQs : "all";
       const allowedSections = new Set([
         "all",
         "korean",
@@ -447,7 +470,7 @@
       const tbody = $("attemptTbody");
       tbody.innerHTML = "";
       if (state.rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="px-3 py-4 text-sm font-black text-slate-500">아직 저장된 기록이 없습니다. 채점 후 자동으로 저장됩니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-4 text-sm font-black text-slate-500">아직 저장된 기록이 없습니다. 채점 후 자동으로 저장됩니다.</td></tr>';
         return;
       }
       const offset = (state.page - 1) * PAGE_SIZE;
@@ -461,17 +484,42 @@
         tr.dataset.section = row.section;
         tr.innerHTML = `
           <td class="px-3 py-2 font-black mono text-slate-600">${no}</td>
-          <td class="px-3 py-2 font-black text-slate-700">${sectionLabel(row.section)}</td>
+          <td class="px-3 py-2 font-black text-slate-700 whitespace-nowrap">${sectionLabelWithRange(row)}</td>
           <td class="px-3 py-2 font-black text-slate-800">${row.year} (${formLabel(row.form)})</td>
           <td class="px-3 py-2 font-black mono text-slate-700">${row.raw_score ?? "-"} / ${row.official_total ?? "-"}</td>
-          <td class="px-3 py-2 font-black mono text-slate-700">${row.standard_score ?? "-"}</td>
-          <td class="px-3 py-2 font-black mono text-slate-700">${row.percentile ?? "-"}</td>
           <td class="px-3 py-2 font-black mono text-slate-500">${fmtDate(row.created_at)}</td>
           <td class="px-3 py-2 text-center">
             <button type="button" data-delete-id="${row.id}" class="px-2 py-1 border border-rose-200 bg-rose-50 text-rose-700 text-xs font-black hover:bg-rose-100">삭제</button>
           </td>
         `;
         tbody.appendChild(tr);
+      }
+    }
+
+    async function hydrateAttemptRanges(rows) {
+      state.rangesByAttempt = {};
+      const ids = (rows || []).map((row) => Number(row?.id)).filter((id) => Number.isFinite(id));
+      if (!ids.length) return;
+
+      const { data, error } = await sbClient
+        .from("exam_attempt_items")
+        .select("attempt_id,item_no")
+        .in("attempt_id", ids)
+        .order("item_no", { ascending: true });
+
+      if (error || !Array.isArray(data)) return;
+      for (const it of data) {
+        const attemptId = Number(it?.attempt_id);
+        const itemNo = Number(it?.item_no);
+        if (!Number.isFinite(attemptId) || !Number.isFinite(itemNo)) continue;
+        const key = String(attemptId);
+        const prev = state.rangesByAttempt[key];
+        if (!prev) {
+          state.rangesByAttempt[key] = { min: itemNo, max: itemNo };
+          continue;
+        }
+        if (itemNo < prev.min) prev.min = itemNo;
+        if (itemNo > prev.max) prev.max = itemNo;
       }
     }
 
@@ -482,6 +530,7 @@
 
       const year = $("yearSelect").value;
       const grade = $("gradeSelect").value;
+      const month = $("monthSelect").value;
       const section = $("sectionSelect").value;
       const from = (state.page - 1) * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
@@ -507,7 +556,7 @@
       const buildRowsQuery = (gradeColumn) => {
         let query = sbClient
           .from("exam_attempts")
-          .select("id,created_at,year,section,form,raw_score,official_total,standard_score,percentile")
+          .select("id,created_at,year,section,form,raw_score,official_total")
           .eq("user_id", currentUser.id)
           .eq("is_deleted", false);
         if (year !== "all") query = query.eq("year", Number(year));
@@ -517,28 +566,68 @@
           .order("created_at", { ascending: false })
           .range(from, to);
       };
+      const buildRowsQueryAll = (gradeColumn) => {
+        let query = sbClient
+          .from("exam_attempts")
+          .select("id,created_at,year,section,form,raw_score,official_total")
+          .eq("user_id", currentUser.id)
+          .eq("is_deleted", false);
+        if (year !== "all") query = query.eq("year", Number(year));
+        query = applySectionFilter(query);
+        query = applyGradeFilter(query, gradeColumn);
+        return query.order("created_at", { ascending: false });
+      };
 
       const runQueries = (gradeColumn) => Promise.all([buildCountQuery(gradeColumn), buildRowsQuery(gradeColumn)]);
+      const runRowsAll = (gradeColumn) => buildRowsQueryAll(gradeColumn);
 
-      let [{ count, error: countError }, { data, error }] = await runQueries(grade === "all" ? null : "grade");
-      if (grade !== "all" && (isMissingColumn(countError, "grade") || isMissingColumn(error, "grade"))) {
-        [{ count, error: countError }, { data, error }] = await runQueries("school_grade");
-        if (isMissingColumn(countError, "school_grade") || isMissingColumn(error, "school_grade")) {
-          [{ count, error: countError }, { data, error }] = await runQueries(null);
+      if (month === "all") {
+        let [{ count, error: countError }, { data, error }] = await runQueries(grade === "all" ? null : "grade");
+        if (grade !== "all" && (isMissingColumn(countError, "grade") || isMissingColumn(error, "grade"))) {
+          [{ count, error: countError }, { data, error }] = await runQueries("school_grade");
+          if (isMissingColumn(countError, "school_grade") || isMissingColumn(error, "school_grade")) {
+            [{ count, error: countError }, { data, error }] = await runQueries(null);
+          }
         }
+        if (error || countError) {
+          clearRows(`오류: ${(error || countError).message}`);
+          showStateCard("error", `오류: ${(error || countError).message}`);
+          return;
+        }
+        state.totalCount = count || 0;
+        state.totalPages = Math.max(1, Math.ceil(state.totalCount / PAGE_SIZE));
+        if (state.page > state.totalPages) state.page = state.totalPages;
+        state.rows = data || [];
+      } else {
+        const monthNum = Number(month);
+        let data = null;
+        let error = null;
+        ({ data, error } = await runRowsAll(grade === "all" ? null : "grade"));
+        if (grade !== "all" && (isMissingColumn(error, "grade"))) {
+          ({ data, error } = await runRowsAll("school_grade"));
+          if (isMissingColumn(error, "school_grade")) {
+            ({ data, error } = await runRowsAll(null));
+          }
+        }
+        if (error) {
+          clearRows(`오류: ${error.message}`);
+          showStateCard("error", `오류: ${error.message}`);
+          return;
+        }
+        const filtered = (data || []).filter((row) => {
+          const d = new Date(row?.created_at);
+          if (!Number.isFinite(d.getTime())) return false;
+          return d.getMonth() + 1 === monthNum;
+        });
+        state.totalCount = filtered.length;
+        state.totalPages = Math.max(1, Math.ceil(state.totalCount / PAGE_SIZE));
+        if (state.page > state.totalPages) state.page = state.totalPages;
+        const start = (state.page - 1) * PAGE_SIZE;
+        const end = start + PAGE_SIZE;
+        state.rows = filtered.slice(start, end);
       }
 
-      if (error || countError) {
-        clearRows(`오류: ${(error || countError).message}`);
-        showStateCard("error", `오류: ${(error || countError).message}`);
-        return;
-      }
-
-      state.totalCount = count || 0;
-      state.totalPages = Math.max(1, Math.ceil(state.totalCount / PAGE_SIZE));
-      if (state.page > state.totalPages) state.page = state.totalPages;
-      state.rows = data || [];
-
+      await hydrateAttemptRanges(state.rows);
       renderRows();
       renderPager();
       if (state.totalCount === 0) {
@@ -566,8 +655,8 @@
 
       $("detailCreatedAt").textContent = fmtDate(row.created_at);
       $("detailExam").textContent = `${row.year} (${formLabel(row.form)})`;
-      $("detailSection").textContent = sectionLabel(row.section);
-      $("detailScore").textContent = `${row.raw_score ?? "-"} / ${row.official_total ?? "-"} · 표준 ${row.standard_score ?? "-"} · 백분위 ${row.percentile ?? "-"}`;
+      $("detailSection").textContent = sectionLabelWithRange(row);
+      $("detailScore").textContent = `${row.raw_score ?? "-"} / ${row.official_total ?? "-"}`;
       $("detailRange").textContent = "불러오는 중...";
       $("detailStats").textContent = "불러오는 중...";
       $("detailWrongList").textContent = "불러오는 중...";
@@ -644,7 +733,7 @@
         showRecordsToast("내보낼 기록이 없습니다.", "error");
         return;
       }
-      const header = ["id", "year", "section", "form", "raw_score", "official_total", "standard_score", "percentile", "created_at"];
+      const header = ["id", "year", "section", "form", "raw_score", "official_total", "created_at"];
       const lines = [header.join(",")];
       for (const row of state.rows) {
         const values = [
@@ -654,8 +743,6 @@
           formLabel(row.form),
           row.raw_score,
           row.official_total,
-          row.standard_score,
-          row.percentile,
           row.created_at
         ].map((value) => {
           const text = String(value == null ? "" : value).replaceAll('"', '""');
@@ -704,7 +791,7 @@
       await loadAttempts();
     });
     $("btnExportCsv")?.addEventListener("click", exportCurrentRowsAsCsv);
-    ["yearSelect", "gradeSelect", "sectionSelect"].forEach((id) => {
+    ["yearSelect", "gradeSelect", "monthSelect", "sectionSelect"].forEach((id) => {
       $(id)?.addEventListener("change", async () => {
         state.page = 1;
         await loadAttempts();

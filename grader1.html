@@ -60,7 +60,7 @@
     <section class="mx-auto max-w-[1180px] border border-slate-300 bg-white p-5 shadow-sm md:p-7">
       <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <h1 class="text-3xl font-black text-slate-900 md:text-4xl">수능 및 모의고사 채점하기</h1>
+          <h1 class="text-3xl font-black text-slate-900 md:text-4xl">채점하기</h1>
           <p class="mt-2 text-sm font-bold text-slate-500">학년도/학년/월/영역을 선택한 뒤 마더텅 채점기로 이동하세요.</p>
         </div>
         <button id="btnOpenMothertung" type="button" class="h-14 w-full whitespace-nowrap bg-[#facc15] px-4 text-xl font-black leading-none text-black hover:bg-[#eab308] md:h-16 md:w-[320px] md:text-[28px]">마더텅 채점하기</button>
@@ -101,6 +101,14 @@
             <option value="social_studies">사회탐구</option>
             <option value="science_studies">과학탐구</option>
             <option value="lang">언어이해</option>
+            <option value="humanities">마더텅 Ⅰ. 인문</option>
+            <option value="social">마더텅 Ⅱ. 사회</option>
+            <option value="science">마더텅 Ⅲ. 과학</option>
+            <option value="tech">마더텅 Ⅳ. 기술</option>
+            <option value="art">마더텅 Ⅴ. 예술</option>
+            <option value="mixed">마더텅 Ⅵ. 복합 지문</option>
+            <option value="mock1">마더텅 미니모의 1회</option>
+            <option value="mock2">마더텅 미니모의 2회</option>
           </select>
         </div>
         <div class="grid grid-cols-2 gap-2 md:w-[320px]">
@@ -108,7 +116,7 @@
           <button id="btnGoRecords" type="button" class="h-14 w-full whitespace-nowrap bg-[#a3e635] px-3 text-lg font-black leading-none text-black hover:bg-[#84cc16] md:text-[20px]">내 기록</button>
         </div>
       </div>
-      <div id="guideMsg" class="mt-3 text-xs font-black text-slate-500">학년도/학년/월/영역 선택 후 채점하기를 눌러 이동하세요.</div>
+      <div id="guideMsg" class="mt-3 text-xs font-black text-slate-500">마더텅 영역을 선택하면 해당 과목으로 바로 이동합니다.</div>
     </section>
   </main>
 
@@ -160,7 +168,6 @@
       mobileMenu.classList.toggle("hidden");
     });
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/app.js?v=20260228-0846"></script>
   <script>
     window.JungdapApp?.setupSecretRoomHover({
