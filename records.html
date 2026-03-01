@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>내 기록 | jungdap.com</title>
+  <title>내 기록 | bmunhak.com</title>
   <link rel="icon" href="/favicon.ico" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -96,20 +96,33 @@
   <main class="hc-shell py-6">
     <section class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
       <h1 class="text-[26px] leading-[1.05] font-extrabold text-slate-900 tracking-tight">내 기록</h1>
-      <p class="mt-2 text-sm font-bold text-slate-500">학년도/영역을 선택하면 해당 시도 목록을 확인할 수 있습니다.</p>
+      <p class="mt-2 text-sm font-bold text-slate-500">학년도/학년/영역을 선택하면 해당 시도 목록을 확인할 수 있습니다.</p>
 
-      <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div>
+      <div class="mt-4 grid grid-cols-1 gap-3 md:flex md:flex-wrap md:items-end md:gap-2">
+        <div class="md:w-[132px]">
           <label for="yearSelect" class="block text-xs font-black text-slate-400 mb-1 ml-1">학년도</label>
           <select id="yearSelect" class="w-full p-3 rounded-2xl border-2 border-slate-200 bg-slate-50 font-black"></select>
         </div>
-        <div>
+        <div class="md:w-[110px]">
+          <label for="gradeSelect" class="block text-xs font-black text-slate-400 mb-1 ml-1">학년</label>
+          <select id="gradeSelect" class="w-full p-3 rounded-2xl border-2 border-slate-200 bg-slate-50 font-black">
+            <option value="all">전체</option>
+            <option value="1">고1</option>
+            <option value="2">고2</option>
+            <option value="3">고3</option>
+          </select>
+        </div>
+        <div class="md:min-w-[260px] md:flex-1">
           <label for="sectionSelect" class="block text-xs font-black text-slate-400 mb-1 ml-1">영역</label>
           <select id="sectionSelect" class="w-full p-3 rounded-2xl border-2 border-slate-200 bg-slate-50 font-black">
             <option value="all">전체</option>
-            <option value="both">언어이해+추리논증</option>
+            <option value="korean">국어</option>
+            <option value="math">수학</option>
+            <option value="english">영어</option>
+            <option value="history">한국사</option>
+            <option value="social_studies">사회탐구</option>
+            <option value="science_studies">과학탐구</option>
             <option value="lang">언어이해</option>
-            <option value="logic">추리논증</option>
             <option value="humanities">마더텅 인문</option>
             <option value="social">마더텅 사회</option>
             <option value="science">마더텅 과학</option>
@@ -120,8 +133,9 @@
             <option value="mock2">마더텅 미니모의 2회</option>
           </select>
         </div>
-        <div class="flex items-end">
-          <button id="btnReload" class="w-full px-4 py-3 rounded-2xl bg-slate-900 text-white font-black hover:opacity-90">조회</button>
+        <div class="grid grid-cols-2 gap-2 md:w-auto md:flex md:items-end">
+          <button id="btnReload" class="w-full px-4 py-3 rounded-2xl bg-slate-900 text-white font-black hover:opacity-90 md:w-auto">새로고침</button>
+          <button id="btnExportCsv" class="w-full px-4 py-3 rounded-2xl border border-slate-300 bg-white text-slate-700 font-black hover:bg-slate-100 md:w-auto">내보내기</button>
         </div>
       </div>
 
@@ -190,6 +204,43 @@
     </div>
   </div>
   <div id="copyToast" class="fixed hidden items-center justify-center bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-900 text-white text-sm font-black z-[70]">복사됨</div>
+  <div id="recordsToast" class="fixed hidden items-center justify-center bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 text-sm font-black z-[71]"></div>
+
+  <div id="attemptDetailModal" class="fixed inset-0 hidden items-center justify-center bg-black/55 p-4 z-[65]">
+    <div class="w-full max-w-2xl rounded-2xl border border-slate-300 bg-white p-5 shadow-xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-black text-slate-900">기록 상세</h3>
+        <button id="btnCloseAttemptDetail" class="rounded border border-slate-300 px-3 py-1 text-sm font-black text-slate-700 hover:bg-slate-100" type="button">닫기</button>
+      </div>
+      <div class="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
+        <div class="rounded border border-slate-200 bg-slate-50 p-3">
+          <div class="text-[11px] font-black text-slate-500">채점일</div>
+          <div id="detailCreatedAt" class="mt-1 text-sm font-black text-slate-800">-</div>
+        </div>
+        <div class="rounded border border-slate-200 bg-slate-50 p-3">
+          <div class="text-[11px] font-black text-slate-500">시험</div>
+          <div id="detailExam" class="mt-1 text-sm font-black text-slate-800">-</div>
+        </div>
+        <div class="rounded border border-slate-200 bg-slate-50 p-3">
+          <div class="text-[11px] font-black text-slate-500">영역</div>
+          <div id="detailSection" class="mt-1 text-sm font-black text-slate-800">-</div>
+        </div>
+        <div class="rounded border border-slate-200 bg-slate-50 p-3">
+          <div class="text-[11px] font-black text-slate-500">점수</div>
+          <div id="detailScore" class="mt-1 text-sm font-black text-slate-800">-</div>
+        </div>
+      </div>
+      <div class="mt-3 rounded border border-slate-200 bg-slate-50 p-3">
+        <div class="text-[11px] font-black text-slate-500">문항 범위</div>
+        <div id="detailRange" class="mt-1 text-sm font-black text-slate-800">불러오는 중...</div>
+      </div>
+      <a id="detailAccumLink" href="#" class="mt-3 hidden inline-flex rounded border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 hover:bg-blue-100">누적 기록 보기</a>
+      <div class="mt-4 rounded border border-slate-200 bg-slate-50 p-4">
+        <h4 class="text-sm font-black text-slate-700">오답 목록</h4>
+        <div id="detailWrongList" class="mt-2 max-h-64 overflow-auto text-sm font-bold text-slate-700">불러오는 중...</div>
+      </div>
+    </div>
+  </div>
 
   <script src="/app.js?v=20260228-0846"></script>
   <script>
@@ -198,12 +249,13 @@
 
     const $ = (id) => document.getElementById(id);
     const qs = new URLSearchParams(location.search);
-    const yearFromQs = String(qs.get("year") || "");
+    const yearFromQs = String(qs.get("year") || "all");
+    const gradeFromQs = String(qs.get("grade") || "all");
     const sectionFromQs = String(qs.get("section") || "all");
     const YEARS = (() => {
-      const arr = ["2009_pre"];
-      for (let y = 2010; y <= 2026; y += 1) arr.push(String(y));
-      return arr.reverse();
+      const arr = ["all"];
+      for (let y = 2026; y >= 1994; y -= 1) arr.push(String(y));
+      return arr;
     })();
     const PAGE_SIZE = 10;
     const GROUP_SIZE = 5;
@@ -211,8 +263,44 @@
     let currentUser = null;
     let profileNickname = "";
     const state = { page: 1, totalPages: 1, totalCount: 0, rows: [] };
+    let toastTimer = null;
+
+    function isMissingColumn(error, column) {
+      const msg = String(error?.message || "").toLowerCase();
+      if (!msg) return false;
+      return msg.includes(String(column || "").toLowerCase()) && (msg.includes("column") || msg.includes("schema cache") || msg.includes("does not exist"));
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? "" : value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function showRecordsToast(message, kind = "success") {
+      const toast = $("recordsToast");
+      if (!toast) return;
+      if (toastTimer) clearTimeout(toastTimer);
+      toast.className = "fixed flex items-center justify-center bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 text-sm font-black z-[71]";
+      if (kind === "error") toast.classList.add("bg-rose-700", "text-white");
+      else toast.classList.add("bg-slate-900", "text-white");
+      toast.textContent = String(message || "");
+      toast.classList.remove("hidden");
+      toastTimer = setTimeout(() => {
+        toast.classList.add("hidden");
+      }, 1800);
+    }
 
     function sectionLabel(section) {
+      if (section === "korean") return "국어";
+      if (section === "math") return "수학";
+      if (section === "english") return "영어";
+      if (section === "history") return "한국사";
+      if (section === "social_studies") return "사회탐구";
+      if (section === "science_studies") return "과학탐구";
       if (section === "logic") return "추리논증";
       if (section === "lang") return "언어이해";
       if (section === "both") return "언어+추리";
@@ -272,13 +360,19 @@
     }
 
     function fillYearOptions() {
-      $("yearSelect").innerHTML = YEARS.map((y) => `<option value="${y}">${y === "2009_pre" ? "2009 예비" : y}</option>`).join("");
-      $("yearSelect").value = YEARS.includes(yearFromQs) ? yearFromQs : "2026";
+      $("yearSelect").innerHTML = YEARS.map((y) => `<option value="${y}">${y === "all" ? "전체" : y}</option>`).join("");
+      $("yearSelect").value = YEARS.includes(yearFromQs) ? yearFromQs : "all";
+      const allowedGrades = new Set(["all", "1", "2", "3"]);
+      $("gradeSelect").value = allowedGrades.has(gradeFromQs) ? gradeFromQs : "all";
       const allowedSections = new Set([
         "all",
-        "both",
+        "korean",
+        "math",
+        "english",
+        "history",
+        "social_studies",
+        "science_studies",
         "lang",
-        "logic",
         "humanities",
         "social",
         "science",
@@ -324,7 +418,7 @@
       const tbody = $("attemptTbody");
       tbody.innerHTML = "";
       if (state.rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="px-3 py-4 text-sm font-black text-slate-500">기록이 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="px-3 py-4 text-sm font-black text-slate-500">아직 저장된 기록이 없습니다. 채점 후 자동으로 저장됩니다.</td></tr>';
         return;
       }
       const offset = (state.page - 1) * PAGE_SIZE;
@@ -333,6 +427,7 @@
         const no = offset + i + 1;
         const tr = document.createElement("tr");
         tr.className = "hover:bg-slate-50 cursor-pointer";
+        tr.dataset.id = String(row.id);
         tr.dataset.year = row.year;
         tr.dataset.section = row.section;
         tr.innerHTML = `
@@ -356,42 +451,52 @@
       clearRows("조회 중...");
 
       const year = $("yearSelect").value;
+      const grade = $("gradeSelect").value;
       const section = $("sectionSelect").value;
       const from = (state.page - 1) * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
       const applySectionFilter = (query) => {
         if (section === "all") return query;
-        if (section === "both") return query.in("section", ["lang", "logic"]);
         return query.eq("section", section);
       };
-
-      const buildCountQuery = () => {
+      const applyGradeFilter = (query, gradeColumn) => {
+        if (grade === "all" || !gradeColumn) return query;
+        return query.eq(gradeColumn, grade);
+      };
+      const buildCountQuery = (gradeColumn) => {
         let query = sbClient
           .from("exam_attempts")
           .select("id", { head: true, count: "exact" })
           .eq("user_id", currentUser.id)
-          .eq("year", year)
           .eq("is_deleted", false);
+        if (year !== "all") query = query.eq("year", Number(year));
         query = applySectionFilter(query);
+        query = applyGradeFilter(query, gradeColumn);
         return query;
       };
-      const buildRowsQuery = () => {
+      const buildRowsQuery = (gradeColumn) => {
         let query = sbClient
           .from("exam_attempts")
           .select("id,created_at,year,section,form,raw_score,official_total,standard_score,percentile")
           .eq("user_id", currentUser.id)
-          .eq("year", year)
           .eq("is_deleted", false);
+        if (year !== "all") query = query.eq("year", Number(year));
         query = applySectionFilter(query);
+        query = applyGradeFilter(query, gradeColumn);
         return query
           .order("created_at", { ascending: false })
           .range(from, to);
       };
 
-      const [{ count, error: countError }, { data, error }] = await Promise.all([
-        buildCountQuery(),
-        buildRowsQuery()
-      ]);
+      const runQueries = (gradeColumn) => Promise.all([buildCountQuery(gradeColumn), buildRowsQuery(gradeColumn)]);
+
+      let [{ count, error: countError }, { data, error }] = await runQueries(grade === "all" ? null : "grade");
+      if (grade !== "all" && (isMissingColumn(countError, "grade") || isMissingColumn(error, "grade"))) {
+        [{ count, error: countError }, { data, error }] = await runQueries("school_grade");
+        if (isMissingColumn(countError, "school_grade") || isMissingColumn(error, "school_grade")) {
+          [{ count, error: countError }, { data, error }] = await runQueries(null);
+        }
+      }
 
       if (error || countError) {
         clearRows(`오류: ${(error || countError).message}`);
@@ -405,8 +510,125 @@
 
       renderRows();
       renderPager();
-      if (state.totalCount === 0) $("recordsHint").textContent = "기록이 없습니다.";
+      if (state.totalCount === 0) $("recordsHint").textContent = "아직 저장된 기록이 없습니다. 채점 후 자동으로 저장됩니다.";
       else $("recordsHint").textContent = `총 ${state.totalCount}개 · ${state.page}/${state.totalPages} 페이지`;
+    }
+
+    function closeAttemptDetailModal() {
+      const modal = $("attemptDetailModal");
+      if (!modal) return;
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+
+    async function openAttemptDetailModal(row) {
+      if (!row) return;
+      const modal = $("attemptDetailModal");
+      if (!modal) return;
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+
+      $("detailCreatedAt").textContent = fmtDate(row.created_at);
+      $("detailExam").textContent = `${row.year} (${formLabel(row.form)})`;
+      $("detailSection").textContent = sectionLabel(row.section);
+      $("detailScore").textContent = `${row.raw_score ?? "-"} / ${row.official_total ?? "-"} · 표준 ${row.standard_score ?? "-"} · 백분위 ${row.percentile ?? "-"}`;
+      $("detailRange").textContent = "불러오는 중...";
+      $("detailWrongList").textContent = "불러오는 중...";
+
+      const accumLink = $("detailAccumLink");
+      if (accumLink) {
+        if (row.section === "lang" || row.section === "logic" || row.section === "both") {
+          accumLink.href = `/accumulated.html?year=${encodeURIComponent(row.year)}&section=${encodeURIComponent(row.section)}`;
+          accumLink.classList.remove("hidden");
+        } else {
+          accumLink.classList.add("hidden");
+        }
+      }
+
+      let itemData = null;
+      let itemError = null;
+      ({ data: itemData, error: itemError } = await sbClient
+        .from("exam_attempt_items")
+        .select("item_no,my_answer,is_correct,correct_answer")
+        .eq("attempt_id", row.id)
+        .order("item_no", { ascending: true }));
+
+      if (itemError && isMissingColumn(itemError, "correct_answer")) {
+        ({ data: itemData, error: itemError } = await sbClient
+          .from("exam_attempt_items")
+          .select("item_no,my_answer,is_correct")
+          .eq("attempt_id", row.id)
+          .order("item_no", { ascending: true }));
+      }
+
+      if (itemError) {
+        $("detailRange").textContent = "상세 문항 정보를 불러오지 못했습니다.";
+        $("detailWrongList").innerHTML = `<div class="text-rose-600">${escapeHtml(itemError.message || "알 수 없는 오류")}</div>`;
+        return;
+      }
+
+      const items = Array.isArray(itemData) ? itemData : [];
+      if (!items.length) {
+        $("detailRange").textContent = "문항 상세 데이터가 없습니다.";
+        $("detailWrongList").textContent = "오답 정보가 없습니다.";
+        return;
+      }
+
+      const numbers = items.map((it) => Number(it.item_no)).filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
+      const minQ = numbers[0];
+      const maxQ = numbers[numbers.length - 1];
+      $("detailRange").textContent = Number.isFinite(minQ) && Number.isFinite(maxQ)
+        ? `${String(minQ).padStart(3, "0")} ~ ${String(maxQ).padStart(3, "0")} (${items.length}문항)`
+        : `${items.length}문항`;
+
+      const wrongItems = items.filter((it) => it?.is_correct === false);
+      if (!wrongItems.length) {
+        $("detailWrongList").textContent = "오답이 없습니다.";
+        return;
+      }
+
+      $("detailWrongList").innerHTML = wrongItems.map((it) => {
+        const q = String(Number(it.item_no) || 0).padStart(3, "0");
+        const my = it.my_answer == null ? "-" : String(it.my_answer);
+        const correct = it.correct_answer == null ? "?" : String(it.correct_answer);
+        return `<div>${q}번 · 내 답 ${escapeHtml(my)} · 정답 ${escapeHtml(correct)}</div>`;
+      }).join("");
+    }
+
+    function exportCurrentRowsAsCsv() {
+      if (!state.rows.length) {
+        showRecordsToast("내보낼 기록이 없습니다.", "error");
+        return;
+      }
+      const header = ["id", "year", "section", "form", "raw_score", "official_total", "standard_score", "percentile", "created_at"];
+      const lines = [header.join(",")];
+      for (const row of state.rows) {
+        const values = [
+          row.id,
+          row.year,
+          sectionLabel(row.section),
+          formLabel(row.form),
+          row.raw_score,
+          row.official_total,
+          row.standard_score,
+          row.percentile,
+          row.created_at
+        ].map((value) => {
+          const text = String(value == null ? "" : value).replaceAll('"', '""');
+          return `"${text}"`;
+        });
+        lines.push(values.join(","));
+      }
+      const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `records_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showRecordsToast("CSV 파일을 내보냈습니다.");
     }
 
     async function deleteAttempt(attemptId) {
@@ -419,9 +641,10 @@
         .eq("id", attemptId)
         .eq("user_id", currentUser.id);
       if (error) {
-        alert(error.message || "삭제 실패");
+        showRecordsToast(error.message || "삭제 실패", "error");
         return;
       }
+      showRecordsToast("기록을 삭제했습니다.");
       await loadAttempts();
     }
 
@@ -435,6 +658,13 @@
     $("btnReload").addEventListener("click", async () => {
       state.page = 1;
       await loadAttempts();
+    });
+    $("btnExportCsv")?.addEventListener("click", exportCurrentRowsAsCsv);
+    ["yearSelect", "gradeSelect", "sectionSelect"].forEach((id) => {
+      $(id)?.addEventListener("change", async () => {
+        state.page = 1;
+        await loadAttempts();
+      });
     });
     $("recordsPager").addEventListener("click", async (e) => {
       const target = e.target;
@@ -454,12 +684,19 @@
         if (Number.isFinite(id)) deleteAttempt(id);
         return;
       }
-      const row = target.closest("tr[data-year][data-section]");
+      const row = target.closest("tr[data-id][data-year][data-section]");
       if (!(row instanceof HTMLElement)) return;
-      const y = row.dataset.year || $("yearSelect").value;
-      const s = row.dataset.section || $("sectionSelect").value;
-      if (!(s === "lang" || s === "logic" || s === "both")) return;
-      location.href = `/accumulated.html?year=${encodeURIComponent(y)}&section=${encodeURIComponent(s)}`;
+      const id = Number(row.dataset.id || "");
+      const current = state.rows.find((it) => Number(it.id) === id);
+      if (!current) return;
+      void openAttemptDetailModal(current);
+    });
+    $("btnCloseAttemptDetail")?.addEventListener("click", closeAttemptDetailModal);
+    $("attemptDetailModal")?.addEventListener("click", (event) => {
+      if (event.target === $("attemptDetailModal")) closeAttemptDetailModal();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeAttemptDetailModal();
     });
 
     (async function init() {

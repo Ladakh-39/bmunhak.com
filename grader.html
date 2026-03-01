@@ -10,6 +10,12 @@
         body { font-family: "SUIT Variable", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; background-color: #e5e7eb; }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .mono { font-variant-numeric: tabular-nums; }
+        .status-badge-idle { background:#e2e8f0; color:#0f172a; }
+        .status-badge-generating { background:#dbeafe; color:#1d4ed8; }
+        .status-badge-grading { background:#ede9fe; color:#6d28d9; }
+        .status-badge-saving { background:#fef3c7; color:#92400e; }
+        .status-badge-done { background:#dcfce7; color:#166534; }
+        .status-badge-error { background:#fee2e2; color:#991b1b; }
     </style>
 </head>
 <body class="min-h-screen bm-auth-pending">
@@ -59,11 +65,23 @@
 
 <main class="px-4 py-8">
     <section class="mx-auto max-w-[1180px] border border-slate-300 bg-white p-5 shadow-sm md:p-7">
-        <div class="mb-5 flex flex-wrap items-end gap-4">
+        <div class="mb-5 flex flex-wrap gap-4">
             <div>
                 <h1 class="text-3xl font-black text-slate-900 md:text-4xl">2027 마더텅 수능기출문제집<br />국어 독서 채점기</h1>
             </div>
-            <div id="statusMsg" class="ml-auto text-xs font-black text-slate-500"></div>
+            <div class="ml-auto w-full max-w-[440px] border border-slate-200 bg-slate-50 p-3">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-xs font-black text-slate-500">상태 패널</span>
+                    <span id="statusBadge" class="rounded-full px-2 py-1 text-xs font-black status-badge-idle">대기</span>
+                </div>
+                <div id="statusMsg" class="mt-2 text-xs font-black text-slate-600">범위를 설정하고 생성 버튼을 눌러주세요.</div>
+                <div class="mt-3 grid grid-cols-3 gap-2 text-[11px] font-black">
+                    <div class="rounded border border-green-200 bg-green-50 px-2 py-1 text-green-700">정답 O</div>
+                    <div class="rounded border border-red-200 bg-red-50 px-2 py-1 text-red-700">오답 X</div>
+                    <div class="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-amber-700">미입력 !</div>
+                </div>
+                <div id="saveMeta" class="mt-3 hidden text-xs font-black text-slate-700"></div>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -99,9 +117,13 @@
         </div>
 
         <p class="mt-4 text-xs font-bold text-slate-500">숫자 1~5 입력 시 자동 다음칸 이동, Enter 채점, 붙여넣기(예: 1234512...) 지원</p>
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+            <button id="btnToggleReveal" type="button" class="rounded border border-slate-300 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-100" disabled>정답 보기: OFF</button>
+            <button id="btnAutofillAnswers" type="button" class="rounded border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-black text-indigo-700 hover:bg-indigo-100" disabled>정답 자동 채우기</button>
+        </div>
         <div id="question-list" class="mt-5 grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10"></div>
 
-        <div id="summary" class="mt-5 hidden border border-blue-200 bg-blue-50 p-4 text-base font-black text-blue-900"></div>
+        <div id="summary" class="mt-5 hidden border border-blue-200 bg-blue-50 p-4"></div>
         <div id="wrongWrap" class="mt-4 hidden border border-slate-200 bg-slate-50 p-4">
             <h2 class="text-sm font-black text-slate-600">오답 목록</h2>
             <div id="wrongList" class="mt-2 text-sm font-bold text-slate-700"></div>
@@ -132,7 +154,9 @@
     const subjectSelect = document.getElementById('subjectSelect');
     const startQ = document.getElementById('startQ');
     const endQ = document.getElementById('endQ');
+    const statusBadge = document.getElementById('statusBadge');
     const statusMsg = document.getElementById('statusMsg');
+    const saveMeta = document.getElementById('saveMeta');
     const questionList = document.getElementById('question-list');
     const summary = document.getElementById('summary');
     const wrongWrap = document.getElementById('wrongWrap');
@@ -140,11 +164,15 @@
     const btnBuild = document.getElementById('btnBuild');
     const btnClear = document.getElementById('btnClear');
     const btnGrade = document.getElementById('btnGrade');
+    const btnToggleReveal = document.getElementById('btnToggleReveal');
+    const btnAutofillAnswers = document.getElementById('btnAutofillAnswers');
     const btnMenu = document.getElementById('btnMenu');
     const mobileMenu = document.getElementById('mobileMenu');
 
     let questionIds = [];
     let gradeBusy = false;
+    let revealAnswers = false;
+    let draftTimer = null;
 
     function getSubjectRange(subject) {
         const keys = Object.keys(db[subject] || {}).map(Number).sort((a, b) => a - b);
@@ -162,6 +190,142 @@
 
     function setStatus(message) {
         statusMsg.textContent = message;
+    }
+
+    function setStatusPhase(phase, message) {
+        const labels = {
+            idle: "대기",
+            generating: "생성중",
+            grading: "채점중",
+            saving: "저장중",
+            done: "완료",
+            error: "오류"
+        };
+        statusBadge.className = `rounded-full px-2 py-1 text-xs font-black status-badge-${phase}`;
+        statusBadge.textContent = labels[phase] || "대기";
+        if (typeof message === "string") setStatus(message);
+    }
+
+    function setSaveMeta({ attemptId, href }) {
+        if (!attemptId || !href) {
+            saveMeta.classList.add("hidden");
+            saveMeta.innerHTML = "";
+            return;
+        }
+        saveMeta.classList.remove("hidden");
+        saveMeta.innerHTML = `저장 완료 (시도 #${attemptId}) · <a href="${href}" class="underline">기록 보기</a>`;
+    }
+
+    function updateActionButtons() {
+        const hasQuestions = questionIds.length > 0;
+        btnGrade.disabled = !hasQuestions || gradeBusy;
+        btnToggleReveal.disabled = !hasQuestions;
+        btnAutofillAnswers.disabled = !hasQuestions;
+    }
+
+    function getDraftKey(subject, start, end) {
+        return `mt:v1:${subject}:${start}-${end}`;
+    }
+
+    function getCurrentDraftKey() {
+        if (!questionIds.length) return "";
+        return getDraftKey(subjectSelect.value, questionIds[0], questionIds[questionIds.length - 1]);
+    }
+
+    function saveDraftNow() {
+        if (!questionIds.length) return;
+        const key = getCurrentDraftKey();
+        if (!key) return;
+        const payload = {
+            answers: buildAnswerPayload(),
+            updated_at: Date.now()
+        };
+        try {
+            localStorage.setItem(key, JSON.stringify(payload));
+        } catch (_a) {
+            // ignore localStorage quota/privacy errors
+        }
+    }
+
+    function queueDraftSave() {
+        if (draftTimer) clearTimeout(draftTimer);
+        draftTimer = setTimeout(() => {
+            saveDraftNow();
+        }, 300);
+    }
+
+    function clearCurrentDraft() {
+        const key = getCurrentDraftKey();
+        if (!key) return;
+        try {
+            localStorage.removeItem(key);
+        } catch (_a) {
+            // ignore localStorage errors
+        }
+    }
+
+    function toggleRevealLabels(forceState) {
+        revealAnswers = typeof forceState === "boolean" ? forceState : !revealAnswers;
+        btnToggleReveal.textContent = revealAnswers ? "정답 보기: ON" : "정답 보기: OFF";
+        for (const qNum of questionIds) {
+            const label = document.getElementById(`ans-${qNum}`);
+            if (!label) continue;
+            label.classList.toggle("hidden", !revealAnswers);
+        }
+    }
+
+    function restoreDraftForCurrentRange() {
+        if (!questionIds.length) return 0;
+        const key = getCurrentDraftKey();
+        if (!key) return 0;
+        let restored = 0;
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) return 0;
+            const parsed = JSON.parse(raw);
+            const answers = parsed && typeof parsed === "object" ? parsed.answers || {} : {};
+            for (const qNum of questionIds) {
+                const input = document.getElementById(`q-${qNum}`);
+                const mark = document.getElementById(`res-${qNum}`);
+                if (!input || !mark) continue;
+                const value = Number.parseInt(String(answers[qNum] || ""), 10);
+                if (!Number.isFinite(value) || value < 1 || value > 5) continue;
+                input.value = String(value);
+                clearVisualState(input, mark);
+                restored += 1;
+            }
+        } catch (_a) {
+            return 0;
+        }
+        return restored;
+    }
+
+    function renderSummaryCards({ total, correct, wrong, unanswered, attemptId, recordHref }) {
+        summary.innerHTML = `
+            <div class="grid grid-cols-2 gap-2 md:grid-cols-4">
+                <div class="rounded border border-slate-200 bg-white p-3">
+                    <div class="text-xs font-black text-slate-500">총문항</div>
+                    <div class="mono mt-1 text-2xl font-black text-slate-900">${total}</div>
+                </div>
+                <div class="rounded border border-green-200 bg-green-50 p-3">
+                    <div class="text-xs font-black text-green-700">정답</div>
+                    <div class="mono mt-1 text-2xl font-black text-green-700">${correct}</div>
+                </div>
+                <div class="rounded border border-red-200 bg-red-50 p-3">
+                    <div class="text-xs font-black text-red-700">오답</div>
+                    <div class="mono mt-1 text-2xl font-black text-red-700">${wrong}</div>
+                </div>
+                <div class="rounded border border-amber-200 bg-amber-50 p-3">
+                    <div class="text-xs font-black text-amber-700">미입력</div>
+                    <div class="mono mt-1 text-2xl font-black text-amber-700">${unanswered}</div>
+                </div>
+            </div>
+            <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+                <div class="text-sm font-black text-slate-700">${attemptId ? `저장 완료 (시도 #${attemptId})` : "로컬 채점 완료"}</div>
+                <a href="${recordHref}" class="rounded bg-slate-900 px-3 py-2 text-xs font-black text-white hover:bg-black">기록 보기</a>
+            </div>
+        `;
+        summary.classList.remove("hidden");
     }
 
     async function getAuthedUser() {
@@ -231,8 +395,10 @@
         wrongList.innerHTML = "";
         summary.classList.add('hidden');
         wrongWrap.classList.add('hidden');
-        btnGrade.disabled = true;
-        setStatus(message);
+        setSaveMeta({});
+        toggleRevealLabels(false);
+        updateActionButtons();
+        setStatusPhase("idle", message);
     }
 
     function clampRange(start, end, min, max) {
@@ -274,6 +440,7 @@
     function clearVisualState(input, mark) {
         input.classList.remove("border-green-500", "bg-green-50", "border-red-500", "bg-red-50", "border-amber-500", "bg-amber-50");
         input.classList.add("border-slate-200");
+        if (!mark) return;
         mark.textContent = "·";
         mark.className = "mt-1 text-center text-xs font-black text-slate-300";
     }
@@ -282,17 +449,20 @@
         input.classList.remove("border-slate-200", "border-green-500", "bg-green-50", "border-red-500", "bg-red-50", "border-amber-500", "bg-amber-50");
         if (state === "O") {
             input.classList.add("border-green-500", "bg-green-50");
+            if (!mark) return;
             mark.textContent = "O";
             mark.className = "mt-1 text-center text-xs font-black text-green-600";
             return;
         }
         if (state === "X") {
             input.classList.add("border-red-500", "bg-red-50");
+            if (!mark) return;
             mark.textContent = "X";
             mark.className = "mt-1 text-center text-xs font-black text-red-600";
             return;
         }
         input.classList.add("border-amber-500", "bg-amber-50");
+        if (!mark) return;
         mark.textContent = "!";
         mark.className = "mt-1 text-center text-xs font-black text-amber-500";
     }
@@ -306,14 +476,18 @@
 
         if (value === "") {
             clearVisualState(input, mark);
+            queueDraftSave();
             return;
         }
 
         if (!/^[1-5]$/.test(value)) {
             input.value = "";
             clearVisualState(input, mark);
+            queueDraftSave();
             return;
         }
+        clearVisualState(input, mark);
+        queueDraftSave();
         focusNext(pos);
     }
 
@@ -367,11 +541,14 @@
             clearVisualState(target, mark);
             pos += 1;
         }
+        queueDraftSave();
         focusPos(Math.min(pos, questionIds.length - 1));
     }
 
     function createInputs() {
+        setStatusPhase("generating", "문항 생성 중...");
         const subject = subjectSelect.value;
+        const answerDB = db[subject] || {};
         const { min, max } = getSubjectRange(subject);
         const start = parseInt(startQ.value, 10);
         const end = parseInt(endQ.value, 10);
@@ -393,9 +570,12 @@
         summary.classList.add("hidden");
         wrongWrap.classList.add("hidden");
         wrongList.innerHTML = "";
+        setSaveMeta({});
+        toggleRevealLabels(false);
 
         for (let q = range.start, pos = 0; q <= range.end; q += 1, pos += 1) {
             questionIds.push(q);
+            const correctValue = answerDB[q];
             const box = document.createElement("div");
             box.className = "border border-slate-200 bg-white p-2";
             box.innerHTML = `
@@ -403,6 +583,7 @@
                 <input id="q-${q}" data-qnum="${q}" data-pos="${pos}" type="text" inputmode="numeric" maxlength="1"
                     class="mono mt-1 w-full border-2 border-slate-200 bg-slate-50 p-2 text-center text-lg font-black outline-none focus:border-blue-500" />
                 <div id="res-${q}" class="mt-1 text-center text-xs font-black text-slate-300">·</div>
+                <div id="ans-${q}" class="mt-1 hidden text-center text-[11px] font-black text-slate-400">정답: ${correctValue || "-"}</div>
             `;
 
             const input = box.querySelector("input");
@@ -414,8 +595,13 @@
             questionList.appendChild(box);
         }
 
-        btnGrade.disabled = false;
-        setStatus(`${range.start}번부터 ${range.end}번까지 생성 완료`);
+        const restored = restoreDraftForCurrentRange();
+        updateActionButtons();
+        if (restored > 0) {
+            setStatusPhase("idle", `${range.start}~${range.end} 생성 완료 · ${restored}개 복원`);
+        } else {
+            setStatusPhase("idle", `${range.start}번부터 ${range.end}번까지 생성 완료`);
+        }
         focusPos(0);
     }
 
@@ -427,65 +613,97 @@
             input.value = "";
             clearVisualState(input, mark);
         }
+        clearCurrentDraft();
         summary.classList.add("hidden");
         wrongWrap.classList.add("hidden");
         wrongList.innerHTML = "";
-        setStatus("입력을 초기화했습니다.");
+        setSaveMeta({});
+        setStatusPhase("idle", "입력을 초기화했습니다.");
+        focusPos(0);
+    }
+
+    function autofillCorrectAnswers() {
+        if (!questionIds.length) return;
+        if (!confirm("현재 입력을 정답으로 자동 채우시겠습니까? (연습용)")) return;
+        const answerDB = db[subjectSelect.value] || {};
+        for (const qNum of questionIds) {
+            const input = document.getElementById(`q-${qNum}`);
+            const mark = document.getElementById(`res-${qNum}`);
+            if (!input || !mark) continue;
+            const correctValue = answerDB[qNum];
+            input.value = correctValue ? String(correctValue) : "";
+            clearVisualState(input, mark);
+        }
+        saveDraftNow();
+        setStatusPhase("idle", "정답 자동 채우기를 적용했습니다.");
         focusPos(0);
     }
 
     async function gradeExam() {
         if (!questionIds.length || gradeBusy) return;
-
-        const auth = await getAuthedUser();
-        if (!auth) return;
-        const { user, accessToken } = auth;
-
-        const subject = subjectSelect.value;
-        const answerDB = db[subject] || {};
-        let correct = 0;
-        let attempted = 0;
-        let unanswered = 0;
-        const wrongRows = [];
-
-        for (const qNum of questionIds) {
-            const input = document.getElementById(`q-${qNum}`);
-            const mark = document.getElementById(`res-${qNum}`);
-            const userValue = parseInt(input.value, 10);
-            const correctValue = answerDB[qNum];
-
-            if (!userValue) {
-                unanswered += 1;
-                applyResultState(input, mark, "!");
-                continue;
-            }
-
-            attempted += 1;
-            if (userValue === correctValue) {
-                correct += 1;
-                applyResultState(input, mark, "O");
-            } else {
-                applyResultState(input, mark, "X");
-                wrongRows.push(`${String(qNum).padStart(3, "0")}번: 내 답 ${userValue} / 정답 ${correctValue}`);
-            }
-        }
-
-        const wrong = attempted - correct;
-        summary.textContent = `${attempted}문제 채점 · ${correct}정답 · ${wrong}오답 · ${unanswered}미입력`;
-        summary.classList.remove("hidden");
-        if (wrongRows.length) {
-            wrongList.innerHTML = wrongRows.map((row) => `<div>${row}</div>`).join("");
-            wrongWrap.classList.remove("hidden");
-        } else {
-            wrongWrap.classList.add("hidden");
-            wrongList.innerHTML = "";
-        }
-
         gradeBusy = true;
-        btnGrade.disabled = true;
-        setStatus("서버 채점/저장 중...");
+        updateActionButtons();
+        setStatusPhase("grading", "로컬 채점 중...");
+        setSaveMeta({});
 
         try {
+            const auth = await getAuthedUser();
+            if (!auth) {
+                setStatusPhase("idle", "로그인이 필요합니다.");
+                return;
+            }
+            const { user, accessToken } = auth;
+
+            const subject = subjectSelect.value;
+            const answerDB = db[subject] || {};
+            let correct = 0;
+            let attempted = 0;
+            let unanswered = 0;
+            const wrongRows = [];
+
+            for (const qNum of questionIds) {
+                const input = document.getElementById(`q-${qNum}`);
+                const mark = document.getElementById(`res-${qNum}`);
+                const userValue = parseInt(input.value, 10);
+                const correctValue = answerDB[qNum];
+
+                if (!userValue) {
+                    unanswered += 1;
+                    applyResultState(input, mark, "!");
+                    continue;
+                }
+
+                attempted += 1;
+                if (userValue === correctValue) {
+                    correct += 1;
+                    applyResultState(input, mark, "O");
+                } else {
+                    applyResultState(input, mark, "X");
+                    wrongRows.push(`${String(qNum).padStart(3, "0")}번: 내 답 ${userValue} / 정답 ${correctValue}`);
+                }
+            }
+
+            const wrong = attempted - correct;
+            const recordHref = `/records.html?year=${MOTHERTUNG_YEAR}&section=${encodeURIComponent(subject)}`;
+            renderSummaryCards({
+                total: questionIds.length,
+                correct,
+                wrong,
+                unanswered,
+                attemptId: null,
+                recordHref
+            });
+            if (wrongRows.length) {
+                wrongList.innerHTML = wrongRows.map((row) => `<div>${row}</div>`).join("");
+                wrongWrap.classList.remove("hidden");
+            } else {
+                wrongWrap.classList.add("hidden");
+                wrongList.innerHTML = "";
+            }
+            saveDraftNow();
+            summary.scrollIntoView({ behavior: "smooth", block: "start" });
+
+            setStatusPhase("saving", "서버 저장 중...");
             const payload = await submitServerGrade({
                 year: MOTHERTUNG_YEAR,
                 subject,
@@ -503,28 +721,35 @@
             const serverWrong = Number(s.wrong || 0);
             const serverUnanswered = Number(s.unanswered || 0);
             const attemptId = payload.attempt_id;
-            const recordHref = `/records.html?year=${MOTHERTUNG_YEAR}&section=${encodeURIComponent(subject)}`;
-            summary.innerHTML = `
-                ${serverAttempted}문제 채점 · ${serverCorrect}정답 · ${serverWrong}오답 · ${serverUnanswered}미입력 (총 ${total}문항)
-                <div class="mt-1 text-sm">
-                    저장 완료 (시도 #${attemptId})
-                    <a href="${recordHref}" class="ml-2 underline">기록 보기</a>
-                </div>
-            `;
-            setStatus("채점 및 저장 완료");
+            renderSummaryCards({
+                total: total || questionIds.length,
+                correct: serverCorrect,
+                wrong: serverWrong,
+                unanswered: serverUnanswered,
+                attemptId,
+                recordHref
+            });
+            setSaveMeta({ attemptId, href: recordHref });
+            summary.scrollIntoView({ behavior: "smooth", block: "start" });
+            setStatusPhase("done", `채점/저장 완료 · 채점 ${serverAttempted}문항`);
         } catch (error) {
             console.error("[grader] grade-mothertung failed:", error);
-            setStatus("로컬 채점 완료 · 서버 저장 실패");
+            setStatusPhase("error", "로컬 채점 완료 · 서버 저장 실패");
             alert(`서버 채점/저장에 실패했습니다: ${String(error?.message || error)}`);
         } finally {
             gradeBusy = false;
-            btnGrade.disabled = false;
+            updateActionButtons();
         }
     }
 
     btnBuild.addEventListener("click", createInputs);
     btnClear.addEventListener("click", clearInputs);
     btnGrade.addEventListener("click", gradeExam);
+    btnToggleReveal.addEventListener("click", () => {
+        toggleRevealLabels();
+        setStatusPhase("idle", revealAnswers ? "정답 보기 ON" : "정답 보기 OFF");
+    });
+    btnAutofillAnswers.addEventListener("click", autofillCorrectAnswers);
     subjectSelect.addEventListener("change", () => {
         setDefaultRange();
         resetAll("과목이 바뀌어 범위를 다시 맞췄습니다.");
@@ -538,6 +763,7 @@
 
     setDefaultRange();
     resetAll();
+    updateActionButtons();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/app.js?v=20260228-0846"></script>
