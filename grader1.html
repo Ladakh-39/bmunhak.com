@@ -135,6 +135,7 @@
       for (let y = 2026; y >= 1994; y -= 1) arr.push(String(y));
       return arr;
     })();
+    const MOTHERTUNG_SECTIONS = new Set(["humanities", "social", "science", "tech", "art", "mixed", "mock1", "mock2"]);
 
     yearSelect.innerHTML = YEARS.map((y) => `<option value="${y}">${y === "all" ? "전체" : y}</option>`).join("");
 
@@ -148,13 +149,16 @@
       location.href = `/grader2.html?${params.toString()}`;
     });
 
-    sectionSelect.addEventListener("change", () => {
+    function syncOpenButtonUi() {
       const s = sectionSelect.value;
-      const isMothertung = ["humanities", "social", "science", "tech", "art", "mixed", "mock1", "mock2"].includes(s);
+      const isMothertung = MOTHERTUNG_SECTIONS.has(s);
+      btnOpenMothertung.textContent = isMothertung ? "마더텅 채점하기" : "수능 및 모의고사 채점하기";
       guideMsg.textContent = isMothertung
         ? "선택한 마더텅 영역으로 이동합니다."
         : "현재 마더텅 채점기는 마더텅 영역만 지원합니다. 이동 후 기본 과목으로 열립니다.";
-    });
+    }
+    sectionSelect.addEventListener("change", syncOpenButtonUi);
+    syncOpenButtonUi();
 
     btnMenu.addEventListener("click", () => {
       mobileMenu.classList.toggle("hidden");
