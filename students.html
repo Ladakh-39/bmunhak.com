@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>학생관리 | bmunhak.com</title>
+  <link rel="icon" href="/favicon.ico" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.css" rel="stylesheet" />
+  <style>
+    body { font-family: "SUIT Variable", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+    .mono { font-variant-numeric: tabular-nums; }
+    .hc-shell { max-width: 1440px; margin: 0 auto; padding: 0 16px; }
+  </style>
+</head>
+<body class="min-h-screen bg-white bm-auth-pending">
+  <header class="border-b border-slate-400 bg-[#7092BE] text-white overflow-hidden">
+    <div class="hc-shell">
+      <div class="flex h-16 items-center gap-4 overflow-hidden">
+        <div class="flex items-center min-w-[160px]">
+          <a href="/" class="block">
+            <span class="block text-[34px] leading-none font-black tracking-tight text-[#33506a]">bmunhak</span>
+          </a>
+        </div>
+        <nav class="hidden md:flex flex-1 items-center justify-center gap-5 lg:gap-7 text-[18px] lg:text-[21px] leading-none min-w-0 flex-nowrap whitespace-nowrap">
+          <span class="room-secret-slot inline-flex items-center justify-center w-[104px] whitespace-nowrap">
+            <a id="room-of-requirement" href="/board.html?b=room" class="room-secret-prehide leading-none transition-colors whitespace-nowrap" style="visibility:hidden;pointer-events:none;">필요의 방</a>
+          </span>
+          <a href="/board.html?b=notice" class="leading-none hover:underline whitespace-nowrap">공지사항</a>
+          <a href="/board.html?b=intro" class="leading-none hover:underline whitespace-nowrap">가입인사</a>
+          <a href="/board.html?b=free" class="leading-none hover:underline whitespace-nowrap">자유게시판</a>
+          <a href="/board.html?b=qna" class="leading-none hover:underline whitespace-nowrap">질문</a>
+          <a href="/grader.html" class="leading-none hover:underline whitespace-nowrap">채점하기</a>
+          <a href="/my.html" class="leading-none hover:underline whitespace-nowrap">My Page</a>
+        </nav>
+        <div class="hidden md:flex items-center justify-end gap-3 min-w-[140px] whitespace-nowrap">
+          <button id="btnSignupTop" type="button" class="hover:underline whitespace-nowrap">회원가입</button>
+          <button id="btnLoginTop" type="button" class="hover:underline whitespace-nowrap">로그인</button>
+          <span id="welcomeText" class="hidden text-sm font-bold whitespace-nowrap"></span>
+          <button id="btnLogoutTop" type="button" class="hidden hover:underline whitespace-nowrap">로그아웃</button>
+        </div>
+        <button id="btnMobileMenu" class="md:hidden px-3 py-2 rounded-lg hover:bg-white/10" type="button" aria-label="menu">☰</button>
+      </div>
+      <div id="mobileMenu" class="md:hidden hidden pb-3">
+        <div class="flex flex-col gap-2 text-base font-bold">
+          <a id="room-of-requirement-mobile" href="/board.html?b=room" class="room-secret-prehide hidden px-3 py-2 rounded-lg transition-colors whitespace-nowrap" style="visibility:hidden;pointer-events:none;">필요의 방</a>
+          <a href="/board.html?b=notice" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">공지사항</a>
+          <a href="/board.html?b=intro" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">가입인사</a>
+          <a href="/board.html?b=free" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">자유게시판</a>
+          <a href="/board.html?b=qna" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">질문</a>
+          <a href="/grader.html" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">채점하기</a>
+          <a href="/my.html" class="px-3 py-2 rounded-lg hover:bg-white/10 whitespace-nowrap">My Page</a>
+          <div class="flex items-center gap-3 px-3 pt-2">
+            <button id="btnSignupMobile" class="hover:underline whitespace-nowrap" type="button">회원가입</button>
+            <button id="btnLoginMobile" class="hover:underline whitespace-nowrap" type="button">로그인</button>
+            <button id="btnLogoutMobile" class="hidden hover:underline whitespace-nowrap" type="button">로그아웃</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main id="studentsMain" class="hc-shell py-6 hidden">
+    <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 class="text-[26px] leading-[1.05] font-extrabold tracking-tight text-slate-900">학생관리</h1>
+          <p class="mt-2 text-sm font-bold text-slate-500">학생 목록 조회/수정/삭제 및 user_id 매핑을 관리합니다.</p>
+        </div>
+        <button id="btnCreateStudent" class="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-black text-white hover:opacity-90" type="button">새 학생 추가</button>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[1fr_140px_120px_100px]">
+        <input id="qName" type="text" placeholder="학생 이름 검색" class="h-12 rounded-2xl border-2 border-slate-200 bg-slate-50 px-3 text-sm font-black outline-none focus:border-blue-500" />
+        <select id="filterLevel" class="h-12 rounded-2xl border-2 border-slate-200 bg-slate-50 px-3 text-sm font-black outline-none focus:border-blue-500">
+          <option value="all">전체 학교급</option>
+          <option value="중등">중등</option>
+          <option value="고등">고등</option>
+        </select>
+        <select id="filterYear" class="h-12 rounded-2xl border-2 border-slate-200 bg-slate-50 px-3 text-sm font-black outline-none focus:border-blue-500">
+          <option value="all">전체 학년</option>
+          <option value="1">1학년</option>
+          <option value="2">2학년</option>
+          <option value="3">3학년</option>
+        </select>
+        <button id="btnSearch" class="h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 hover:bg-slate-100" type="button">검색</button>
+      </div>
+
+      <div id="stateCard" class="mt-4 hidden rounded-2xl border p-4"></div>
+
+      <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200">
+        <table class="min-w-full text-sm">
+          <thead class="border-b border-slate-200 bg-slate-50">
+            <tr class="font-black text-slate-500">
+              <th class="px-3 py-3 text-left w-[70px]">ID</th>
+              <th class="px-3 py-3 text-left w-[90px]">학교급</th>
+              <th class="px-3 py-3 text-left w-[90px]">학년</th>
+              <th class="px-3 py-3 text-left">이름</th>
+              <th class="px-3 py-3 text-left">user_id</th>
+              <th class="px-3 py-3 text-left w-[100px]">상태</th>
+              <th class="px-3 py-3 text-left w-[260px]">액션</th>
+            </tr>
+          </thead>
+          <tbody id="studentsTbody" class="divide-y divide-slate-200"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div>
+        <h2 class="text-[22px] leading-[1.05] font-extrabold tracking-tight text-slate-900">기록관리</h2>
+        <p class="mt-2 text-sm font-bold text-slate-500">학생을 선택하면 기록(exam_attempts)을 조회하고 soft delete(is_deleted=true) 처리할 수 있습니다.</p>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto] md:items-end">
+        <div>
+          <label for="attemptStudentSelect" class="mb-1 ml-1 block text-xs font-black text-slate-400">학생 선택</label>
+          <select id="attemptStudentSelect" class="h-12 w-full rounded-2xl border-2 border-slate-200 bg-slate-50 px-3 text-sm font-black outline-none focus:border-blue-500">
+            <option value="">학생을 선택하세요</option>
+          </select>
+        </div>
+        <label class="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 px-3 text-xs font-black text-slate-600">
+          <input id="attemptIncludeDeleted" type="checkbox" class="h-4 w-4" />
+          삭제 포함
+        </label>
+        <button id="btnLoadStudentAttempts" class="h-12 rounded-2xl bg-slate-900 px-4 text-sm font-black text-white hover:opacity-90" type="button">기록 조회</button>
+      </div>
+
+      <div id="attemptManageStateCard" class="mt-4 hidden rounded-2xl border p-4"></div>
+
+      <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200">
+        <table class="min-w-full text-sm">
+          <thead class="border-b border-slate-200 bg-slate-50">
+            <tr class="font-black text-slate-500">
+              <th class="px-3 py-3 text-left w-[80px]">기록ID</th>
+              <th class="px-3 py-3 text-left w-[100px]">채점일</th>
+              <th class="px-3 py-3 text-left">영역</th>
+              <th class="px-3 py-3 text-left w-[120px]">시험</th>
+              <th class="px-3 py-3 text-left w-[110px]">점수</th>
+              <th class="px-3 py-3 text-left w-[90px]">상태</th>
+              <th class="px-3 py-3 text-left w-[130px]">액션</th>
+            </tr>
+          </thead>
+          <tbody id="managedAttemptsTbody" class="divide-y divide-slate-200">
+            <tr><td colspan="7" class="px-3 py-4 text-sm font-black text-slate-500">학생을 선택해 주세요.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div id="studentsToast" class="fixed bottom-6 left-1/2 z-[80] hidden -translate-x-1/2 items-center justify-center px-4 py-2 text-sm font-black"></div>
+
+  <div id="studentModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-lg rounded-2xl border border-slate-300 bg-white p-5 shadow-xl">
+      <div class="flex items-center justify-between">
+        <h3 id="studentModalTitle" class="text-lg font-black text-slate-900">새 학생 추가</h3>
+        <button id="btnCloseStudentModal" class="rounded border border-slate-300 px-3 py-1 text-sm font-black text-slate-700 hover:bg-slate-100" type="button">닫기</button>
+      </div>
+      <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div>
+          <label for="modalGradeLevel" class="mb-1 ml-1 block text-xs font-black text-slate-400">학교급</label>
+          <select id="modalGradeLevel" class="h-11 w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-3 text-sm font-black outline-none focus:border-blue-500">
+            <option value="중등">중등</option>
+            <option value="고등">고등</option>
+          </select>
+        </div>
+        <div>
+          <label for="modalGradeYear" class="mb-1 ml-1 block text-xs font-black text-slate-400">학년</label>
+          <select id="modalGradeYear" class="h-11 w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-3 text-sm font-black outline-none focus:border-blue-500">
+            <option value="1">1학년</option>
+            <option value="2">2학년</option>
+            <option value="3">3학년</option>
+          </select>
+        </div>
+        <div class="sm:col-span-1">
+          <label for="modalName" class="mb-1 ml-1 block text-xs font-black text-slate-400">학생 이름</label>
+          <input id="modalName" type="text" class="h-11 w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-3 text-sm font-black outline-none focus:border-blue-500" />
+        </div>
+      </div>
+      <div class="mt-4 flex justify-end gap-2">
+        <button id="btnSaveStudent" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-black text-white hover:opacity-90" type="button">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="linkModal" class="fixed inset-0 z-[75] hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-2xl rounded-2xl border border-slate-300 bg-white p-5 shadow-xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-black text-slate-900">학생 user_id 매핑</h3>
+        <button id="btnCloseLinkModal" class="rounded border border-slate-300 px-3 py-1 text-sm font-black text-slate-700 hover:bg-slate-100" type="button">닫기</button>
+      </div>
+      <div class="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-black text-slate-700">
+        <div>대상 학생: <span id="linkStudentLabel" class="text-slate-900">-</span></div>
+        <div class="mt-1 mono text-xs text-slate-500">현재 user_id: <span id="linkCurrentUserId">-</span></div>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[1fr_100px]">
+        <input id="profileSearchQ" type="text" placeholder="닉네임/이메일 prefix 검색" class="h-11 rounded-xl border-2 border-slate-200 bg-slate-50 px-3 text-sm font-black outline-none focus:border-blue-500" />
+        <button id="btnSearchProfiles" class="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 hover:bg-slate-100" type="button">검색</button>
+      </div>
+
+      <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200">
+        <table class="min-w-full text-xs">
+          <thead class="border-b border-slate-200 bg-slate-50">
+            <tr class="font-black text-slate-500">
+              <th class="px-3 py-2 text-left">nickname</th>
+              <th class="px-3 py-2 text-left">email_hint</th>
+              <th class="px-3 py-2 text-left">user_id</th>
+              <th class="px-3 py-2 text-left w-[80px]">선택</th>
+            </tr>
+          </thead>
+          <tbody id="profilesTbody" class="divide-y divide-slate-200"></tbody>
+        </table>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[1fr_150px_120px]">
+        <input id="directUserId" type="text" placeholder="UUID 직접 입력" class="h-11 rounded-xl border-2 border-slate-200 bg-slate-50 px-3 text-sm font-black outline-none focus:border-blue-500 mono" />
+        <button id="btnLinkByInput" class="h-11 rounded-xl bg-blue-600 px-3 text-sm font-black text-white hover:bg-blue-700" type="button">직접 연결</button>
+        <button id="btnUnlink" class="h-11 rounded-xl border border-rose-300 bg-rose-50 px-3 text-sm font-black text-rose-700 hover:bg-rose-100" type="button">연결 해제</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js?v=20260228-0846"></script>
+  <script>
+    const APP = window.JungdapApp;
+    const sbClient = APP.getSb();
+    const $ = (id) => document.getElementById(id);
+    const STAFF_ROLES = new Set(["admin", "assistant"]);
+
+    const state = {
+      role: "",
+      rows: [],
+      editingId: null,
+      linkTarget: null,
+      selectedProfileUserId: "",
+      managedStudentId: "",
+      managedAttempts: [],
+    };
+
+    function escapeHtml(value) {
+      return String(value == null ? "" : value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function showToast(message, kind = "ok") {
+      const toast = $("studentsToast");
+      if (!toast) return;
+      toast.className = "fixed bottom-6 left-1/2 z-[80] flex -translate-x-1/2 items-center justify-center px-4 py-2 text-sm font-black";
+      toast.classList.add(kind === "error" ? "bg-rose-700" : "bg-slate-900", "text-white");
+      toast.textContent = String(message || "");
+      toast.classList.remove("hidden");
+      setTimeout(() => toast.classList.add("hidden"), 1800);
+    }
+
+    function showState(kind, message) {
+      const card = $("stateCard");
+      if (!card) return;
+      card.className = "mt-4 rounded-2xl border p-4";
+      if (kind === "loading") card.classList.add("border-blue-200", "bg-blue-50", "text-blue-900");
+      else if (kind === "error") card.classList.add("border-rose-200", "bg-rose-50", "text-rose-800");
+      else card.classList.add("border-slate-200", "bg-slate-50", "text-slate-700");
+      card.innerHTML = `<div class="text-sm font-black">${escapeHtml(message || "")}</div>`;
+      card.classList.remove("hidden");
+    }
+
+    function hideState() {
+      const card = $("stateCard");
+      if (!card) return;
+      card.className = "mt-4 hidden rounded-2xl border p-4";
+      card.innerHTML = "";
+    }
+
+    function showAttemptState(kind, message) {
+      const card = $("attemptManageStateCard");
+      if (!card) return;
+      card.className = "mt-4 rounded-2xl border p-4";
+      if (kind === "loading") card.classList.add("border-blue-200", "bg-blue-50", "text-blue-900");
+      else if (kind === "error") card.classList.add("border-rose-200", "bg-rose-50", "text-rose-800");
+      else card.classList.add("border-slate-200", "bg-slate-50", "text-slate-700");
+      card.innerHTML = `<div class="text-sm font-black">${escapeHtml(message || "")}</div>`;
+      card.classList.remove("hidden");
+    }
+
+    function hideAttemptState() {
+      const card = $("attemptManageStateCard");
+      if (!card) return;
+      card.className = "mt-4 hidden rounded-2xl border p-4";
+      card.innerHTML = "";
+    }
+
+    function normalizeRole(value) {
+      return String(value || "").trim().toLowerCase();
+    }
+
+    function sectionLabel(section) {
+      if (section === "korean") return "국어";
+      if (section === "math") return "수학";
+      if (section === "english") return "영어";
+      if (section === "history") return "한국사";
+      if (section === "social_studies") return "사회탐구";
+      if (section === "science_studies") return "과학탐구";
+      if (section === "lang") return "언어이해";
+      if (section === "humanities") return "마더텅 Ⅰ. 인문";
+      if (section === "social") return "마더텅 Ⅱ. 사회";
+      if (section === "science") return "마더텅 Ⅲ. 과학";
+      if (section === "tech") return "마더텅 Ⅳ. 기술";
+      if (section === "art") return "마더텅 Ⅴ. 예술";
+      if (section === "mixed") return "마더텅 Ⅵ. 복합 지문";
+      if (section === "mock1") return "마더텅 미니모의 1회";
+      if (section === "mock2") return "마더텅 미니모의 2회";
+      return "-";
+    }
+
+    function formLabel(form) {
+      if (form === "na" || form == null || form === "") return "-";
+      return form === "even" ? "짝수형" : "홀수형";
+    }
+
+    function fmtDate(ts) {
+      const d = new Date(ts);
+      if (!Number.isFinite(d.getTime())) return "-";
+      const yy = String(d.getFullYear()).slice(2);
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${yy}/${mm}/${dd}`;
+    }
+
+    function getStudentById(studentId) {
+      const sid = Number(studentId || "");
+      if (!Number.isFinite(sid)) return null;
+      return state.rows.find((row) => Number(row?.id) === sid) || null;
+    }
+
+    async function getAuthed() {
+      const [{ data: sessionData }, { data: userData }] = await Promise.all([
+        sbClient.auth.getSession(),
+        sbClient.auth.getUser(),
+      ]);
+      const session = sessionData?.session || null;
+      const user = userData?.user || null;
+      const accessToken = session?.access_token || "";
+      return { session, user, accessToken };
+    }
+
+    async function getMyRole(userId) {
+      if (!userId) return "";
+      const { data } = await sbClient
+        .from("profiles")
+        .select("role")
+        .eq("user_id", userId)
+        .maybeSingle();
+      return normalizeRole(data?.role);
+    }
+
+    async function callAdminApi(path, { method = "GET", query = null, body = null } = {}) {
+      const auth = await getAuthed();
+      if (!auth?.accessToken) throw new Error("UNAUTHORIZED");
+      const qs = query ? new URLSearchParams(query).toString() : "";
+      const url = qs ? `${path}?${qs}` : path;
+      const res = await fetch(url, {
+        method,
+        headers: {
+          authorization: `Bearer ${auth.accessToken}`,
+          ...(body ? { "content-type": "application/json" } : {}),
+        },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok || !payload?.ok) {
+        throw new Error(String(payload?.detail || payload?.error || `HTTP_${res.status}`));
+      }
+      return payload;
+    }
+
+    function renderRows() {
+      const tbody = $("studentsTbody");
+      tbody.innerHTML = "";
+      if (!state.rows.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="px-3 py-4 text-sm font-black text-slate-500">조회 결과가 없습니다.</td></tr>';
+        return;
+      }
+      for (const row of state.rows) {
+        const status = row.user_id ? "연결" : "미연결";
+        const statusClass = row.user_id ? "text-emerald-700" : "text-amber-700";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="px-3 py-2 mono font-black text-slate-700">${row.id}</td>
+          <td class="px-3 py-2 font-black text-slate-700">${escapeHtml(row.grade_level)}</td>
+          <td class="px-3 py-2 font-black text-slate-700">${escapeHtml(String(row.grade_year))}</td>
+          <td class="px-3 py-2 font-black text-slate-800">${escapeHtml(row.name)}</td>
+          <td class="px-3 py-2 mono text-xs font-bold text-slate-600">${escapeHtml(row.user_id || "-")}</td>
+          <td class="px-3 py-2 font-black ${statusClass}">${status}</td>
+          <td class="px-3 py-2">
+            <div class="flex flex-wrap gap-1">
+              <button type="button" data-act="edit" data-id="${row.id}" class="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-black text-slate-700 hover:bg-slate-100">수정</button>
+              <button type="button" data-act="map" data-id="${row.id}" class="rounded border border-blue-300 bg-blue-50 px-2 py-1 text-xs font-black text-blue-700 hover:bg-blue-100">매핑</button>
+              <button type="button" data-act="delete" data-id="${row.id}" class="rounded border border-rose-300 bg-rose-50 px-2 py-1 text-xs font-black text-rose-700 hover:bg-rose-100">삭제</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function rebuildAttemptStudentSelect() {
+      const select = $("attemptStudentSelect");
+      if (!select) return;
+      const previous = String(state.managedStudentId || "");
+      const options = ['<option value="">학생을 선택하세요</option>'];
+      for (const row of state.rows) {
+        const statusLabel = row.user_id ? "" : " (미연결)";
+        options.push(`<option value="${row.id}">${escapeHtml(row.grade_level)} ${escapeHtml(String(row.grade_year))}학년 · ${escapeHtml(row.name)}${statusLabel}</option>`);
+      }
+      select.innerHTML = options.join("");
+      if (previous && state.rows.some((row) => String(row.id) === previous)) {
+        select.value = previous;
+      } else {
+        state.managedStudentId = "";
+        select.value = "";
+      }
+    }
+
+    function renderManagedAttempts() {
+      const tbody = $("managedAttemptsTbody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      if (!state.managedStudentId) {
+        tbody.innerHTML = '<tr><td colspan="7" class="px-3 py-4 text-sm font-black text-slate-500">학생을 선택해 주세요.</td></tr>';
+        return;
+      }
+      if (!state.managedAttempts.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="px-3 py-4 text-sm font-black text-slate-500">조회된 기록이 없습니다.</td></tr>';
+        return;
+      }
+      for (const row of state.managedAttempts) {
+        const tr = document.createElement("tr");
+        const section = sectionLabel(row.section);
+        const score = `${row.raw_score ?? "-"} / ${row.official_total ?? "-"}`;
+        const deleted = row.is_deleted === true;
+        tr.innerHTML = `
+          <td class="px-3 py-2 mono font-black text-slate-700">${escapeHtml(String(row.id))}</td>
+          <td class="px-3 py-2 mono font-black text-slate-600">${escapeHtml(fmtDate(row.created_at))}</td>
+          <td class="px-3 py-2 font-black text-slate-800">${escapeHtml(section)}</td>
+          <td class="px-3 py-2 font-black text-slate-700">${escapeHtml(String(row.year ?? "-"))} (${escapeHtml(formLabel(row.form))})</td>
+          <td class="px-3 py-2 mono font-black text-slate-700">${escapeHtml(score)}</td>
+          <td class="px-3 py-2 font-black ${deleted ? "text-rose-700" : "text-emerald-700"}">${deleted ? "삭제됨" : "정상"}</td>
+          <td class="px-3 py-2">
+            ${deleted ? '<span class="text-xs font-black text-slate-400">-</span>' : `<button type="button" data-soft-delete-attempt-id="${row.id}" class="rounded border border-rose-300 bg-rose-50 px-2 py-1 text-xs font-black text-rose-700 hover:bg-rose-100">삭제(soft)</button>`}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    async function loadManagedAttempts() {
+      const select = $("attemptStudentSelect");
+      const includeDeleted = $("attemptIncludeDeleted")?.checked === true;
+      const studentId = String(select?.value || "");
+      state.managedStudentId = studentId;
+      state.managedAttempts = [];
+      renderManagedAttempts();
+      if (!studentId) {
+        hideAttemptState();
+        return;
+      }
+
+      const student = getStudentById(studentId);
+      if (!student) {
+        showAttemptState("error", "선택한 학생 정보를 찾지 못했습니다.");
+        return;
+      }
+      if (!student.user_id) {
+        showAttemptState("error", "선택한 학생은 user_id가 연결되지 않아 기록을 조회할 수 없습니다.");
+        return;
+      }
+
+      showAttemptState("loading", "학생 기록을 조회하는 중...");
+      try {
+        const payload = await callAdminApi("/.netlify/functions/admin-list-student-attempts", {
+          query: {
+            student_id: String(student.id),
+            include_deleted: includeDeleted ? "1" : "0",
+          },
+        });
+        state.managedAttempts = Array.isArray(payload.attempts) ? payload.attempts : [];
+        renderManagedAttempts();
+        if (!state.managedAttempts.length) {
+          showAttemptState("empty", "조회된 기록이 없습니다.");
+        } else {
+          hideAttemptState();
+        }
+      } catch (error) {
+        state.managedAttempts = [];
+        renderManagedAttempts();
+        showAttemptState("error", `기록 조회 실패: ${String(error?.message || error)}`);
+      }
+    }
+
+    async function softDeleteManagedAttempt(attemptId) {
+      const id = Number(attemptId || "");
+      if (!Number.isFinite(id)) return;
+      if (!confirm("선택한 기록을 soft delete 처리할까요?")) return;
+      try {
+        await callAdminApi("/.netlify/functions/admin-soft-delete-attempt", {
+          method: "POST",
+          body: { attempt_id: id },
+        });
+        showToast("기록을 삭제(soft) 처리했습니다.");
+        await loadManagedAttempts();
+      } catch (error) {
+        showToast(`기록 삭제 실패: ${String(error?.message || error)}`, "error");
+      }
+    }
+
+    async function loadStudents() {
+      showState("loading", "학생 목록을 불러오는 중...");
+      try {
+        const q = $("qName").value.trim();
+        const level = $("filterLevel").value;
+        const year = $("filterYear").value;
+        const payload = await callAdminApi("/.netlify/functions/admin-list-students", {
+          query: {
+            ...(q ? { q } : {}),
+            ...(level !== "all" ? { grade_level: level } : {}),
+            ...(year !== "all" ? { grade_year: year } : {}),
+            limit: "200",
+          },
+        });
+        state.rows = Array.isArray(payload.students) ? payload.students : [];
+        renderRows();
+        rebuildAttemptStudentSelect();
+        renderManagedAttempts();
+        if (!state.rows.length) showState("empty", "조회 결과가 없습니다.");
+        else hideState();
+      } catch (error) {
+        state.rows = [];
+        renderRows();
+        rebuildAttemptStudentSelect();
+        renderManagedAttempts();
+        showState("error", `조회 실패: ${String(error?.message || error)}`);
+      }
+    }
+
+    function openStudentModal(row = null) {
+      state.editingId = row ? Number(row.id) : null;
+      $("studentModalTitle").textContent = row ? "학생 정보 수정" : "새 학생 추가";
+      $("modalGradeLevel").value = row?.grade_level || "중등";
+      $("modalGradeYear").value = String(row?.grade_year || "1");
+      $("modalName").value = row?.name || "";
+      $("studentModal").classList.remove("hidden");
+      $("studentModal").classList.add("flex");
+      $("modalName").focus();
+    }
+
+    function closeStudentModal() {
+      $("studentModal").classList.add("hidden");
+      $("studentModal").classList.remove("flex");
+      state.editingId = null;
+    }
+
+    async function saveStudent() {
+      const grade_level = $("modalGradeLevel").value;
+      const grade_year = Number($("modalGradeYear").value);
+      const name = $("modalName").value.trim();
+      if (!name) {
+        showToast("학생 이름을 입력하세요.", "error");
+        return;
+      }
+      try {
+        if (state.editingId) {
+          await callAdminApi("/.netlify/functions/admin-update-student", {
+            method: "POST",
+            body: { id: state.editingId, grade_level, grade_year, name },
+          });
+          showToast("학생 정보를 수정했습니다.");
+        } else {
+          await callAdminApi("/.netlify/functions/admin-create-student", {
+            method: "POST",
+            body: { grade_level, grade_year, name },
+          });
+          showToast("학생을 추가했습니다.");
+        }
+        closeStudentModal();
+        await loadStudents();
+      } catch (error) {
+        showToast(`저장 실패: ${String(error?.message || error)}`, "error");
+      }
+    }
+
+    function openLinkModal(row) {
+      state.linkTarget = row || null;
+      state.selectedProfileUserId = "";
+      $("linkStudentLabel").textContent = row ? `${row.name} (${row.grade_level} ${row.grade_year}학년)` : "-";
+      $("linkCurrentUserId").textContent = row?.user_id || "-";
+      $("profileSearchQ").value = "";
+      $("directUserId").value = "";
+      $("profilesTbody").innerHTML = '<tr><td colspan="4" class="px-3 py-3 text-xs font-black text-slate-500">검색어를 입력해 주세요.</td></tr>';
+      $("linkModal").classList.remove("hidden");
+      $("linkModal").classList.add("flex");
+    }
+
+    function closeLinkModal() {
+      $("linkModal").classList.add("hidden");
+      $("linkModal").classList.remove("flex");
+      state.linkTarget = null;
+      state.selectedProfileUserId = "";
+    }
+
+    async function searchProfiles() {
+      const q = $("profileSearchQ").value.trim();
+      const tbody = $("profilesTbody");
+      if (!q) {
+        tbody.innerHTML = '<tr><td colspan="4" class="px-3 py-3 text-xs font-black text-slate-500">검색어를 입력해 주세요.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = '<tr><td colspan="4" class="px-3 py-3 text-xs font-black text-slate-500">검색 중...</td></tr>';
+      try {
+        const payload = await callAdminApi("/.netlify/functions/admin-search-profiles", {
+          query: { q, limit: "20" },
+        });
+        const rows = Array.isArray(payload.profiles) ? payload.profiles : [];
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="4" class="px-3 py-3 text-xs font-black text-slate-500">검색 결과가 없습니다.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = rows.map((row) => `
+          <tr>
+            <td class="px-3 py-2 text-xs font-black text-slate-700">${escapeHtml(row.nickname || "-")}</td>
+            <td class="px-3 py-2 mono text-xs font-bold text-slate-600">${escapeHtml(row.email_hint || "-")}</td>
+            <td class="px-3 py-2 mono text-xs font-bold text-slate-600">${escapeHtml(row.user_id)}</td>
+            <td class="px-3 py-2">
+              <button type="button" data-user-id="${row.user_id}" class="rounded border border-blue-300 bg-blue-50 px-2 py-1 text-xs font-black text-blue-700 hover:bg-blue-100">선택</button>
+            </td>
+          </tr>
+        `).join("");
+      } catch (error) {
+        tbody.innerHTML = `<tr><td colspan="4" class="px-3 py-3 text-xs font-black text-rose-700">${escapeHtml(String(error?.message || error))}</td></tr>`;
+      }
+    }
+
+    async function linkStudent(userId) {
+      if (!state.linkTarget) return;
+      try {
+        await callAdminApi("/.netlify/functions/admin-link-student-user", {
+          method: "POST",
+          body: { id: state.linkTarget.id, user_id: userId },
+        });
+        showToast("user_id를 연결했습니다.");
+        closeLinkModal();
+        await loadStudents();
+      } catch (error) {
+        showToast(`연결 실패: ${String(error?.message || error)}`, "error");
+      }
+    }
+
+    async function unlinkStudent() {
+      if (!state.linkTarget) return;
+      if (!confirm("현재 연결을 해제할까요?")) return;
+      try {
+        await callAdminApi("/.netlify/functions/admin-unlink-student-user", {
+          method: "POST",
+          body: { id: state.linkTarget.id },
+        });
+        showToast("연결을 해제했습니다.");
+        closeLinkModal();
+        await loadStudents();
+      } catch (error) {
+        showToast(`해제 실패: ${String(error?.message || error)}`, "error");
+      }
+    }
+
+    async function deleteStudent(id) {
+      if (!confirm("학생 레코드를 삭제할까요? 이 작업은 되돌릴 수 없습니다.")) return;
+      try {
+        await callAdminApi("/.netlify/functions/admin-delete-student", {
+          method: "POST",
+          body: { id },
+        });
+        showToast("학생을 삭제했습니다.");
+        await loadStudents();
+      } catch (error) {
+        showToast(`삭제 실패: ${String(error?.message || error)}`, "error");
+      }
+    }
+
+    async function ensureAccess() {
+      const auth = await getAuthed();
+      if (!auth?.session || !auth?.user) {
+        APP.openAuth("login");
+        return false;
+      }
+      const role = await getMyRole(auth.user.id);
+      state.role = role;
+      if (!STAFF_ROLES.has(role)) {
+        alert("학생관리 페이지는 관리자/조교만 접근할 수 있습니다.");
+        location.href = "/";
+        return false;
+      }
+      return true;
+    }
+
+    $("btnSearch").addEventListener("click", () => { void loadStudents(); });
+    $("qName").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") void loadStudents();
+    });
+    $("filterLevel").addEventListener("change", () => { void loadStudents(); });
+    $("filterYear").addEventListener("change", () => { void loadStudents(); });
+    $("btnCreateStudent").addEventListener("click", () => openStudentModal());
+    $("btnCloseStudentModal").addEventListener("click", closeStudentModal);
+    $("btnSaveStudent").addEventListener("click", () => { void saveStudent(); });
+    $("studentModal").addEventListener("click", (event) => {
+      if (event.target === $("studentModal")) closeStudentModal();
+    });
+
+    $("btnCloseLinkModal").addEventListener("click", closeLinkModal);
+    $("btnSearchProfiles").addEventListener("click", () => { void searchProfiles(); });
+    $("profileSearchQ").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") void searchProfiles();
+    });
+    $("profilesTbody").addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const btn = target.closest("button[data-user-id]");
+      if (!(btn instanceof HTMLButtonElement)) return;
+      const userId = String(btn.dataset.userId || "").trim();
+      if (!userId) return;
+      state.selectedProfileUserId = userId;
+      $("directUserId").value = userId;
+      showToast("선택한 user_id를 입력칸에 반영했습니다.");
+    });
+    $("btnLinkByInput").addEventListener("click", () => {
+      const userId = $("directUserId").value.trim();
+      if (!userId) {
+        showToast("user_id를 입력하세요.", "error");
+        return;
+      }
+      void linkStudent(userId);
+    });
+    $("btnUnlink").addEventListener("click", () => { void unlinkStudent(); });
+
+    $("studentsTbody").addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const btn = target.closest("button[data-act][data-id]");
+      if (!(btn instanceof HTMLButtonElement)) return;
+      const id = Number(btn.dataset.id || "");
+      if (!Number.isFinite(id)) return;
+      const row = state.rows.find((it) => Number(it.id) === id);
+      if (!row) return;
+      const act = btn.dataset.act;
+      if (act === "edit") openStudentModal(row);
+      else if (act === "map") openLinkModal(row);
+      else if (act === "delete") void deleteStudent(id);
+    });
+    $("btnLoadStudentAttempts").addEventListener("click", () => { void loadManagedAttempts(); });
+    $("attemptStudentSelect").addEventListener("change", () => { void loadManagedAttempts(); });
+    $("attemptIncludeDeleted").addEventListener("change", () => { void loadManagedAttempts(); });
+    $("managedAttemptsTbody").addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const btn = target.closest("button[data-soft-delete-attempt-id]");
+      if (!(btn instanceof HTMLButtonElement)) return;
+      const id = Number(btn.dataset.softDeleteAttemptId || "");
+      if (!Number.isFinite(id)) return;
+      void softDeleteManagedAttempt(id);
+    });
+
+    (async function init() {
+      APP.setupMobileMenu("btnMobileMenu", "mobileMenu");
+      APP.setupAuthModal();
+      APP.setupSecretRoomHover({
+        elementId: "room-of-requirement",
+        hiddenColor: "#7092BE",
+        hoverColor: "#7496C2",
+        openColor: "#FFFFFF",
+        requiredCount: 3,
+        withinMs: 1500,
+        resetMs: 1500,
+      });
+
+      const allowed = await ensureAccess();
+      if (!allowed) return;
+
+      $("studentsMain").classList.remove("hidden");
+      await loadStudents();
+      renderManagedAttempts();
+
+      sbClient.auth.onAuthStateChange(async (_event, session) => {
+        if (!session?.user) {
+          alert("로그인이 필요합니다.");
+          APP.openAuth("login");
+          return;
+        }
+        const role = await getMyRole(session.user.id);
+        if (!STAFF_ROLES.has(role)) {
+          alert("권한이 없습니다.");
+          location.href = "/";
+          return;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

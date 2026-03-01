@@ -163,7 +163,7 @@
               <th class="px-3 py-3 text-left">시험</th>
               <th class="px-3 py-3 text-left w-[120px]">점수</th>
               <th class="px-3 py-3 text-left w-[100px]">채점일</th>
-              <th class="px-3 py-3 text-center w-[90px]">삭제</th>
+              <th id="attemptDeleteHeader" class="px-3 py-3 text-center w-[90px] hidden">삭제</th>
             </tr>
           </thead>
           <tbody id="attemptTbody" class="divide-y divide-slate-200"></tbody>
@@ -277,10 +277,19 @@
     })();
     const PAGE_SIZE = 10;
     const GROUP_SIZE = 5;
+    const STAFF_ROLES = new Set(["admin", "assistant"]);
 
     let currentUser = null;
     let profileNickname = "";
-    const state = { page: 1, totalPages: 1, totalCount: 0, rows: [], rangesByAttempt: {} };
+    const state = {
+      page: 1,
+      totalPages: 1,
+      totalCount: 0,
+      rows: [],
+      rangesByAttempt: {},
+      role: "",
+      canDeleteRecords: false
+    };
     let toastTimer = null;
     const MOTHERTUNG_SECTIONS = new Set(["humanities", "social", "science", "tech", "art", "mixed", "mock1", "mock2"]);
 
@@ -383,6 +392,13 @@
       return String(data?.nickname || "").trim();
     }
 
+    async function getProfileRoleByUserId(uid) {
+      if (!uid) return "";
+      const { data, error } = await sbClient.from("profiles").select("role").eq("user_id", uid).maybeSingle();
+      if (error) return "";
+      return String(data?.role || "").trim().toLowerCase();
+    }
+
     async function getMyDisplayName() {
       if (!currentUser) return "";
       if (profileNickname) return profileNickname;
@@ -397,6 +413,11 @@
       $("recordsHint").textContent = message || "";
     }
 
+    function syncDeleteUi() {
+      const header = $("attemptDeleteHeader");
+      if (header) header.classList.toggle("hidden", !state.canDeleteRecords);
+    }
+
     async function syncAuthUI(session) {
       currentUser = session?.user || null;
       const signedIn = Boolean(currentUser);
@@ -406,7 +427,13 @@
       $("btnSignupTop").classList.toggle("hidden", signedIn);
       if (signedIn) {
         profileNickname = await getProfileNicknameByUserId(currentUser.id);
+        state.role = await getProfileRoleByUserId(currentUser.id);
+        state.canDeleteRecords = STAFF_ROLES.has(state.role);
+      } else {
+        state.role = "";
+        state.canDeleteRecords = false;
       }
+      syncDeleteUi();
     }
 
     function fillYearOptions() {
@@ -470,7 +497,8 @@
       const tbody = $("attemptTbody");
       tbody.innerHTML = "";
       if (state.rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-4 text-sm font-black text-slate-500">아직 저장된 기록이 없습니다. 채점 후 자동으로 저장됩니다.</td></tr>';
+        const colspan = state.canDeleteRecords ? 6 : 5;
+        tbody.innerHTML = `<tr><td colspan="${colspan}" class="px-3 py-4 text-sm font-black text-slate-500">아직 저장된 기록이 없습니다. 채점 후 자동으로 저장됩니다.</td></tr>`;
         return;
       }
       const offset = (state.page - 1) * PAGE_SIZE;
@@ -488,9 +516,7 @@
           <td class="px-3 py-2 font-black text-slate-800">${row.year} (${formLabel(row.form)})</td>
           <td class="px-3 py-2 font-black mono text-slate-700">${row.raw_score ?? "-"} / ${row.official_total ?? "-"}</td>
           <td class="px-3 py-2 font-black mono text-slate-500">${fmtDate(row.created_at)}</td>
-          <td class="px-3 py-2 text-center">
-            <button type="button" data-delete-id="${row.id}" class="px-2 py-1 border border-rose-200 bg-rose-50 text-rose-700 text-xs font-black hover:bg-rose-100">삭제</button>
-          </td>
+          ${state.canDeleteRecords ? `<td class="px-3 py-2 text-center"><button type="button" data-delete-id="${row.id}" class="px-2 py-1 border border-rose-200 bg-rose-50 text-rose-700 text-xs font-black hover:bg-rose-100">삭제</button></td>` : ""}
         `;
         tbody.appendChild(tr);
       }
@@ -764,6 +790,7 @@
 
     async function deleteAttempt(attemptId) {
       if (!currentUser) return APP.openAuth("login");
+      if (!state.canDeleteRecords) return;
       if (!confirm("이 기록을 삭제하면 복구할 수 없습니다. 정말 삭제할까요?")) return;
 
       const { error } = await sbClient
@@ -809,7 +836,7 @@
       const target = e.target;
       if (!(target instanceof HTMLElement)) return;
       const deleteBtn = target.closest("button[data-delete-id]");
-      if (deleteBtn instanceof HTMLButtonElement) {
+      if (deleteBtn instanceof HTMLButtonElement && state.canDeleteRecords) {
         e.stopPropagation();
         const id = Number(deleteBtn.dataset.deleteId || "");
         if (Number.isFinite(id)) deleteAttempt(id);

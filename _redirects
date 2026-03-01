@@ -7,6 +7,7 @@
 /post          /post.html          200
 /my            /my.html            200
 /profile       /profile.html       200
+/students      /students.html      200
 /records       /records.html       200
 /write         /write.html         200
 /accumulated   /accumulated.html   200

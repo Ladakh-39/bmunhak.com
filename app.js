@@ -1824,14 +1824,65 @@
     return "";
   }
 
+  async function bmGetProfileRole(userId) {
+    var uid = toStringSafe(userId).trim();
+    if (!uid) return "";
+    try {
+      var sb = getSb();
+      var _a = await sb.from("profiles").select("role").eq("user_id", uid).maybeSingle(), data = _a.data, error = _a.error;
+      if (error) return "";
+      return toStringSafe(data && data.role).trim().toLowerCase();
+    } catch (_a) {
+      return "";
+    }
+  }
+
+  function bmEnsureAdminStudentsLinks() {
+    var topNode = bmById("adminStudentsLinkTop");
+    if (!topNode) {
+      var header = document.querySelector("header");
+      var topNav = header && header.querySelector("nav");
+      var myTop = topNav && topNav.querySelector('a[href="/my.html"]');
+      if (myTop && myTop.parentNode) {
+        var createdTop = document.createElement("a");
+        createdTop.id = "adminStudentsLinkTop";
+        createdTop.href = "/students.html";
+        createdTop.className = toStringSafe(myTop.className).trim() + " hidden";
+        createdTop.textContent = "학생관리";
+        myTop.parentNode.insertBefore(createdTop, myTop.nextSibling);
+      }
+    }
+
+    var mobileNode = bmById("adminStudentsLinkMobile");
+    if (!mobileNode) {
+      var mobileWrap = bmById("mobileMenu");
+      var myMobile = mobileWrap && mobileWrap.querySelector('a[href="/my.html"]');
+      if (myMobile && myMobile.parentNode) {
+        var createdMobile = document.createElement("a");
+        createdMobile.id = "adminStudentsLinkMobile";
+        createdMobile.href = "/students.html";
+        createdMobile.className = toStringSafe(myMobile.className).trim() + " hidden";
+        createdMobile.textContent = "학생관리";
+        myMobile.parentNode.insertBefore(createdMobile, myMobile.nextSibling);
+      }
+    }
+  }
+
   async function bmSetHeaderUI(session) {
     var token = __bmHeaderUiToken + 1;
     __bmHeaderUiToken = token;
     var signedIn = Boolean(session && session.user);
     var welcomeText = bmById("welcomeText");
     var displayName = "";
+    var role = "";
     if (signedIn) {
-      displayName = await bmResolveDisplayName(session);
+      var userId = toStringSafe(session.user && session.user.id).trim();
+      var _a = await Promise.all([
+        bmResolveDisplayName(session),
+        bmGetProfileRole(userId)
+      ]), resolvedName = _a[0], resolvedRole = _a[1];
+      displayName = resolvedName;
+      role = resolvedRole;
       if (token !== __bmHeaderUiToken) return;
     }
 
@@ -1865,6 +1916,10 @@
     toggle("btnLoginMobile", !signedIn);
     toggle("btnSignupMobile", !signedIn);
     toggle("btnLogoutMobile", signedIn);
+    bmEnsureAdminStudentsLinks();
+    var showStudentsAdminLink = signedIn && (role === "admin" || role === "assistant");
+    toggle("adminStudentsLinkTop", showStudentsAdminLink);
+    toggle("adminStudentsLinkMobile", showStudentsAdminLink);
     try { document.body.classList.remove("bm-auth-pending"); } catch (_a) {}
   }
 

@@ -328,6 +328,8 @@ export async function handler(event) {
       item_no: it.item_no,
       my_answer: it.my_answer,
       is_correct: it.is_correct,
+      correct_answer: it.correct_answer,
+      p_correct: it.p_correct,
     }));
 
     if (payloadItems.length) {
