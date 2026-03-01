@@ -124,6 +124,34 @@
             </div>
         </div>
 
+        <div id="taSelectorWrap" class="mt-4 hidden border border-indigo-200 bg-indigo-50 p-3">
+            <div class="text-xs font-black text-indigo-700">조교 대리 저장 대상 선택</div>
+            <div class="mt-2 grid grid-cols-1 gap-2 md:grid-cols-3">
+                <div>
+                    <label for="taLevelSelect" class="mb-1 ml-1 block text-[11px] font-black text-indigo-600">학교급</label>
+                    <select id="taLevelSelect" class="h-11 w-full border border-indigo-200 bg-white px-3 text-sm font-black outline-none focus:border-indigo-500">
+                        <option value="중등">중등</option>
+                        <option value="고등">고등</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="taGradeYearSelect" class="mb-1 ml-1 block text-[11px] font-black text-indigo-600">학년</label>
+                    <select id="taGradeYearSelect" class="h-11 w-full border border-indigo-200 bg-white px-3 text-sm font-black outline-none focus:border-indigo-500">
+                        <option value="1">1학년</option>
+                        <option value="2">2학년</option>
+                        <option value="3">3학년</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="taStudentSelect" class="mb-1 ml-1 block text-[11px] font-black text-indigo-600">학생명</label>
+                    <select id="taStudentSelect" class="h-11 w-full border border-indigo-200 bg-white px-3 text-sm font-black outline-none focus:border-indigo-500">
+                        <option value="">학생을 선택하세요</option>
+                    </select>
+                </div>
+            </div>
+            <div id="taSelectorMsg" class="mt-2 text-[11px] font-black text-indigo-700">학생 목록을 불러오는 중입니다.</div>
+        </div>
+
         <p class="mt-4 text-xs font-bold text-slate-500">숫자 1~5 입력 시 자동 다음칸 이동, Enter 채점, 붙여넣기(예: 1234512...) 지원</p>
         <div id="question-list" class="mt-5 grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10"></div>
 
@@ -172,10 +200,19 @@
     const btnGrade = document.getElementById('btnGrade');
     const btnMenu = document.getElementById('btnMenu');
     const mobileMenu = document.getElementById('mobileMenu');
+    const taSelectorWrap = document.getElementById("taSelectorWrap");
+    const taLevelSelect = document.getElementById("taLevelSelect");
+    const taGradeYearSelect = document.getElementById("taGradeYearSelect");
+    const taStudentSelect = document.getElementById("taStudentSelect");
+    const taSelectorMsg = document.getElementById("taSelectorMsg");
 
     let questionIds = [];
     let gradeBusy = false;
     let draftTimer = null;
+    let taModeEnabled = false;
+    let taRole = "";
+
+    const TA_ROLES = new Set(["assistant", "admin"]);
 
     function getSubjectRange(subject) {
         const range = SUBJECT_RANGES[subject];
@@ -215,6 +252,43 @@
         }
         saveMeta.classList.remove("hidden");
         saveMeta.innerHTML = `저장 완료 (시도 #${attemptId}) · <a href="${href}" class="underline">기록 보기</a>`;
+    }
+
+    function normalizeRole(value) {
+        return String(value || "").trim().toLowerCase();
+    }
+
+    function setTaVisibility(show) {
+        if (!taSelectorWrap) return;
+        taSelectorWrap.classList.toggle("hidden", !show);
+    }
+
+    function setTaMessage(message, isError = false) {
+        if (!taSelectorMsg) return;
+        taSelectorMsg.textContent = String(message || "");
+        taSelectorMsg.className = `mt-2 text-[11px] font-black ${isError ? "text-rose-700" : "text-indigo-700"}`;
+    }
+
+    function resetTaStudentOptions(message = "학생 목록을 불러오는 중입니다.") {
+        if (!taStudentSelect) return;
+        taStudentSelect.innerHTML = '<option value="">학생을 선택하세요</option>';
+        taStudentSelect.disabled = true;
+        setTaMessage(message);
+    }
+
+    function renderTaStudents(students) {
+        if (!taStudentSelect) return;
+        const options = ['<option value="">학생을 선택하세요</option>'];
+        for (const row of students) {
+            const id = Number.parseInt(String(row?.id ?? ""), 10);
+            if (!Number.isFinite(id) || id <= 0) continue;
+            const name = String(row?.name || "").trim() || `학생#${id}`;
+            const linked = String(row?.user_id || "").trim();
+            const suffix = linked ? "" : " (미연결)";
+            options.push(`<option value="${id}" data-user-id="${linked}">${name}${suffix}</option>`);
+        }
+        taStudentSelect.innerHTML = options.join("");
+        taStudentSelect.disabled = false;
     }
 
     function updateActionButtons() {
@@ -577,11 +651,12 @@
         initScratchSurfaces(wrongList);
     }
 
-    async function getAuthedUser() {
+    async function getAuthedUser(options = {}) {
+        const passive = Boolean(options?.passive);
         const app = window.JungdapApp || null;
         const sbClient = typeof app?.getSb === "function" ? app.getSb() : null;
         if (!sbClient?.auth) {
-            alert("로그인 모듈이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.");
+            if (!passive) alert("로그인 모듈이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.");
             return null;
         }
 
@@ -593,15 +668,100 @@
         const accessToken = sessionData?.session?.access_token || "";
         const user = userData?.user || null;
         if (userError || !user || !accessToken) {
-            if (typeof app?.openAuth === "function") app.openAuth("login");
-            setStatus("로그인이 필요합니다.");
+            if (!passive) {
+                if (typeof app?.openAuth === "function") app.openAuth("login");
+                setStatus("로그인이 필요합니다.");
+            }
             return null;
         }
 
-        return { user, accessToken };
+        return { user, accessToken, sbClient };
     }
 
-    async function submitServerGrade({ year, subject, startQ, endQ, answers, userId, accessToken }) {
+    async function getMyRole(sbClient, userId) {
+        if (!sbClient || !userId) return "";
+        const { data, error } = await sbClient
+            .from("profiles")
+            .select("role")
+            .eq("user_id", userId)
+            .maybeSingle();
+        if (error) return "";
+        return normalizeRole(data?.role);
+    }
+
+    async function fetchStudentsByGrade({ accessToken, gradeLevel, gradeYear }) {
+        const query = new URLSearchParams({
+            grade_level: String(gradeLevel || ""),
+            grade_year: String(gradeYear || "")
+        });
+        const res = await fetch(`/.netlify/functions/list-students?${query.toString()}`, {
+            method: "GET",
+            headers: {
+                authorization: `Bearer ${accessToken}`,
+                "cache-control": "no-store"
+            }
+        });
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok || !payload?.ok) {
+            const message = payload?.detail || payload?.error || `HTTP_${res.status}`;
+            throw new Error(String(message));
+        }
+        return Array.isArray(payload.students) ? payload.students : [];
+    }
+
+    async function loadTaStudents(accessToken) {
+        if (!taModeEnabled) return;
+        if (!accessToken) return;
+        resetTaStudentOptions("학생 목록을 불러오는 중입니다.");
+        try {
+            const rows = await fetchStudentsByGrade({
+                accessToken,
+                gradeLevel: taLevelSelect?.value || "중등",
+                gradeYear: taGradeYearSelect?.value || "1",
+            });
+            renderTaStudents(rows);
+            const linked = rows.filter((row) => String(row?.user_id || "").trim()).length;
+            const unlinked = rows.length - linked;
+            setTaMessage(`학생 ${rows.length}명 로드 (연결 ${linked} / 미연결 ${unlinked})`);
+        } catch (error) {
+            resetTaStudentOptions("학생 목록을 불러오지 못했습니다.");
+            setTaMessage(`학생 목록 조회 실패: ${String(error?.message || error)}`, true);
+        }
+    }
+
+    async function refreshTaMode() {
+        taModeEnabled = false;
+        taRole = "";
+        setTaVisibility(false);
+        if (taStudentSelect) {
+            taStudentSelect.innerHTML = '<option value="">학생을 선택하세요</option>';
+            taStudentSelect.disabled = true;
+        }
+
+        const auth = await getAuthedUser({ passive: true });
+        if (!auth?.user || !auth?.accessToken || !auth?.sbClient) return;
+
+        const role = await getMyRole(auth.sbClient, auth.user.id);
+        if (!TA_ROLES.has(role)) return;
+
+        taModeEnabled = true;
+        taRole = role;
+        setTaVisibility(true);
+        setTaMessage(`조교 모드(${role}) · 학생을 선택하면 해당 계정으로 저장됩니다.`);
+        await loadTaStudents(auth.accessToken);
+    }
+
+    function getSelectedStudent() {
+        if (!taStudentSelect) return null;
+        const id = Number.parseInt(String(taStudentSelect.value || ""), 10);
+        if (!Number.isFinite(id) || id <= 0) return null;
+        const selectedOption = taStudentSelect.selectedOptions && taStudentSelect.selectedOptions[0];
+        const name = selectedOption ? String(selectedOption.textContent || "").trim() : "";
+        const userId = selectedOption ? String(selectedOption.dataset.userId || "").trim() : "";
+        return { id, name, userId };
+    }
+
+    async function submitServerGrade({ year, subject, startQ, endQ, answers, accessToken }) {
         const res = await fetch("/.netlify/functions/grade-mothertung", {
             method: "POST",
             headers: {
@@ -613,8 +773,32 @@
                 subject,
                 startQ,
                 endQ,
+                answers
+            })
+        });
+
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok || !payload?.ok) {
+            const message = payload?.detail || payload?.error || `HTTP_${res.status}`;
+            throw new Error(String(message));
+        }
+        return payload;
+    }
+
+    async function submitStudentGrade({ year, subject, startQ, endQ, answers, targetStudentId, accessToken }) {
+        const res = await fetch("/.netlify/functions/save-student-attempt", {
+            method: "POST",
+            headers: {
+                "content-type": "application/json",
+                authorization: `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({
+                year,
+                subject,
+                startQ,
+                endQ,
                 answers,
-                user_id: userId
+                target_student_id: targetStudentId
             })
         });
 
@@ -869,18 +1053,30 @@
                 setStatusPhase("idle", "로그인이 필요합니다.");
                 return;
             }
-            const { user, accessToken } = auth;
+            const { accessToken } = auth;
             const subject = subjectSelect.value;
+            const target = taModeEnabled ? getSelectedStudent() : null;
+            if (taModeEnabled && !target) {
+                setStatusPhase("idle", "학생을 선택한 뒤 채점해주세요.");
+                return;
+            }
 
-            const payload = await submitServerGrade({
+            const basePayload = {
                 year: MOTHERTUNG_YEAR,
                 subject,
                 startQ: questionIds[0],
                 endQ: questionIds[questionIds.length - 1],
                 answers: buildAnswerPayload(),
-                userId: user.id,
                 accessToken
-            });
+            };
+            const payload = taModeEnabled
+                ? await submitStudentGrade({
+                    ...basePayload,
+                    targetStudentId: target.id
+                })
+                : await submitServerGrade({
+                    ...basePayload
+                });
 
             const items = Array.isArray(payload.items) ? payload.items : [];
             const itemMap = new Map();
@@ -960,7 +1156,11 @@
             saveDraftNow();
             setSaveMeta({ attemptId, href: recordHref });
             summary.scrollIntoView({ behavior: "smooth", block: "start" });
-            setStatusPhase("done", `채점/저장 완료 · 채점 ${attempted}문항`);
+            if (taModeEnabled && target) {
+                setStatusPhase("done", `채점/저장 완료 · ${target.name} 학생 계정으로 저장됨`);
+            } else {
+                setStatusPhase("done", `채점/저장 완료 · 채점 ${attempted}문항`);
+            }
         } catch (error) {
             console.error("[grader] grade-mothertung failed:", error);
             setStatusPhase("error", "채점/저장 실패");
@@ -984,6 +1184,22 @@
     btnMenu.addEventListener("click", () => {
         mobileMenu.classList.toggle("hidden");
     });
+    taLevelSelect?.addEventListener("change", async () => {
+        const auth = await getAuthedUser({ passive: true });
+        if (!auth?.accessToken) {
+            resetTaStudentOptions("로그인 후 학생을 불러올 수 있습니다.");
+            return;
+        }
+        await loadTaStudents(auth.accessToken);
+    });
+    taGradeYearSelect?.addEventListener("change", async () => {
+        const auth = await getAuthedUser({ passive: true });
+        if (!auth?.accessToken) {
+            resetTaStudentOptions("로그인 후 학생을 불러올 수 있습니다.");
+            return;
+        }
+        await loadTaStudents(auth.accessToken);
+    });
 
     const allowedSubject = new Set(["humanities", "social", "science", "tech", "art", "mixed", "mock1", "mock2"]);
     if (allowedSubject.has(sectionFromQs)) {
@@ -1000,6 +1216,24 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/app.js?v=20260228-0846"></script>
 <script>
+    function initTaModeBinding() {
+        if (typeof refreshTaMode === "function") {
+            void refreshTaMode();
+        }
+        const sbForTa = window.JungdapApp?.getSb?.();
+        if (sbForTa?.auth?.onAuthStateChange && typeof refreshTaMode === "function") {
+            sbForTa.auth.onAuthStateChange(() => {
+                void refreshTaMode();
+            });
+            return true;
+        }
+        return false;
+    }
+
+    if (!initTaModeBinding()) {
+        setTimeout(() => { void initTaModeBinding(); }, 400);
+    }
+
     window.JungdapApp?.setupSecretRoomHover({
         elementId: "room-of-requirement",
         hiddenColor: "#7092BE",

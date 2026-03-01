@@ -12,6 +12,7 @@ const SUBJECTS = new Set([
   "mock1",
   "mock2",
 ]);
+const TA_ROLES = new Set(["assistant", "admin"]);
 const ANSWER_CSV_PATH = path.join(process.cwd(), "netlify", "functions", "_private", "2027_mothertung_answers.csv");
 const ANSWER_CACHE = { bySubject: null };
 
@@ -66,6 +67,10 @@ function toSafeFloat(value) {
   return Number.isFinite(n) ? n : NaN;
 }
 
+function normalizeRole(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
 function normalizeAnswerMap(rawAnswers) {
   if (!rawAnswers || typeof rawAnswers !== "object" || Array.isArray(rawAnswers)) return null;
   const out = {};
@@ -84,10 +89,10 @@ function parseCsvRow(line) {
   let inQuotes = false;
   for (let i = 0; i < line.length; i += 1) {
     const ch = line[i];
-    if (ch === "\"") {
+    if (ch === '"') {
       const next = line[i + 1];
-      if (inQuotes && next === "\"") {
-        cur += "\"";
+      if (inQuotes && next === '"') {
+        cur += '"';
         i += 1;
         continue;
       }
@@ -129,7 +134,6 @@ function normalizeStarValue(rawStar, rawDifficulty) {
 function normalizePCorrectValue(raw) {
   const n = toSafeFloat(raw);
   if (!Number.isFinite(n)) return null;
-  // Keep original scale: downstream can render both 0~1 and 0~100 safely.
   return n;
 }
 
@@ -163,6 +167,7 @@ function loadAnswerDbFromCsv() {
     if (!SUBJECTS.has(subject)) continue;
     if (!Number.isFinite(qnum) || qnum <= 0) continue;
     if (!Number.isFinite(answer) || answer < 1 || answer > 5) continue;
+
     bySubject[subject].set(qnum, {
       answer,
       stars: Number.isFinite(stars) ? stars : null,
@@ -178,6 +183,7 @@ function getAnswerRowsFromCsv(subject, startQ, endQ) {
   const bySubject = loadAnswerDbFromCsv();
   const answerMap = bySubject[subject];
   if (!answerMap || !answerMap.size) return [];
+
   const rows = [];
   for (let qnum = startQ; qnum <= endQ; qnum += 1) {
     const row = answerMap.get(qnum);
@@ -192,6 +198,7 @@ function getAnswerRowsFromCsv(subject, startQ, endQ) {
   }
   return rows;
 }
+
 export async function handler(event) {
   try {
     if (event.httpMethod !== "POST") return json(405, { ok: false, error: "METHOD_NOT_ALLOWED" });
@@ -203,26 +210,54 @@ export async function handler(event) {
     const accessToken = extractAccessToken(event);
     if (!accessToken) return json(401, { ok: false, error: "UNAUTHORIZED" });
 
-    const sb = createClient(SUPABASE_URL, SERVICE_KEY, {
+    const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const userRes = await sb.auth.getUser(accessToken);
-    const authedUserId = userRes?.data?.user?.id || "";
-    if (userRes.error || !authedUserId) return json(401, { ok: false, error: "UNAUTHORIZED" });
+    const userRes = await admin.auth.getUser(accessToken);
+    const actorUserId = userRes?.data?.user?.id || "";
+    if (userRes.error || !actorUserId) return json(401, { ok: false, error: "UNAUTHORIZED" });
+
+    const { data: profile, error: perr } = await admin
+      .from("profiles")
+      .select("role")
+      .eq("user_id", actorUserId)
+      .maybeSingle();
+
+    if (perr) return json(500, { ok: false, error: "PROFILE_LOOKUP_FAILED", detail: perr.message });
+    const role = normalizeRole(profile?.role);
+    if (!TA_ROLES.has(role)) return json(403, { ok: false, error: "FORBIDDEN" });
 
     const body = JSON.parse(event.body || "{}");
     const year = toSafeInt(body?.year);
     const subject = String(body?.subject || "").trim();
     const startQ = toSafeInt(body?.startQ);
     const endQ = toSafeInt(body?.endQ);
+    const targetStudentId = toSafeInt(body?.target_student_id);
     const answers = normalizeAnswerMap(body?.answers);
 
-    if (!Number.isFinite(year) || !subject || !Number.isFinite(startQ) || !Number.isFinite(endQ) || !answers) {
+    if (!Number.isFinite(year) || !subject || !Number.isFinite(startQ) || !Number.isFinite(endQ) || !answers || !Number.isFinite(targetStudentId)) {
       return json(400, { ok: false, error: "BAD_REQUEST" });
     }
     if (!SUBJECTS.has(subject)) return json(400, { ok: false, error: "INVALID_SUBJECT" });
     if (startQ <= 0 || endQ <= 0 || startQ > endQ) return json(400, { ok: false, error: "INVALID_RANGE" });
+    if (targetStudentId <= 0) return json(400, { ok: false, error: "INVALID_TARGET_STUDENT" });
+
+    const { data: student, error: serr } = await admin
+      .from("students")
+      .select("id,name,user_id,grade_level,grade_year")
+      .eq("id", targetStudentId)
+      .maybeSingle();
+
+    if (serr) return json(500, { ok: false, error: "STUDENT_LOOKUP_FAILED", detail: serr.message });
+    if (!student) return json(404, { ok: false, error: "STUDENT_NOT_FOUND" });
+    if (!student.user_id) {
+      return json(400, {
+        ok: false,
+        error: "STUDENT_USER_NOT_LINKED",
+        detail: "선택한 학생은 user_id가 연결되지 않았습니다.",
+      });
+    }
 
     let rows = [];
     try {
@@ -272,10 +307,10 @@ export async function handler(event) {
 
     const wrong = attempted - correct;
 
-    const { data: attempt, error: aerr } = await sb
+    const { data: attempt, error: aerr } = await admin
       .from("exam_attempts")
       .insert({
-        user_id: authedUserId,
+        user_id: student.user_id,
         year,
         section: subject,
         form: "na",
@@ -296,7 +331,7 @@ export async function handler(event) {
     }));
 
     if (payloadItems.length) {
-      const { error: ierr } = await sb.from("exam_attempt_items").insert(payloadItems);
+      const { error: ierr } = await admin.from("exam_attempt_items").insert(payloadItems);
       if (ierr) return json(500, { ok: false, error: "ITEMS_INSERT_FAILED", detail: ierr.message });
     }
 
@@ -316,6 +351,14 @@ export async function handler(event) {
       summary: { total: rows.length, attempted, correct, wrong, unanswered },
       items: itemRows,
       wrong_details: wrongDetails,
+      target_student: {
+        id: student.id,
+        name: student.name,
+        user_id: student.user_id,
+        grade_level: student.grade_level,
+        grade_year: student.grade_year,
+      },
+      saved_by: actorUserId,
     });
   } catch (e) {
     return json(500, { ok: false, error: "UNEXPECTED", detail: String(e?.message || e) });
