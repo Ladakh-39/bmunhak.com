@@ -1783,7 +1783,6 @@
       return "";
     }
   }
-
   async function bmResolveDisplayName(session) {
     if (!session || !session.user) return "";
     var user = session.user;
@@ -1822,7 +1821,6 @@
 
     var forced = await bmEnsureNicknameInteractive(getSb(), userId);
     if (forced) return forced;
-
     return "";
   }
 

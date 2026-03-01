@@ -242,6 +242,65 @@
     })();
   </script>
   <script>
+    (function () {
+      const APP = window.JungdapApp;
+      if (!APP) return;
+
+      const sb = APP.getSb();
+      const sections = [
+        { slug: "notice", el: "pv_notice" },
+        { slug: "intro",  el: "pv_intro" },
+        { slug: "free",   el: "pv_free" },
+        { slug: "review", el: "pv_review" },
+        { slug: "qna",    el: "pv_qna" },
+      ];
+
+      const escape = (s) => (APP.escapeHtml ? APP.escapeHtml(String(s ?? "")) : String(s ?? ""));
+      const fmtDate = (iso) => (APP.formatYmd ? APP.formatYmd(iso) : String(iso || "").slice(0, 10));
+
+      function renderList(el, rows, slug) {
+        if (!rows || rows.length === 0) {
+          el.innerHTML = '<div class="text-slate-400">게시글이 없습니다.</div>';
+          return;
+        }
+        el.innerHTML = `
+          <ul class="space-y-2">
+            ${rows.map(r => `
+              <li class="flex items-center justify-between gap-3">
+                <a class="min-w-0 flex-1 truncate hover:underline"
+                   href="/post.html?b=${encodeURIComponent(slug)}&id=${encodeURIComponent(r.id)}">
+                  ${escape(r.title || "(제목 없음)")}
+                </a>
+                <span class="shrink-0 text-xs text-slate-400">${escape(fmtDate(r.created_at))}</span>
+              </li>
+            `).join("")}
+          </ul>
+        `;
+      }
+
+      async function loadPreview(slug, elId) {
+        const el = document.getElementById(elId);
+        if (!el) return;
+
+        const { data, error } = await sb
+          .from("board_posts_active")
+          .select("id,title,created_at")
+          .eq("is_deleted", false)
+          .eq("section_slug", slug)
+          .order("id", { ascending: false })
+          .limit(3);
+
+        if (error) {
+          el.innerHTML = `<div class="text-rose-600 text-sm">불러오기 실패: ${escape(error.message)}</div>`;
+          return;
+        }
+        renderList(el, data || [], slug);
+      }
+
+      sections.forEach(s => loadPreview(s.slug, s.el));
+    })();
+  </script>
+  <script>
     window.JungdapApp?.setupSecretRoomHover({
       elementId: "room-of-requirement",
       hiddenColor: "#7092BE",
