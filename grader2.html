@@ -365,7 +365,11 @@
     function buildPlainAnswerCellHtml(answer) {
         const safe = Number.parseInt(String(answer ?? ""), 10);
         const text = Number.isFinite(safe) ? String(safe) : "-";
-        return `<span class="mono inline-block text-sm font-black text-slate-800">${text}</span>`;
+        return `
+            <div class="answer-scratch mono revealed" role="img" aria-label="정답 박스">
+                <span class="answer-value">${text}</span>
+            </div>
+        `;
     }
 
     const REVEAL_WITHIN_MS = 3000;
