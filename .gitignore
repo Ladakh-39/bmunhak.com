@@ -65,3 +65,5 @@ Desktop.ini
 
 .idea/
 *.iml
+# build/debug artifacts
+artifacts/

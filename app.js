@@ -1324,6 +1324,26 @@
     return document.getElementById(id);
   }
 
+  function bmEnsureAuthFoucGuardStyle() {
+    if (!document || !document.head) return;
+    var id = "bm-auth-fouc-guard";
+    if (document.getElementById(id)) return;
+    var style = document.createElement("style");
+    style.id = id;
+    style.textContent = [
+      "body.bm-auth-pending #btnSignupTop,",
+      "body.bm-auth-pending #btnLoginTop,",
+      "body.bm-auth-pending #btnLogoutTop,",
+      "body.bm-auth-pending #welcomeText,",
+      "body.bm-auth-pending #btnSignupMobile,",
+      "body.bm-auth-pending #btnLoginMobile,",
+      "body.bm-auth-pending #btnLogoutMobile {",
+      "  visibility: hidden !important;",
+      "}"
+    ].join("\n");
+    document.head.appendChild(style);
+  }
+
   function bmPasswordHintText() {
     return "비밀번호 8~64자 / 영문 대문자+소문자+숫자 필수 / 특수문자 !@#$%^&*()_+=;:[]{} 사용 가능";
   }
@@ -1735,6 +1755,34 @@
     }
   }
 
+  async function bmEnsureNicknameInteractive(sb, userId) {
+    var uid = toStringSafe(userId).trim();
+    if (!uid) return "";
+    try {
+      var promptKey = "bm_nick_prompted_v1:" + uid;
+      try {
+        if (sessionStorage.getItem(promptKey) === "1") return "";
+        sessionStorage.setItem(promptKey, "1");
+      } catch (_a) {
+        // ignore storage errors
+      }
+
+      var raw = window.prompt("닉네임을 설정하세요 (2~12자)");
+      if (raw == null) return "";
+      var checked = bmValidateNickname(raw);
+      if (!checked.ok) {
+        try { window.alert("닉네임 형식이 올바르지 않습니다."); } catch (_b) {}
+        return "";
+      }
+
+      var nick = checked.value;
+      try { await bmUpsertProfileNickname(sb, uid, nick); } catch (_c) {}
+      try { await sb.auth.updateUser({ data: { nickname: nick } }); } catch (_d) {}
+      return nick;
+    } catch (_e) {
+      return "";
+    }
+  }
   async function bmResolveDisplayName(session) {
     if (!session || !session.user) return "";
     var user = session.user;
@@ -1771,6 +1819,8 @@
       return metaNick;
     }
 
+    var forced = await bmEnsureNicknameInteractive(getSb(), userId);
+    if (forced) return forced;
     return "";
   }
 
@@ -1793,10 +1843,13 @@
         welcomeText.classList.remove("hidden");
         welcomeText.classList.add("text-[var(--bm-text)]");
         welcomeText.classList.remove("text-white");
+        // Force a single color source across pages that inherit text-white in header.
+        welcomeText.style.setProperty("color", "var(--bm-text, #33506a)", "important");
       } else {
         welcomeText.textContent = "";
         welcomeText.classList.add("hidden");
         welcomeText.classList.remove("text-[var(--bm-text)]", "text-white");
+        welcomeText.style.removeProperty("color");
       }
     }
 
@@ -1812,6 +1865,7 @@
     toggle("btnLoginMobile", !signedIn);
     toggle("btnSignupMobile", !signedIn);
     toggle("btnLogoutMobile", signedIn);
+    try { document.body.classList.remove("bm-auth-pending"); } catch (_a) {}
   }
 
   function bmBindAuthButtons() {
@@ -1842,13 +1896,15 @@
   }
 
   async function bmInit(options) {
+    bmEnsureAuthFoucGuardStyle();
+    try { document.body.classList.add("bm-auth-pending"); } catch (_a) {}
     var force = Boolean(options && options.force);
     if (!force && bmShouldSkipAutoAuthInit()) {
       var sbHeaderOnly = getSb();
       try {
-        var _a = await sbHeaderOnly.auth.getSession(), data = _a.data;
+        var _b = await sbHeaderOnly.auth.getSession(), data = _b.data;
         await bmSetHeaderUI(data && data.session);
-      } catch (_b) {
+      } catch (_c) {
         await bmSetHeaderUI(null);
       }
       if (!__bmAuthStateBound) {
@@ -1868,9 +1924,9 @@
 
     var sb = getSb();
     try {
-      var _c = await sb.auth.getSession(), data = _c.data;
+      var _d = await sb.auth.getSession(), data = _d.data;
       await bmSetHeaderUI(data && data.session);
-    } catch (_d) {
+    } catch (_e) {
       await bmSetHeaderUI(null);
     }
 
