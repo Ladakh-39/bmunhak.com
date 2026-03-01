@@ -16,11 +16,14 @@
         .status-badge-saving { background:#fef3c7; color:#92400e; }
         .status-badge-done { background:#dcfce7; color:#166534; }
         .status-badge-error { background:#fee2e2; color:#991b1b; }
-        .scratch-box { position: relative; width: 58px; height: 28px; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; overflow: hidden; }
-        .scratch-answer { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #0f172a; }
-        .scratch-canvas { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
-        .scratch-hint { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #cbd5e1; pointer-events: none; line-height: 1; }
-        .scratch-box.scratched .scratch-hint { display: none; }
+        .answer-scratch { position: relative; width: 56px; height: 40px; border: 1px solid #cbd5e1; background: #fff; overflow: hidden; user-select: none; }
+        .answer-scratch .scratchCanvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: default; touch-action: none; z-index: 2; }
+        .answer-scratch .answer-value { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #445394; z-index: 1; }
+        .answer-scratch .answer-value.hidden { display: none; }
+        .answer-scratch.revealed { border-color: #93c5fd; background: #eff6ff; }
+        .answer-scratch.revealed .scratchCanvas { display: none; }
+        .answer-scratch .scratch-hint { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #e2e8f0; pointer-events: none; line-height: 1; }
+        .answer-scratch.revealed .scratch-hint { display: none; }
     </style>
 </head>
 <body class="min-h-screen bm-auth-pending">
@@ -351,9 +354,9 @@
         const safe = Number.parseInt(String(answer ?? ""), 10);
         const text = Number.isFinite(safe) ? String(safe) : "-";
         return `
-            <div class="scratch-box js-scratch" role="img" aria-label="정답 스크래치 영역">
-                <span class="scratch-answer">${text}</span>
-                <canvas class="scratch-canvas"></canvas>
+            <div class="answer-scratch mono js-scratch" role="img" aria-label="정답 스크래치 영역">
+                <span class="answer-value hidden">${text}</span>
+                <canvas class="scratchCanvas"></canvas>
                 <span class="scratch-hint">긁기</span>
             </div>
         `;
@@ -365,46 +368,168 @@
         return `<span class="mono inline-block text-sm font-black text-slate-800">${text}</span>`;
     }
 
+    const REVEAL_WITHIN_MS = 3000;
+    const REVEAL_REQUIRED_COUNT = 2;
+
+    function setupScratchCanvas(canvas) {
+        const rect = canvas.getBoundingClientRect();
+        const width = Math.max(1, Math.floor(rect.width));
+        const height = Math.max(1, Math.floor(rect.height));
+        const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return null;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, width, height);
+        return { ctx, width, height };
+    }
+
+    function paintScratchSurface(canvas) {
+        const setup = setupScratchCanvas(canvas);
+        if (!setup) return;
+        const { ctx, width, height } = setup;
+
+        const grad = ctx.createLinearGradient(0, 0, 0, height);
+        grad.addColorStop(0, "#D6DAE1");
+        grad.addColorStop(0.5, "#BFC5CF");
+        grad.addColorStop(1, "#AEB5C1");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, width, height);
+
+        const noiseCount = 250 + Math.floor(Math.random() * 201);
+        for (let i = 0; i < noiseCount; i += 1) {
+            const x = Math.random() * width;
+            const y = Math.random() * height;
+            const alpha = 0.12 + Math.random() * 0.10;
+            const size = Math.random() < 0.82 ? 1 : 2;
+            ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
+            ctx.fillRect(x, y, size, size);
+        }
+
+        const strokeCount = 18 + Math.floor(Math.random() * 11);
+        ctx.lineCap = "round";
+        for (let i = 0; i < strokeCount; i += 1) {
+            const x1 = Math.random() * width;
+            const y1 = Math.random() * height;
+            const len = 6 + Math.random() * 12;
+            const angle = (Math.random() * 0.8) - 0.4;
+            const x2 = x1 + (Math.cos(angle) * len);
+            const y2 = y1 + (Math.sin(angle) * len);
+            const alpha = 0.08 + Math.random() * 0.08;
+            ctx.strokeStyle = `rgba(120,130,145,${alpha.toFixed(3)})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        ctx.strokeStyle = "rgba(255,255,255,0.22)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, 2.5);
+        ctx.lineTo(width, 2.5);
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(40,55,80,0.08)";
+        ctx.fillRect(0, height - 3, width, 3);
+    }
+
+    function eraseScratchAt(canvas, event, radius = 12) {
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        const prev = ctx.globalCompositeOperation;
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalCompositeOperation = prev;
+    }
+
     function initScratchSurfaces(root) {
         const targets = root.querySelectorAll(".js-scratch");
         targets.forEach((box) => {
-            const canvas = box.querySelector(".scratch-canvas");
-            if (!canvas) return;
-            const ctx = canvas.getContext("2d");
-            if (!ctx) return;
+            const canvas = box.querySelector(".scratchCanvas");
+            const valueNode = box.querySelector(".answer-value");
+            if (!canvas || !valueNode) return;
 
-            const rect = canvas.getBoundingClientRect();
-            const dpr = Math.max(window.devicePixelRatio || 1, 1);
-            canvas.width = Math.max(1, Math.floor(rect.width * dpr));
-            canvas.height = Math.max(1, Math.floor(rect.height * dpr));
-            ctx.scale(dpr, dpr);
-            ctx.fillStyle = "#334155";
-            ctx.fillRect(0, 0, rect.width, rect.height);
+            paintScratchSurface(canvas);
 
-            let scratched = false;
-            const scratchAt = (event, radius) => {
-                const r = canvas.getBoundingClientRect();
-                const x = event.clientX - r.left;
-                const y = event.clientY - r.top;
-                if (x < 0 || y < 0 || x > r.width || y > r.height) return;
-                ctx.globalCompositeOperation = "destination-out";
-                ctx.beginPath();
-                ctx.arc(x, y, radius, 0, Math.PI * 2);
-                ctx.fill();
-                if (!scratched) {
-                    scratched = true;
-                    box.classList.add("scratched");
-                }
+            let revealed = false;
+            let windowStartedAt = 0;
+            let lastRegion = null;
+            let transitionCount = 0;
+
+            const revealNow = () => {
+                if (revealed) return;
+                revealed = true;
+                valueNode.classList.remove("hidden");
+                box.classList.add("revealed");
             };
 
-            canvas.addEventListener("pointerdown", (event) => {
-                try { canvas.setPointerCapture(event.pointerId); } catch (_a) {}
-                scratchAt(event, event.pointerType === "touch" ? 20 : 14);
-            });
+            const resetMotionWindow = (now, region) => {
+                windowStartedAt = now;
+                lastRegion = region;
+                transitionCount = 0;
+            };
+
+            const classifyRegion = (event) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+                if (x < 0 || x > rect.width || y < 0 || y > rect.height) return "outside";
+
+                const centerW = rect.width * 0.52;
+                const centerH = rect.height * 0.64;
+                const centerLeft = (rect.width - centerW) / 2;
+                const centerTop = (rect.height - centerH) / 2;
+                const centerRight = centerLeft + centerW;
+                const centerBottom = centerTop + centerH;
+                const insideCenter = x >= centerLeft && x <= centerRight && y >= centerTop && y <= centerBottom;
+                return insideCenter ? "inside" : "outside";
+            };
+
+            const handleScratchMotion = (event, radius) => {
+                if (revealed) return;
+                eraseScratchAt(canvas, event, radius);
+                const now = Date.now();
+                const region = classifyRegion(event);
+                if (!windowStartedAt || now - windowStartedAt > REVEAL_WITHIN_MS) {
+                    resetMotionWindow(now, region);
+                    return;
+                }
+                if (lastRegion == null) {
+                    lastRegion = region;
+                    return;
+                }
+                if (region !== lastRegion) {
+                    transitionCount += 1;
+                    lastRegion = region;
+                }
+                const roundTripCount = Math.floor(transitionCount / 2);
+                if (roundTripCount >= REVEAL_REQUIRED_COUNT) revealNow();
+            };
+
+            let activePointerId = null;
             canvas.addEventListener("pointermove", (event) => {
-                scratchAt(event, event.pointerType === "touch" ? 20 : 12);
+                handleScratchMotion(event, 11 + Math.random() * 3);
+            });
+            canvas.addEventListener("pointerdown", (event) => {
+                activePointerId = event.pointerId;
+                try { canvas.setPointerCapture(event.pointerId); } catch (_a) {}
+                handleScratchMotion(event, 13);
             });
             canvas.addEventListener("pointerup", (event) => {
+                if (activePointerId === event.pointerId) activePointerId = null;
+                try { canvas.releasePointerCapture(event.pointerId); } catch (_a) {}
+            });
+            canvas.addEventListener("pointercancel", (event) => {
+                if (activePointerId === event.pointerId) activePointerId = null;
                 try { canvas.releasePointerCapture(event.pointerId); } catch (_a) {}
             });
         });
