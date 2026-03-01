@@ -88,10 +88,13 @@
                 <label for="endQ" class="mb-1 ml-1 block text-xs font-black text-slate-400">끝 번호</label>
                 <input id="endQ" type="number" inputmode="numeric" class="mono h-14 w-full border-2 border-slate-200 bg-slate-50 px-3 text-center text-lg font-black outline-none focus:border-blue-500" />
             </div>
-            <div class="grid grid-cols-3 gap-2">
-                <button id="btnBuild" type="button" class="h-14 bg-blue-600 px-3 text-sm font-black text-white hover:bg-blue-700">생성</button>
-                <button id="btnClear" type="button" class="h-14 bg-slate-200 px-3 text-sm font-black text-slate-700 hover:bg-slate-300">초기화</button>
-                <button id="btnGrade" type="button" class="h-14 bg-slate-900 px-3 text-sm font-black text-white hover:bg-black" disabled>채점</button>
+            <div>
+                <label aria-hidden="true" class="mb-1 ml-1 block text-xs font-black text-transparent">정렬용 라벨</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button id="btnBuild" type="button" class="h-14 bg-blue-600 px-3 text-sm font-black text-white hover:bg-blue-700">생성</button>
+                    <button id="btnClear" type="button" class="h-14 bg-slate-200 px-3 text-sm font-black text-slate-700 hover:bg-slate-300">초기화</button>
+                    <button id="btnGrade" type="button" class="h-14 bg-slate-900 px-3 text-sm font-black text-white hover:bg-black" disabled>채점</button>
+                </div>
             </div>
         </div>
 
