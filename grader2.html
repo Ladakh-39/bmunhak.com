@@ -16,10 +16,10 @@
         .status-badge-saving { background:#fef3c7; color:#92400e; }
         .status-badge-done { background:#dcfce7; color:#166534; }
         .status-badge-error { background:#fee2e2; color:#991b1b; }
-        .scratch-box { position: relative; min-width: 88px; height: 34px; border: 1px solid #cbd5e1; border-radius: 6px; background: #f8fafc; overflow: hidden; }
+        .scratch-box { position: relative; width: 58px; height: 28px; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; overflow: hidden; }
         .scratch-answer { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #0f172a; }
         .scratch-canvas { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
-        .scratch-hint { position: absolute; right: 4px; bottom: 3px; z-index: 3; font-size: 9px; font-weight: 800; color: #94a3b8; pointer-events: none; }
+        .scratch-hint { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #cbd5e1; pointer-events: none; line-height: 1; }
         .scratch-box.scratched .scratch-hint { display: none; }
     </style>
 </head>
@@ -126,7 +126,7 @@
 
         <div id="summary" class="mt-5 hidden border border-blue-200 bg-blue-50 p-4"></div>
         <div id="wrongWrap" class="mt-4 hidden border border-slate-200 bg-slate-50 p-4">
-            <h2 class="text-sm font-black text-slate-600">오답 목록 (정답 칸을 긁어서 확인)</h2>
+            <h2 class="text-sm font-black text-slate-600">풀이 목록 (오답만 긁어서 정답 확인)</h2>
             <div id="wrongList" class="mt-2"></div>
         </div>
     </section>
@@ -359,6 +359,12 @@
         `;
     }
 
+    function buildPlainAnswerCellHtml(answer) {
+        const safe = Number.parseInt(String(answer ?? ""), 10);
+        const text = Number.isFinite(safe) ? String(safe) : "-";
+        return `<span class="mono inline-block text-sm font-black text-slate-800">${text}</span>`;
+    }
+
     function initScratchSurfaces(root) {
         const targets = root.querySelectorAll(".js-scratch");
         targets.forEach((box) => {
@@ -430,7 +436,7 @@
                                 <td class="border-b border-slate-100 px-2 py-2 mono">${row.myAnswer}</td>
                                 <td class="border-b border-slate-100 px-2 py-2">${formatStars(row.stars)}</td>
                                 <td class="border-b border-slate-100 px-2 py-2">${formatPercent(row.pCorrect)}</td>
-                                <td class="border-b border-slate-100 px-2 py-2">${buildScratchCellHtml(row.answer)}</td>
+                                <td class="border-b border-slate-100 px-2 py-2">${row.isCorrect ? buildPlainAnswerCellHtml(row.answer) : buildScratchCellHtml(row.answer)}</td>
                             </tr>
                         `).join("")}
                     </tbody>
@@ -755,7 +761,7 @@
                 itemMap.set(qNum, raw);
             }
 
-            const wrongRows = [];
+            const solvedRows = [];
             let localAttempted = 0;
             let localCorrect = 0;
             let localUnanswered = 0;
@@ -779,14 +785,23 @@
                 if (isCorrect === true) {
                     localCorrect += 1;
                     applyResultState(input, mark, "O");
-                } else if (isCorrect === false) {
-                    applyResultState(input, mark, "X");
-                    wrongRows.push({
+                    solvedRows.push({
                         qnum: qNum,
                         myAnswer,
                         answer: item?.correct_answer,
                         stars: item?.stars,
-                        pCorrect: item?.p_correct
+                        pCorrect: item?.p_correct,
+                        isCorrect: true
+                    });
+                } else if (isCorrect === false) {
+                    applyResultState(input, mark, "X");
+                    solvedRows.push({
+                        qnum: qNum,
+                        myAnswer,
+                        answer: item?.correct_answer,
+                        stars: item?.stars,
+                        pCorrect: item?.p_correct,
+                        isCorrect: false
                     });
                 } else {
                     localUnanswered += 1;
@@ -811,7 +826,7 @@
                 attemptId,
                 recordHref
             });
-            renderWrongTable(wrongRows);
+            renderWrongTable(solvedRows);
 
             saveDraftNow();
             setSaveMeta({ attemptId, href: recordHref });
