@@ -139,6 +139,8 @@
         </div>
       </div>
 
+      <div id="recordsStateCard" class="mt-4 hidden rounded-2xl border p-4"></div>
+
       <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200">
         <table class="min-w-full text-sm">
           <thead class="bg-slate-50 border-b border-slate-200">
@@ -234,6 +236,10 @@
         <div class="text-[11px] font-black text-slate-500">문항 범위</div>
         <div id="detailRange" class="mt-1 text-sm font-black text-slate-800">불러오는 중...</div>
       </div>
+      <div class="mt-3 rounded border border-slate-200 bg-slate-50 p-3">
+        <div class="text-[11px] font-black text-slate-500">문항 요약</div>
+        <div id="detailStats" class="mt-1 text-sm font-black text-slate-800">불러오는 중...</div>
+      </div>
       <a id="detailAccumLink" href="#" class="mt-3 hidden inline-flex rounded border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 hover:bg-blue-100">누적 기록 보기</a>
       <div class="mt-4 rounded border border-slate-200 bg-slate-50 p-4">
         <h4 class="text-sm font-black text-slate-700">오답 목록</h4>
@@ -292,6 +298,29 @@
       toastTimer = setTimeout(() => {
         toast.classList.add("hidden");
       }, 1800);
+    }
+
+    function hideStateCard() {
+      const card = $("recordsStateCard");
+      if (!card) return;
+      card.classList.add("hidden");
+      card.innerHTML = "";
+      card.className = "mt-4 hidden rounded-2xl border p-4";
+    }
+
+    function showStateCard(kind, message) {
+      const card = $("recordsStateCard");
+      if (!card) return;
+      card.className = "mt-4 rounded-2xl border p-4";
+      if (kind === "loading") {
+        card.classList.add("border-blue-200", "bg-blue-50", "text-blue-900");
+      } else if (kind === "error") {
+        card.classList.add("border-rose-200", "bg-rose-50", "text-rose-800");
+      } else {
+        card.classList.add("border-slate-200", "bg-slate-50", "text-slate-700");
+      }
+      card.innerHTML = `<div class="text-sm font-black">${escapeHtml(message || "")}</div>`;
+      card.classList.remove("hidden");
     }
 
     function sectionLabel(section) {
@@ -449,6 +478,7 @@
     async function loadAttempts() {
       if (!currentUser) return;
       clearRows("조회 중...");
+      showStateCard("loading", "조회 중...");
 
       const year = $("yearSelect").value;
       const grade = $("gradeSelect").value;
@@ -500,6 +530,7 @@
 
       if (error || countError) {
         clearRows(`오류: ${(error || countError).message}`);
+        showStateCard("error", `오류: ${(error || countError).message}`);
         return;
       }
 
@@ -510,8 +541,13 @@
 
       renderRows();
       renderPager();
-      if (state.totalCount === 0) $("recordsHint").textContent = "아직 저장된 기록이 없습니다. 채점 후 자동으로 저장됩니다.";
-      else $("recordsHint").textContent = `총 ${state.totalCount}개 · ${state.page}/${state.totalPages} 페이지`;
+      if (state.totalCount === 0) {
+        $("recordsHint").textContent = "아직 저장된 기록이 없습니다. 채점 후 자동으로 저장됩니다.";
+        showStateCard("empty", "아직 저장된 기록이 없습니다. 채점 후 자동으로 저장됩니다.");
+      } else {
+        $("recordsHint").textContent = `총 ${state.totalCount}개 · ${state.page}/${state.totalPages} 페이지`;
+        hideStateCard();
+      }
     }
 
     function closeAttemptDetailModal() {
@@ -533,6 +569,7 @@
       $("detailSection").textContent = sectionLabel(row.section);
       $("detailScore").textContent = `${row.raw_score ?? "-"} / ${row.official_total ?? "-"} · 표준 ${row.standard_score ?? "-"} · 백분위 ${row.percentile ?? "-"}`;
       $("detailRange").textContent = "불러오는 중...";
+      $("detailStats").textContent = "불러오는 중...";
       $("detailWrongList").textContent = "불러오는 중...";
 
       const accumLink = $("detailAccumLink");
@@ -563,6 +600,7 @@
 
       if (itemError) {
         $("detailRange").textContent = "상세 문항 정보를 불러오지 못했습니다.";
+        $("detailStats").textContent = "문항 요약을 계산할 수 없습니다.";
         $("detailWrongList").innerHTML = `<div class="text-rose-600">${escapeHtml(itemError.message || "알 수 없는 오류")}</div>`;
         return;
       }
@@ -570,6 +608,7 @@
       const items = Array.isArray(itemData) ? itemData : [];
       if (!items.length) {
         $("detailRange").textContent = "문항 상세 데이터가 없습니다.";
+        $("detailStats").textContent = "문항 요약 정보가 없습니다.";
         $("detailWrongList").textContent = "오답 정보가 없습니다.";
         return;
       }
@@ -580,6 +619,11 @@
       $("detailRange").textContent = Number.isFinite(minQ) && Number.isFinite(maxQ)
         ? `${String(minQ).padStart(3, "0")} ~ ${String(maxQ).padStart(3, "0")} (${items.length}문항)`
         : `${items.length}문항`;
+
+      const correctCount = items.filter((it) => it?.is_correct === true).length;
+      const wrongCount = items.filter((it) => it?.is_correct === false).length;
+      const unansweredCount = items.filter((it) => it?.is_correct == null).length;
+      $("detailStats").textContent = `정답 ${correctCount} · 오답 ${wrongCount} · 미입력 ${unansweredCount}`;
 
       const wrongItems = items.filter((it) => it?.is_correct === false);
       if (!wrongItems.length) {
@@ -633,7 +677,7 @@
 
     async function deleteAttempt(attemptId) {
       if (!currentUser) return APP.openAuth("login");
-      if (!confirm("이 기록을 삭제할까요?")) return;
+      if (!confirm("이 기록을 삭제하면 복구할 수 없습니다. 정말 삭제할까요?")) return;
 
       const { error } = await sbClient
         .from("exam_attempts")
@@ -722,11 +766,13 @@
         if (session?.user) await loadAttempts();
         else {
           clearRows("로그인이 필요합니다.");
+          showStateCard("empty", "로그인이 필요합니다.");
           APP.openAuth("login");
         }
       });
       if (!data.session) {
         clearRows("로그인이 필요합니다.");
+        showStateCard("empty", "로그인이 필요합니다.");
         APP.openAuth("login");
         return;
       }
