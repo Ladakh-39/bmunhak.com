@@ -74,7 +74,6 @@
         <div>
           <label for="gradeSelect" class="mb-1 ml-1 block text-xs font-black text-slate-400">학년</label>
           <select id="gradeSelect" class="h-14 w-full border-2 border-slate-200 bg-slate-50 px-3 text-base font-black outline-none focus:border-blue-500">
-            <option value="all">전체</option>
             <option value="1">고1</option>
             <option value="2">고2</option>
             <option value="3">고3</option>
@@ -83,7 +82,6 @@
         <div>
           <label for="monthSelect" class="mb-1 ml-1 block text-xs font-black text-slate-400">월</label>
           <select id="monthSelect" class="h-14 w-full border-2 border-slate-200 bg-slate-50 px-3 text-base font-black outline-none focus:border-blue-500">
-            <option value="all">전체</option>
             <option value="3">3월</option>
             <option value="4">4월</option>
             <option value="6">6월</option>
@@ -114,8 +112,8 @@
           </select>
         </div>
         <div class="grid grid-cols-2 gap-2">
-          <button id="btnOpenGrade" type="button" class="h-14 w-full whitespace-nowrap bg-[#445874] px-3 text-2xl font-black leading-none text-black hover:bg-[#3a4d66] md:text-[32px]">채점하기</button>
-          <button id="btnGoRecords" type="button" class="h-14 w-full whitespace-nowrap bg-[#a3e635] px-3 text-2xl font-black leading-none text-black hover:bg-[#84cc16] md:text-[32px]">내 기록</button>
+          <button id="btnOpenGrade" type="button" class="h-14 w-full whitespace-nowrap bg-[#445874] px-3 text-lg font-black leading-none text-black hover:bg-[#3a4d66] md:text-[20px]">채점하기</button>
+          <button id="btnGoRecords" type="button" class="h-14 w-full whitespace-nowrap bg-[#a3e635] px-3 text-lg font-black leading-none text-black hover:bg-[#84cc16] md:text-[20px]">내 기록</button>
         </div>
       </div>
       <div id="guideMsg" class="mt-3 text-xs font-black text-slate-500">마더텅 영역을 선택하면 해당 과목으로 바로 이동합니다.</div>
@@ -139,11 +137,11 @@
     const mobileMenu = document.getElementById("mobileMenu");
 
     const YEARS = (() => {
-      const arr = ["all"];
+      const arr = [];
       for (let y = 2026; y >= 1994; y -= 1) arr.push(String(y));
       return arr;
     })();
-    yearSelect.innerHTML = YEARS.map((y) => `<option value="${y}">${y === "all" ? "전체" : y}</option>`).join("");
+    yearSelect.innerHTML = YEARS.map((y) => `<option value="${y}">${y}</option>`).join("");
 
     function buildParams() {
       return new URLSearchParams({
