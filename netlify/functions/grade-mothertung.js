@@ -60,6 +60,12 @@ function toSafeInt(value) {
   return Math.trunc(n);
 }
 
+function toSafeFloat(value) {
+  if (value === null || value === undefined) return NaN;
+  const n = Number(String(value).replace(/%/g, "").trim());
+  return Number.isFinite(n) ? n : NaN;
+}
+
 function normalizeAnswerMap(rawAnswers) {
   if (!rawAnswers || typeof rawAnswers !== "object" || Array.isArray(rawAnswers)) return null;
   const out = {};
@@ -99,6 +105,34 @@ function parseCsvRow(line) {
   return out.map((v) => String(v || "").replace(/^\uFEFF/, "").trim());
 }
 
+function findHeaderIndex(header, candidates) {
+  if (!Array.isArray(header)) return -1;
+  for (const key of candidates) {
+    const idx = header.indexOf(key);
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
+function normalizeStarValue(rawStar, rawDifficulty) {
+  const asNum = toSafeInt(rawStar);
+  if (Number.isFinite(asNum) && asNum > 0) return Math.min(Math.max(asNum, 1), 5);
+  const starChars = String(rawStar || "").match(/★/g);
+  if (starChars?.length) return Math.min(Math.max(starChars.length, 1), 5);
+  const d = String(rawDifficulty || "").trim().toLowerCase();
+  if (d === "low") return 1;
+  if (d === "medium" || d === "memium") return 2;
+  if (d === "high") return 3;
+  return null;
+}
+
+function normalizePCorrectValue(raw) {
+  const n = toSafeFloat(raw);
+  if (!Number.isFinite(n)) return null;
+  // Keep original scale: downstream can render both 0~1 and 0~100 safely.
+  return n;
+}
+
 function loadAnswerDbFromCsv() {
   if (ANSWER_CACHE.bySubject) return ANSWER_CACHE.bySubject;
   if (!fs.existsSync(ANSWER_CSV_PATH)) throw new Error("ANSWER_CSV_NOT_FOUND");
@@ -108,9 +142,12 @@ function loadAnswerDbFromCsv() {
   if (lines.length < 2) throw new Error("ANSWER_CSV_EMPTY");
 
   const header = parseCsvRow(lines[0]);
-  const idxCategory = header.indexOf("category");
-  const idxQuestion = header.indexOf("question_id");
-  const idxAnswer = header.indexOf("correct_answer");
+  const idxCategory = findHeaderIndex(header, ["category", "section"]);
+  const idxQuestion = findHeaderIndex(header, ["question_id", "item_no", "qno"]);
+  const idxAnswer = findHeaderIndex(header, ["correct_answer", "answer"]);
+  const idxStar = findHeaderIndex(header, ["stars", "difficulty_star", "difficultyStars"]);
+  const idxDifficulty = findHeaderIndex(header, ["difficulty", "difficulty_level"]);
+  const idxPCorrect = findHeaderIndex(header, ["p_correct", "correct_rate", "accuracy_rate"]);
   if (idxCategory < 0 || idxQuestion < 0 || idxAnswer < 0) throw new Error("ANSWER_CSV_BAD_HEADER");
 
   const bySubject = {};
@@ -121,10 +158,16 @@ function loadAnswerDbFromCsv() {
     const subject = String(cols[idxCategory] || "").trim();
     const qnum = toSafeInt(cols[idxQuestion]);
     const answer = toSafeInt(cols[idxAnswer]);
+    const stars = normalizeStarValue(idxStar >= 0 ? cols[idxStar] : "", idxDifficulty >= 0 ? cols[idxDifficulty] : "");
+    const pCorrect = normalizePCorrectValue(idxPCorrect >= 0 ? cols[idxPCorrect] : "");
     if (!SUBJECTS.has(subject)) continue;
     if (!Number.isFinite(qnum) || qnum <= 0) continue;
     if (!Number.isFinite(answer) || answer < 1 || answer > 5) continue;
-    bySubject[subject].set(qnum, answer);
+    bySubject[subject].set(qnum, {
+      answer,
+      stars: Number.isFinite(stars) ? stars : null,
+      p_correct: Number.isFinite(pCorrect) ? pCorrect : null,
+    });
   }
 
   ANSWER_CACHE.bySubject = bySubject;
@@ -137,9 +180,15 @@ function getAnswerRowsFromCsv(subject, startQ, endQ) {
   if (!answerMap || !answerMap.size) return [];
   const rows = [];
   for (let qnum = startQ; qnum <= endQ; qnum += 1) {
-    const answer = answerMap.get(qnum);
+    const row = answerMap.get(qnum);
+    const answer = toSafeInt(row?.answer);
     if (!Number.isFinite(answer)) continue;
-    rows.push({ qnum, answer });
+    rows.push({
+      qnum,
+      answer,
+      stars: Number.isFinite(toSafeInt(row?.stars)) ? toSafeInt(row?.stars) : null,
+      p_correct: Number.isFinite(toSafeFloat(row?.p_correct)) ? toSafeFloat(row?.p_correct) : null,
+    });
   }
   return rows;
 }
@@ -193,18 +242,34 @@ export async function handler(event) {
     for (const r of rows) {
       const qnum = toSafeInt(r?.qnum);
       const official = toSafeInt(r?.answer);
+      const stars = Number.isFinite(toSafeInt(r?.stars)) ? toSafeInt(r?.stars) : null;
+      const pCorrect = Number.isFinite(toSafeFloat(r?.p_correct)) ? toSafeFloat(r?.p_correct) : null;
       const my = toSafeInt(answers[qnum] ?? 0);
 
       if (!my) {
         unanswered += 1;
-        itemRows.push({ item_no: qnum, my_answer: null, is_correct: null });
+        itemRows.push({
+          item_no: qnum,
+          my_answer: null,
+          is_correct: null,
+          correct_answer: Number.isFinite(official) ? official : null,
+          stars,
+          p_correct: pCorrect,
+        });
         continue;
       }
 
       attempted += 1;
       const isCorrect = my === official;
       if (isCorrect) correct += 1;
-      itemRows.push({ item_no: qnum, my_answer: my, is_correct: isCorrect });
+      itemRows.push({
+        item_no: qnum,
+        my_answer: my,
+        is_correct: isCorrect,
+        correct_answer: Number.isFinite(official) ? official : null,
+        stars,
+        p_correct: pCorrect,
+      });
     }
 
     const wrong = attempted - correct;
@@ -237,10 +302,22 @@ export async function handler(event) {
       if (ierr) return json(500, { ok: false, error: "ITEMS_INSERT_FAILED", detail: ierr.message });
     }
 
+    const wrongDetails = itemRows
+      .filter((it) => Number.isFinite(toSafeInt(it.my_answer)) && it.is_correct === false)
+      .map((it) => ({
+        item_no: it.item_no,
+        my_answer: it.my_answer,
+        correct_answer: it.correct_answer,
+        stars: it.stars,
+        p_correct: it.p_correct,
+      }));
+
     return json(200, {
       ok: true,
       attempt_id: attemptId,
       summary: { total: rows.length, attempted, correct, wrong, unanswered },
+      items: itemRows,
+      wrong_details: wrongDetails,
     });
   } catch (e) {
     return json(500, { ok: false, error: "UNEXPECTED", detail: String(e?.message || e) });
