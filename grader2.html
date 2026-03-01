@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>bmunhak 채점하기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.css" rel="stylesheet" />
+    <style>
+        body { font-family: "SUIT Variable", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; background-color: #e5e7eb; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .mono { font-variant-numeric: tabular-nums; }
+        .status-badge-idle { background:#e2e8f0; color:#0f172a; }
+        .status-badge-generating { background:#dbeafe; color:#1d4ed8; }
+        .status-badge-grading { background:#ede9fe; color:#6d28d9; }
+        .status-badge-saving { background:#fef3c7; color:#92400e; }
+        .status-badge-done { background:#dcfce7; color:#166534; }
+        .status-badge-error { background:#fee2e2; color:#991b1b; }
+    </style>
+</head>
+<body class="min-h-screen bm-auth-pending">
+<header class="border-b border-slate-400 bg-[#7092BE] text-white overflow-hidden">
+    <div class="mx-auto flex h-16 max-w-[1440px] items-center gap-4 overflow-hidden px-4">
+        <div class="flex items-center min-w-[160px]">
+            <a href="/index.html" class="block">
+                <span class="block text-[34px] leading-none font-black tracking-tight text-[#33506a]">bmunhak</span>
+            </a>
+        </div>
+        <nav class="hidden md:flex flex-1 items-center justify-center gap-5 text-[18px] leading-none font-semibold min-w-0 flex-nowrap whitespace-nowrap">
+            <span class="room-secret-slot inline-flex items-center justify-center w-[104px] whitespace-nowrap">
+                <a id="room-of-requirement" href="/board.html?b=room" class="room-secret-prehide leading-none transition-colors whitespace-nowrap" style="visibility:hidden;pointer-events:none;">필요의 방</a>
+            </span>
+            <a href="/board.html?b=notice" class="leading-none hover:underline whitespace-nowrap">공지사항</a>
+            <a href="/board.html?b=intro" class="leading-none hover:underline whitespace-nowrap">가입인사</a>
+            <a href="/board.html?b=free" class="leading-none hover:underline whitespace-nowrap">자유게시판</a>
+            <a href="/board.html?b=qna" class="leading-none hover:underline whitespace-nowrap">질문</a>
+            <a href="/grader.html" class="leading-none hover:underline whitespace-nowrap">채점하기</a>
+            <a href="/my.html" class="leading-none hover:underline whitespace-nowrap">My Page</a>
+        </nav>
+        <div class="hidden md:flex items-center justify-end gap-3 min-w-[140px] text-sm font-semibold">
+            <button id="btnSignupTop" type="button" class="hover:underline">회원가입</button>
+            <button id="btnLoginTop" type="button" class="hover:underline">로그인</button>
+            <span id="welcomeText" class="hidden text-sm font-bold"></span>
+            <button id="btnLogoutTop" type="button" class="hidden hover:underline">로그아웃</button>
+        </div>
+        <button id="btnMenu" class="rounded-lg px-3 py-2 text-2xl md:hidden" type="button">☰</button>
+    </div>
+    <div id="mobileMenu" class="mx-auto hidden max-w-[1440px] px-4 pb-3 md:hidden">
+        <div class="flex flex-col gap-2 text-base font-bold">
+            <a id="room-of-requirement-mobile" href="/board.html?b=room" class="room-secret-prehide hidden px-3 py-2 rounded-lg transition-colors whitespace-nowrap" style="visibility:hidden;pointer-events:none;">필요의 방</a>
+            <a href="/board.html?b=notice" class="rounded px-2 py-1 hover:bg-white/10">공지사항</a>
+            <a href="/board.html?b=intro" class="rounded px-2 py-1 hover:bg-white/10">가입인사</a>
+            <a href="/board.html?b=free" class="rounded px-2 py-1 hover:bg-white/10">자유게시판</a>
+            <a href="/board.html?b=qna" class="rounded px-2 py-1 hover:bg-white/10">질문</a>
+            <a href="/grader.html" class="rounded px-2 py-1 hover:bg-white/10">채점하기</a>
+            <a href="/my.html" class="rounded px-2 py-1 hover:bg-white/10">My Page</a>
+        </div>
+        <div class="flex items-center gap-3 px-3 pt-2">
+            <button id="btnSignupMobile" class="hover:underline" type="button">회원가입</button>
+            <button id="btnLoginMobile" class="hover:underline" type="button">로그인</button>
+            <button id="btnLogoutMobile" class="hidden hover:underline" type="button">로그아웃</button>
+        </div>
+    </div>
+</header>
+
+<main class="px-4 py-8">
+    <section class="mx-auto max-w-[1180px] border border-slate-300 bg-white p-5 shadow-sm md:p-7">
+        <div class="mb-5 flex flex-wrap gap-4">
+            <div>
+                <h1 class="text-3xl font-black text-slate-900 md:text-4xl">2027 마더텅 수능기출문제집<br />국어 독서 채점기</h1>
+            </div>
+            <div class="ml-auto w-full max-w-[440px] border border-slate-200 bg-slate-50 p-3">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-xs font-black text-slate-500">상태 패널</span>
+                    <span id="statusBadge" class="rounded-full px-2 py-1 text-xs font-black status-badge-idle">대기</span>
+                </div>
+                <div id="statusMsg" class="mt-2 text-xs font-black text-slate-600">범위를 설정하고 생성 버튼을 눌러주세요.</div>
+                <div class="mt-3 grid grid-cols-3 gap-2 text-[11px] font-black">
+                    <div class="rounded border border-green-200 bg-green-50 px-2 py-1 text-green-700">정답 O</div>
+                    <div class="rounded border border-red-200 bg-red-50 px-2 py-1 text-red-700">오답 X</div>
+                    <div class="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-amber-700">미입력 !</div>
+                </div>
+                <div id="saveMeta" class="mt-3 hidden text-xs font-black text-slate-700"></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <div>
+                <label for="subjectSelect" class="mb-1 ml-1 block text-xs font-black text-slate-400">과목 선택</label>
+                <select id="subjectSelect" class="h-14 w-full border-2 border-slate-200 bg-slate-50 px-3 text-base font-black outline-none focus:border-blue-500">
+                    <option value="humanities">마더텅 Ⅰ. 인문 (001~218)</option>
+                    <option value="social">마더텅 Ⅱ. 사회 (001~157)</option>
+                    <option value="science">마더텅 Ⅲ. 과학 (001~099)</option>
+                    <option value="tech">마더텅 Ⅳ. 기술 (001~090)</option>
+                    <option value="art">마더텅 Ⅴ. 예술 (001~044)</option>
+                    <option value="mixed">마더텅 Ⅵ. 복합 지문 (001~036)</option>
+                    <option value="mock1">마더텅 미니모의 1회 (01~17)</option>
+                    <option value="mock2">마더텅 미니모의 2회 (01~17)</option>
+                </select>
+            </div>
+            <div>
+                <label for="startQ" class="mb-1 ml-1 block text-xs font-black text-slate-400">시작 번호</label>
+                <input id="startQ" type="number" inputmode="numeric" class="mono h-14 w-full border-2 border-slate-200 bg-slate-50 px-3 text-center text-lg font-black outline-none focus:border-blue-500" />
+            </div>
+            <div>
+                <label for="endQ" class="mb-1 ml-1 block text-xs font-black text-slate-400">끝 번호</label>
+                <input id="endQ" type="number" inputmode="numeric" class="mono h-14 w-full border-2 border-slate-200 bg-slate-50 px-3 text-center text-lg font-black outline-none focus:border-blue-500" />
+            </div>
+            <div>
+                <label aria-hidden="true" class="mb-1 ml-1 block text-xs font-black text-transparent">정렬용 라벨</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button id="btnBuild" type="button" class="h-14 bg-blue-600 px-3 text-sm font-black text-white hover:bg-blue-700">생성</button>
+                    <button id="btnClear" type="button" class="h-14 bg-slate-200 px-3 text-sm font-black text-slate-700 hover:bg-slate-300">초기화</button>
+                    <button id="btnGrade" type="button" class="h-14 bg-slate-900 px-3 text-sm font-black text-white hover:bg-black" disabled>채점</button>
+                </div>
+            </div>
+        </div>
+
+        <p class="mt-4 text-xs font-bold text-slate-500">숫자 1~5 입력 시 자동 다음칸 이동, Enter 채점, 붙여넣기(예: 1234512...) 지원</p>
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+            <button id="btnToggleReveal" type="button" class="rounded border border-slate-300 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-100" disabled>정답 보기: OFF</button>
+            <button id="btnAutofillAnswers" type="button" class="rounded border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-black text-indigo-700 hover:bg-indigo-100" disabled>정답 자동 채우기</button>
+        </div>
+        <div id="question-list" class="mt-5 grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10"></div>
+
+        <div id="summary" class="mt-5 hidden border border-blue-200 bg-blue-50 p-4"></div>
+        <div id="wrongWrap" class="mt-4 hidden border border-slate-200 bg-slate-50 p-4">
+            <h2 class="text-sm font-black text-slate-600">오답 목록</h2>
+            <div id="wrongList" class="mt-2 text-sm font-bold text-slate-700"></div>
+        </div>
+    </section>
+</main>
+
+<footer class="border-t border-slate-300 bg-[#d7d9de] py-6">
+    <div class="mx-auto max-w-[1180px] px-4 text-center text-[44px] font-semibold tracking-tight text-[#36516b]">
+        bmunhak.com
+    </div>
+</footer>
+
+<script>
+    const db = {
+        "humanities": { 1:3, 2:5, 3:1, 4:2, 5:3, 6:1, 7:4, 8:4, 9:5, 10:4, 11:3, 12:1, 13:5, 14:5, 15:3, 16:1, 17:1, 18:3, 19:4, 20:1, 21:2, 22:3, 23:1, 24:3, 25:4, 26:3, 27:2, 28:3, 29:2, 30:4, 31:5, 32:5, 33:5, 34:3, 35:2, 36:3, 37:5, 38:2, 39:3, 40:1, 41:2, 42:1, 43:2, 44:2, 45:3, 46:4, 47:4, 48:4, 49:3, 50:3, 51:4, 52:4, 53:5, 54:1, 55:4, 56:5, 57:1, 58:4, 59:4, 60:5, 61:4, 62:1, 63:1, 64:2, 65:2, 66:4, 67:5, 68:5, 69:2, 70:5, 71:5, 72:3, 73:2, 74:1, 75:5, 76:1, 77:4, 78:4, 79:5, 80:2, 81:4, 82:4, 83:2, 84:2, 85:4, 86:5, 87:2, 88:1, 89:2, 90:3, 91:4, 92:4, 93:1, 94:5, 95:3, 96:5, 97:1, 98:2, 99:3, 100:1, 101:3, 102:1, 103:2, 104:3, 105:4, 106:5, 107:4, 108:5, 109:4, 110:5, 111:1, 112:1, 113:4, 114:3, 115:3, 116:5, 117:1, 118:1, 119:4, 120:5, 121:3, 122:2, 123:4, 124:5, 125:3, 126:2, 127:1, 128:2, 129:4, 130:5, 131:3, 132:5, 133:5, 134:1, 135:4, 136:5, 137:3, 138:2, 139:5, 140:2, 141:3, 142:4, 143:4, 144:2, 145:2, 146:1, 147:1, 148:4, 149:5, 150:3, 151:4, 152:3, 153:1, 154:4, 155:2, 156:4, 157:5, 158:4, 159:2, 160:4, 161:3, 162:3, 163:2, 164:5, 165:4, 166:5, 167:5, 168:4, 169:2, 170:4, 171:1, 172:4, 173:5, 174:3, 175:5, 176:4, 177:2, 178:5, 179:3, 180:4, 181:5, 182:3, 183:3, 184:4, 185:5, 186:4, 187:5, 188:2, 189:5, 190:2, 191:2, 192:5, 193:3, 194:1, 195:2, 196:3, 197:3, 198:2, 199:5, 200:1, 201:4, 202:5, 203:1, 204:1, 205:4, 206:1, 207:1, 208:5, 209:4, 210:2, 211:5, 212:1, 213:1, 214:3, 215:5, 216:5, 217:1, 218:3 },
+        "social": { 1:1, 2:5, 3:4, 4:2, 5:2, 6:5, 7:5, 8:4, 9:1, 10:3, 11:4, 12:5, 13:5, 14:3, 15:2, 16:4, 17:2, 18:3, 19:1, 20:2, 21:5, 22:4, 23:3, 24:3, 25:4, 26:3, 27:1, 28:3, 29:2, 30:1, 31:5, 32:1, 33:4, 34:3, 35:2, 36:1, 37:5, 38:1, 39:5, 40:3, 41:5, 42:4, 43:1, 44:4, 45:5, 46:2, 47:5, 48:5, 49:1, 50:5, 51:4, 52:3, 53:3, 54:2, 55:1, 56:3, 57:5, 58:3, 59:4, 60:5, 61:1, 62:4, 63:1, 64:5, 65:1, 66:5, 67:5, 68:2, 69:1, 70:3, 71:5, 72:2, 73:1, 74:4, 75:1, 76:4, 77:2, 78:5, 79:3, 80:5, 81:2, 82:3, 83:4, 84:4, 85:5, 86:1, 87:4, 88:4, 89:3, 90:1, 91:2, 92:4, 93:2, 94:4, 95:5, 96:3, 97:1, 98:4, 99:2, 100:5, 101:5, 102:2, 103:3, 104:1, 105:3, 106:5, 107:1, 108:3, 109:1, 110:5, 111:4, 112:4, 113:3, 114:1, 115:2, 116:2, 117:3, 118:1, 119:5, 120:2, 121:1, 122:5, 123:3, 124:2, 125:2, 126:2, 127:4, 128:5, 129:5, 130:2, 131:3, 132:2, 133:1, 134:3, 135:5, 136:3, 137:5, 138:4, 139:2, 140:3, 141:4, 142:1, 143:1, 144:2, 145:1, 146:2, 147:1, 148:5, 149:1, 150:5, 151:4, 152:1, 153:2, 154:1, 155:5, 156:5, 157:3 },
+        "science": { 1:5, 2:1, 3:3, 4:1, 5:5, 6:2, 7:4, 8:1, 9:3, 10:5, 11:3, 12:2, 13:5, 14:4, 15:2, 16:4, 17:5, 18:3, 19:3, 20:2, 21:5, 22:3, 23:1, 24:1, 25:5, 26:2, 27:4, 28:4, 29:5, 30:4, 31:5, 32:4, 33:3, 34:4, 35:5, 36:1, 37:5, 38:1, 39:5, 40:4, 41:4, 42:3, 43:4, 44:1, 45:3, 46:3, 47:2, 48:1, 49:4, 50:3, 51:1, 52:2, 53:4, 54:3, 55:5, 56:2, 57:5, 58:4, 59:5, 60:5, 61:2, 62:3, 63:1, 64:5, 65:2, 66:3, 67:4, 68:4, 69:1, 70:1, 71:2, 72:4, 73:2, 74:1, 75:2, 76:3, 77:3, 78:3, 79:4, 80:5, 81:2, 82:1, 83:4, 84:3, 85:1, 86:4, 87:2, 88:5, 89:4, 90:1, 91:3, 92:5, 93:1, 94:4, 95:3, 96:3, 97:3, 98:4, 99:2 },
+        "tech": { 1:3, 2:3, 3:5, 4:5, 5:3, 6:1, 7:5, 8:3, 9:4, 10:5, 11:2, 12:3, 13:2, 14:2, 15:4, 16:4, 17:2, 18:2, 19:5, 20:4, 21:4, 22:4, 23:3, 24:2, 25:5, 26:2, 27:3, 28:2, 29:3, 30:4, 31:4, 32:5, 33:1, 34:2, 35:3, 36:2, 37:5, 38:5, 39:1, 40:3, 41:5, 42:3, 43:3, 44:1, 45:3, 46:1, 47:5, 48:4, 49:5, 50:2, 51:2, 52:3, 53:1, 54:5, 55:4, 56:2, 57:1, 58:4, 59:2, 60:4, 61:1, 62:5, 63:3, 64:1, 65:1, 66:2, 67:2, 68:2, 69:3, 70:5, 71:1, 72:2, 73:2, 74:2, 75:5, 76:5, 77:3, 78:3, 79:1, 80:5, 81:4, 82:4, 83:4, 84:2, 85:2, 86:3, 87:3, 88:4, 89:3, 90:2 },
+        "art": { 1:1, 2:3, 3:5, 4:1, 5:5, 6:1, 7:1, 8:5, 9:3, 10:2, 11:1, 12:4, 13:3, 14:3, 15:3, 16:3, 17:5, 18:4, 19:2, 20:2, 21:5, 22:5, 23:1, 24:1, 25:4, 26:1, 27:1, 28:2, 29:3, 30:3, 31:5, 32:4, 33:1, 34:4, 35:2, 36:5, 37:4, 38:5, 39:4, 40:1, 41:3, 42:4, 43:4, 44:1 },
+        "mixed": { 1:2, 2:5, 3:4, 4:1, 5:2, 6:4, 7:4, 8:3, 9:1, 10:5, 11:2, 12:4, 13:2, 14:5, 15:4, 16:5, 17:2, 18:2, 19:5, 20:4, 21:2, 22:1, 23:4, 24:3, 25:3, 26:4, 27:2, 28:5, 29:5, 30:3, 31:4, 32:1, 33:4, 34:3, 35:2, 36:4 },
+        "mock1": { 1:4, 2:2, 3:1, 4:4, 5:1, 6:3, 7:4, 8:3, 9:2, 10:1, 11:5, 12:1, 13:1, 14:5, 15:4, 16:1, 17:5 },
+        "mock2": { 1:5, 2:4, 3:1, 4:2, 5:1, 6:4, 7:5, 8:4, 9:1, 10:3, 11:3, 12:2, 13:5, 14:3, 15:1, 16:5, 17:3 }
+    };
+
+    const MOTHERTUNG_YEAR = 2027;
+    const qs = new URLSearchParams(location.search);
+    const sectionFromQs = String(qs.get("section") || "").trim().toLowerCase();
+
+    const subjectSelect = document.getElementById('subjectSelect');
+    const startQ = document.getElementById('startQ');
+    const endQ = document.getElementById('endQ');
+    const statusBadge = document.getElementById('statusBadge');
+    const statusMsg = document.getElementById('statusMsg');
+    const saveMeta = document.getElementById('saveMeta');
+    const questionList = document.getElementById('question-list');
+    const summary = document.getElementById('summary');
+    const wrongWrap = document.getElementById('wrongWrap');
+    const wrongList = document.getElementById('wrongList');
+    const btnBuild = document.getElementById('btnBuild');
+    const btnClear = document.getElementById('btnClear');
+    const btnGrade = document.getElementById('btnGrade');
+    const btnToggleReveal = document.getElementById('btnToggleReveal');
+    const btnAutofillAnswers = document.getElementById('btnAutofillAnswers');
+    const btnMenu = document.getElementById('btnMenu');
+    const mobileMenu = document.getElementById('mobileMenu');
+
+    let questionIds = [];
+    let gradeBusy = false;
+    let revealAnswers = false;
+    let draftTimer = null;
+
+    function getSubjectRange(subject) {
+        const keys = Object.keys(db[subject] || {}).map(Number).sort((a, b) => a - b);
+        return {
+            min: keys[0] || 1,
+            max: keys[keys.length - 1] || 1
+        };
+    }
+
+    function setDefaultRange() {
+        const { min, max } = getSubjectRange(subjectSelect.value);
+        startQ.value = String(min);
+        endQ.value = String(max);
+    }
+
+    function setStatus(message) {
+        statusMsg.textContent = message;
+    }
+
+    function setStatusPhase(phase, message) {
+        const labels = {
+            idle: "대기",
+            generating: "생성중",
+            grading: "채점중",
+            saving: "저장중",
+            done: "완료",
+            error: "오류"
+        };
+        statusBadge.className = `rounded-full px-2 py-1 text-xs font-black status-badge-${phase}`;
+        statusBadge.textContent = labels[phase] || "대기";
+        if (typeof message === "string") setStatus(message);
+    }
+
+    function setSaveMeta({ attemptId, href }) {
+        if (!attemptId || !href) {
+            saveMeta.classList.add("hidden");
+            saveMeta.innerHTML = "";
+            return;
+        }
+        saveMeta.classList.remove("hidden");
+        saveMeta.innerHTML = `저장 완료 (시도 #${attemptId}) · <a href="${href}" class="underline">기록 보기</a>`;
+    }
+
+    function updateActionButtons() {
+        const hasQuestions = questionIds.length > 0;
+        btnGrade.disabled = !hasQuestions || gradeBusy;
+        btnToggleReveal.disabled = !hasQuestions;
+        btnAutofillAnswers.disabled = !hasQuestions;
+    }
+
+    function getDraftKey(subject, start, end) {
+        return `mt:v1:${subject}:${start}-${end}`;
+    }
+
+    function getCurrentDraftKey() {
+        if (!questionIds.length) return "";
+        return getDraftKey(subjectSelect.value, questionIds[0], questionIds[questionIds.length - 1]);
+    }
+
+    function saveDraftNow() {
+        if (!questionIds.length) return;
+        const key = getCurrentDraftKey();
+        if (!key) return;
+        const payload = {
+            answers: buildAnswerPayload(),
+            updated_at: Date.now()
+        };
+        try {
+            localStorage.setItem(key, JSON.stringify(payload));
+        } catch (_a) {
+            // ignore localStorage quota/privacy errors
+        }
+    }
+
+    function queueDraftSave() {
+        if (draftTimer) clearTimeout(draftTimer);
+        draftTimer = setTimeout(() => {
+            saveDraftNow();
+        }, 300);
+    }
+
+    function clearCurrentDraft() {
+        const key = getCurrentDraftKey();
+        if (!key) return;
+        try {
+            localStorage.removeItem(key);
+        } catch (_a) {
+            // ignore localStorage errors
+        }
+    }
+
+    function toggleRevealLabels(forceState) {
+        revealAnswers = typeof forceState === "boolean" ? forceState : !revealAnswers;
+        btnToggleReveal.textContent = revealAnswers ? "정답 보기: ON" : "정답 보기: OFF";
+        for (const qNum of questionIds) {
+            const label = document.getElementById(`ans-${qNum}`);
+            if (!label) continue;
+            label.classList.toggle("hidden", !revealAnswers);
+        }
+    }
+
+    function restoreDraftForCurrentRange() {
+        if (!questionIds.length) return 0;
+        const key = getCurrentDraftKey();
+        if (!key) return 0;
+        let restored = 0;
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) return 0;
+            const parsed = JSON.parse(raw);
+            const answers = parsed && typeof parsed === "object" ? parsed.answers || {} : {};
+            for (const qNum of questionIds) {
+                const input = document.getElementById(`q-${qNum}`);
+                const mark = document.getElementById(`res-${qNum}`);
+                if (!input || !mark) continue;
+                const value = Number.parseInt(String(answers[qNum] || ""), 10);
+                if (!Number.isFinite(value) || value < 1 || value > 5) continue;
+                input.value = String(value);
+                clearVisualState(input, mark);
+                restored += 1;
+            }
+        } catch (_a) {
+            return 0;
+        }
+        return restored;
+    }
+
+    function renderSummaryCards({ total, correct, wrong, unanswered, attemptId, recordHref }) {
+        summary.innerHTML = `
+            <div class="grid grid-cols-2 gap-2 md:grid-cols-4">
+                <div class="rounded border border-slate-200 bg-white p-3">
+                    <div class="text-xs font-black text-slate-500">총문항</div>
+                    <div class="mono mt-1 text-2xl font-black text-slate-900">${total}</div>
+                </div>
+                <div class="rounded border border-green-200 bg-green-50 p-3">
+                    <div class="text-xs font-black text-green-700">정답</div>
+                    <div class="mono mt-1 text-2xl font-black text-green-700">${correct}</div>
+                </div>
+                <div class="rounded border border-red-200 bg-red-50 p-3">
+                    <div class="text-xs font-black text-red-700">오답</div>
+                    <div class="mono mt-1 text-2xl font-black text-red-700">${wrong}</div>
+                </div>
+                <div class="rounded border border-amber-200 bg-amber-50 p-3">
+                    <div class="text-xs font-black text-amber-700">미입력</div>
+                    <div class="mono mt-1 text-2xl font-black text-amber-700">${unanswered}</div>
+                </div>
+            </div>
+            <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+                <div class="text-sm font-black text-slate-700">${attemptId ? `저장 완료 (시도 #${attemptId})` : "로컬 채점 완료"}</div>
+                <a href="${recordHref}" class="rounded bg-slate-900 px-3 py-2 text-xs font-black text-white hover:bg-black">기록 보기</a>
+            </div>
+        `;
+        summary.classList.remove("hidden");
+    }
+
+    async function getAuthedUser() {
+        const app = window.JungdapApp || null;
+        const sbClient = typeof app?.getSb === "function" ? app.getSb() : null;
+        if (!sbClient?.auth) {
+            alert("로그인 모듈이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.");
+            return null;
+        }
+
+        const [{ data: sessionData }, { data: userData, error: userError }] = await Promise.all([
+            sbClient.auth.getSession(),
+            sbClient.auth.getUser()
+        ]);
+
+        const accessToken = sessionData?.session?.access_token || "";
+        const user = userData?.user || null;
+        if (userError || !user || !accessToken) {
+            if (typeof app?.openAuth === "function") app.openAuth("login");
+            setStatus("로그인이 필요합니다.");
+            return null;
+        }
+
+        return { user, accessToken };
+    }
+
+    function buildAnswerPayload() {
+        const payload = {};
+        for (const qNum of questionIds) {
+            const input = document.getElementById(`q-${qNum}`);
+            if (!input) continue;
+            const value = Number.parseInt(input.value, 10);
+            if (!Number.isFinite(value) || value < 1 || value > 5) continue;
+            payload[qNum] = value;
+        }
+        return payload;
+    }
+
+    async function submitServerGrade({ year, subject, startQ, endQ, answers, userId, accessToken }) {
+        const res = await fetch("/.netlify/functions/grade-mothertung", {
+            method: "POST",
+            headers: {
+                "content-type": "application/json",
+                authorization: `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({
+                year,
+                subject,
+                startQ,
+                endQ,
+                answers,
+                user_id: userId
+            })
+        });
+
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok || !payload?.ok) {
+            const message = payload?.detail || payload?.error || `HTTP_${res.status}`;
+            throw new Error(String(message));
+        }
+        return payload;
+    }
+
+    function resetAll(message = "범위를 설정하고 생성 버튼을 눌러주세요.") {
+        questionIds = [];
+        questionList.innerHTML = "";
+        wrongList.innerHTML = "";
+        summary.classList.add('hidden');
+        wrongWrap.classList.add('hidden');
+        setSaveMeta({});
+        toggleRevealLabels(false);
+        updateActionButtons();
+        setStatusPhase("idle", message);
+    }
+
+    function clampRange(start, end, min, max) {
+        const safeStart = Math.min(Math.max(start, min), max);
+        const safeEnd = Math.min(Math.max(end, min), max);
+        if (safeStart > safeEnd) return null;
+        return { start: safeStart, end: safeEnd };
+    }
+
+    function inputByPos(pos) {
+        const qid = questionIds[pos];
+        if (!qid) return null;
+        return document.getElementById(`q-${qid}`);
+    }
+
+    function focusPos(pos) {
+        const target = inputByPos(pos);
+        if (target) target.focus();
+    }
+
+    function focusNext(pos) {
+        for (let next = pos + 1; next < questionIds.length; next++) {
+            if (inputByPos(next)) {
+                focusPos(next);
+                return;
+            }
+        }
+    }
+
+    function focusPrev(pos) {
+        for (let prev = pos - 1; prev >= 0; prev--) {
+            if (inputByPos(prev)) {
+                focusPos(prev);
+                return;
+            }
+        }
+    }
+
+    function clearVisualState(input, mark) {
+        input.classList.remove("border-green-500", "bg-green-50", "border-red-500", "bg-red-50", "border-amber-500", "bg-amber-50");
+        input.classList.add("border-slate-200");
+        if (!mark) return;
+        mark.textContent = "·";
+        mark.className = "mt-1 text-center text-xs font-black text-slate-300";
+    }
+
+    function applyResultState(input, mark, state) {
+        input.classList.remove("border-slate-200", "border-green-500", "bg-green-50", "border-red-500", "bg-red-50", "border-amber-500", "bg-amber-50");
+        if (state === "O") {
+            input.classList.add("border-green-500", "bg-green-50");
+            if (!mark) return;
+            mark.textContent = "O";
+            mark.className = "mt-1 text-center text-xs font-black text-green-600";
+            return;
+        }
+        if (state === "X") {
+            input.classList.add("border-red-500", "bg-red-50");
+            if (!mark) return;
+            mark.textContent = "X";
+            mark.className = "mt-1 text-center text-xs font-black text-red-600";
+            return;
+        }
+        input.classList.add("border-amber-500", "bg-amber-50");
+        if (!mark) return;
+        mark.textContent = "!";
+        mark.className = "mt-1 text-center text-xs font-black text-amber-500";
+    }
+
+    function handleInputChange(event) {
+        const input = event.target;
+        const pos = Number(input.dataset.pos || -1);
+        const qNum = Number(input.dataset.qnum || 0);
+        const mark = document.getElementById(`res-${qNum}`);
+        const value = input.value.trim();
+
+        if (value === "") {
+            clearVisualState(input, mark);
+            queueDraftSave();
+            return;
+        }
+
+        if (!/^[1-5]$/.test(value)) {
+            input.value = "";
+            clearVisualState(input, mark);
+            queueDraftSave();
+            return;
+        }
+        clearVisualState(input, mark);
+        queueDraftSave();
+        focusNext(pos);
+    }
+
+    function handleInputKeydown(event) {
+        const input = event.target;
+        const pos = Number(input.dataset.pos || -1);
+        const value = input.value.trim();
+
+        if (event.key === "Enter") {
+            event.preventDefault();
+            gradeExam();
+            return;
+        }
+        if (event.key === "Backspace" && value === "") {
+            event.preventDefault();
+            focusPrev(pos);
+            return;
+        }
+        if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+            event.preventDefault();
+            focusPrev(pos);
+            return;
+        }
+        if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+            event.preventDefault();
+            focusNext(pos);
+            return;
+        }
+        if (event.key.length === 1 && !/[1-5]/.test(event.key)) {
+            event.preventDefault();
+        }
+    }
+
+    function handlePaste(event) {
+        const input = event.target;
+        const startPos = Number(input.dataset.pos || -1);
+        const digits = (event.clipboardData?.getData("text") || "")
+            .replace(/\s+/g, "")
+            .split("")
+            .filter((ch) => /[1-5]/.test(ch));
+
+        if (!digits.length) return;
+
+        event.preventDefault();
+        let pos = startPos;
+        for (const digit of digits) {
+            const target = inputByPos(pos);
+            if (!target) break;
+            target.value = digit;
+            const mark = document.getElementById(`res-${target.dataset.qnum}`);
+            clearVisualState(target, mark);
+            pos += 1;
+        }
+        queueDraftSave();
+        focusPos(Math.min(pos, questionIds.length - 1));
+    }
+
+    function createInputs() {
+        setStatusPhase("generating", "문항 생성 중...");
+        const subject = subjectSelect.value;
+        const answerDB = db[subject] || {};
+        const { min, max } = getSubjectRange(subject);
+        const start = parseInt(startQ.value, 10);
+        const end = parseInt(endQ.value, 10);
+        if (Number.isNaN(start) || Number.isNaN(end)) {
+            alert("시작 번호와 끝 번호를 입력해주세요.");
+            return;
+        }
+
+        const range = clampRange(start, end, min, max);
+        if (!range) {
+            alert(`범위는 ${min}번부터 ${max}번까지 설정할 수 있습니다.`);
+            return;
+        }
+
+        startQ.value = String(range.start);
+        endQ.value = String(range.end);
+        questionIds = [];
+        questionList.innerHTML = "";
+        summary.classList.add("hidden");
+        wrongWrap.classList.add("hidden");
+        wrongList.innerHTML = "";
+        setSaveMeta({});
+        toggleRevealLabels(false);
+
+        for (let q = range.start, pos = 0; q <= range.end; q += 1, pos += 1) {
+            questionIds.push(q);
+            const correctValue = answerDB[q];
+            const box = document.createElement("div");
+            box.className = "border border-slate-200 bg-white p-2";
+            box.innerHTML = `
+                <div class="mono text-center text-xs font-black text-slate-400">${String(q).padStart(3, "0")}</div>
+                <input id="q-${q}" data-qnum="${q}" data-pos="${pos}" type="text" inputmode="numeric" maxlength="1"
+                    class="mono mt-1 w-full border-2 border-slate-200 bg-slate-50 p-2 text-center text-lg font-black outline-none focus:border-blue-500" />
+                <div id="res-${q}" class="mt-1 text-center text-xs font-black text-slate-300">·</div>
+                <div id="ans-${q}" class="mt-1 hidden text-center text-[11px] font-black text-slate-400">정답: ${correctValue || "-"}</div>
+            `;
+
+            const input = box.querySelector("input");
+            const mark = box.querySelector(`#res-${q}`);
+            input.addEventListener("input", handleInputChange);
+            input.addEventListener("keydown", handleInputKeydown);
+            input.addEventListener("paste", handlePaste);
+            clearVisualState(input, mark);
+            questionList.appendChild(box);
+        }
+
+        const restored = restoreDraftForCurrentRange();
+        updateActionButtons();
+        if (restored > 0) {
+            setStatusPhase("idle", `${range.start}~${range.end} 생성 완료 · ${restored}개 복원`);
+        } else {
+            setStatusPhase("idle", `${range.start}번부터 ${range.end}번까지 생성 완료`);
+        }
+        focusPos(0);
+    }
+
+    function clearInputs() {
+        for (const qNum of questionIds) {
+            const input = document.getElementById(`q-${qNum}`);
+            const mark = document.getElementById(`res-${qNum}`);
+            if (!input || !mark) continue;
+            input.value = "";
+            clearVisualState(input, mark);
+        }
+        clearCurrentDraft();
+        summary.classList.add("hidden");
+        wrongWrap.classList.add("hidden");
+        wrongList.innerHTML = "";
+        setSaveMeta({});
+        setStatusPhase("idle", "입력을 초기화했습니다.");
+        focusPos(0);
+    }
+
+    function autofillCorrectAnswers() {
+        if (!questionIds.length) return;
+        if (!confirm("현재 입력을 정답으로 자동 채우시겠습니까? (연습용)")) return;
+        const answerDB = db[subjectSelect.value] || {};
+        for (const qNum of questionIds) {
+            const input = document.getElementById(`q-${qNum}`);
+            const mark = document.getElementById(`res-${qNum}`);
+            if (!input || !mark) continue;
+            const correctValue = answerDB[qNum];
+            input.value = correctValue ? String(correctValue) : "";
+            clearVisualState(input, mark);
+        }
+        saveDraftNow();
+        setStatusPhase("idle", "정답 자동 채우기를 적용했습니다.");
+        focusPos(0);
+    }
+
+    async function gradeExam() {
+        if (!questionIds.length || gradeBusy) return;
+        gradeBusy = true;
+        updateActionButtons();
+        setStatusPhase("grading", "로컬 채점 중...");
+        setSaveMeta({});
+
+        try {
+            const auth = await getAuthedUser();
+            if (!auth) {
+                setStatusPhase("idle", "로그인이 필요합니다.");
+                return;
+            }
+            const { user, accessToken } = auth;
+
+            const subject = subjectSelect.value;
+            const answerDB = db[subject] || {};
+            let correct = 0;
+            let attempted = 0;
+            let unanswered = 0;
+            const wrongRows = [];
+
+            for (const qNum of questionIds) {
+                const input = document.getElementById(`q-${qNum}`);
+                const mark = document.getElementById(`res-${qNum}`);
+                const userValue = parseInt(input.value, 10);
+                const correctValue = answerDB[qNum];
+
+                if (!userValue) {
+                    unanswered += 1;
+                    applyResultState(input, mark, "!");
+                    continue;
+                }
+
+                attempted += 1;
+                if (userValue === correctValue) {
+                    correct += 1;
+                    applyResultState(input, mark, "O");
+                } else {
+                    applyResultState(input, mark, "X");
+                    wrongRows.push(`${String(qNum).padStart(3, "0")}번: 내 답 ${userValue} / 정답 ${correctValue}`);
+                }
+            }
+
+            const wrong = attempted - correct;
+            const recordHref = `/records.html?year=${MOTHERTUNG_YEAR}&section=${encodeURIComponent(subject)}`;
+            renderSummaryCards({
+                total: questionIds.length,
+                correct,
+                wrong,
+                unanswered,
+                attemptId: null,
+                recordHref
+            });
+            if (wrongRows.length) {
+                wrongList.innerHTML = wrongRows.map((row) => `<div>${row}</div>`).join("");
+                wrongWrap.classList.remove("hidden");
+            } else {
+                wrongWrap.classList.add("hidden");
+                wrongList.innerHTML = "";
+            }
+            saveDraftNow();
+            summary.scrollIntoView({ behavior: "smooth", block: "start" });
+
+            setStatusPhase("saving", "서버 저장 중...");
+            const payload = await submitServerGrade({
+                year: MOTHERTUNG_YEAR,
+                subject,
+                startQ: questionIds[0],
+                endQ: questionIds[questionIds.length - 1],
+                answers: buildAnswerPayload(),
+                userId: user.id,
+                accessToken
+            });
+
+            const s = payload.summary || {};
+            const total = Number(s.total || 0);
+            const serverAttempted = Number(s.attempted || 0);
+            const serverCorrect = Number(s.correct || 0);
+            const serverWrong = Number(s.wrong || 0);
+            const serverUnanswered = Number(s.unanswered || 0);
+            const attemptId = payload.attempt_id;
+            renderSummaryCards({
+                total: total || questionIds.length,
+                correct: serverCorrect,
+                wrong: serverWrong,
+                unanswered: serverUnanswered,
+                attemptId,
+                recordHref
+            });
+            setSaveMeta({ attemptId, href: recordHref });
+            summary.scrollIntoView({ behavior: "smooth", block: "start" });
+            setStatusPhase("done", `채점/저장 완료 · 채점 ${serverAttempted}문항`);
+        } catch (error) {
+            console.error("[grader] grade-mothertung failed:", error);
+            setStatusPhase("error", "로컬 채점 완료 · 서버 저장 실패");
+            alert(`서버 채점/저장에 실패했습니다: ${String(error?.message || error)}`);
+        } finally {
+            gradeBusy = false;
+            updateActionButtons();
+        }
+    }
+
+    btnBuild.addEventListener("click", createInputs);
+    btnClear.addEventListener("click", clearInputs);
+    btnGrade.addEventListener("click", gradeExam);
+    btnToggleReveal.addEventListener("click", () => {
+        toggleRevealLabels();
+        setStatusPhase("idle", revealAnswers ? "정답 보기 ON" : "정답 보기 OFF");
+    });
+    btnAutofillAnswers.addEventListener("click", autofillCorrectAnswers);
+    subjectSelect.addEventListener("change", () => {
+        setDefaultRange();
+        resetAll("과목이 바뀌어 범위를 다시 맞췄습니다.");
+    });
+    endQ.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") createInputs();
+    });
+    btnMenu.addEventListener("click", () => {
+        mobileMenu.classList.toggle("hidden");
+    });
+
+    const allowedSubject = new Set(["humanities", "social", "science", "tech", "art", "mixed", "mock1", "mock2"]);
+    if (allowedSubject.has(sectionFromQs)) {
+        subjectSelect.value = sectionFromQs;
+    }
+    setDefaultRange();
+    if (sectionFromQs && !allowedSubject.has(sectionFromQs)) {
+        resetAll("선택한 영역은 마더텅 채점기 대상이 아니어서 기본 과목으로 열었습니다.");
+    } else {
+        resetAll();
+    }
+    updateActionButtons();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/app.js?v=20260228-0846"></script>
+<script>
+    window.JungdapApp?.setupSecretRoomHover({
+        elementId: "room-of-requirement",
+        hiddenColor: "#7092BE",
+        hoverColor: "#7496C2",
+        openColor: "#FFFFFF",
+        requiredCount: 3,
+        withinMs: 1500,
+        resetMs: 1500
+    });
+</script>
+
+</body>
+</html>
