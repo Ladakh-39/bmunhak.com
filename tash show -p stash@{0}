@@ -1,0 +1,414 @@
+ records.html  |  60 [32m++++++++++[m[31m---[m
+ students.html | 268 [32m++++++++++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ 2 files changed, 318 insertions(+), 10 deletions(-)
+
+[1mdiff --git a/records.html b/records.html[m
+[1mindex 487e346..f61b271 100644[m
+[1m--- a/records.html[m
+[1m+++ b/records.html[m
+[36m@@ -280,6 +280,7 @@[m
+     const STAFF_ROLES = new Set(["admin", "assistant"]);[m
+ [m
+     let currentUser = null;[m
+[32m+[m[32m    let currentSession = null;[m
+     let profileNickname = "";[m
+     const state = {[m
+       page: 1,[m
+[36m@@ -419,6 +420,7 @@[m
+     }[m
+ [m
+     async function syncAuthUI(session) {[m
+[32m+[m[32m      currentSession = session || null;[m
+       currentUser = session?.user || null;[m
+       const signedIn = Boolean(currentUser);[m
+       $("welcomeText").classList.toggle("hidden", !signedIn);[m
+[36m@@ -788,21 +790,59 @@[m
+       showRecordsToast("CSV 파일을 내보냈습니다.");[m
+     }[m
+ [m
+[32m+[m[32m    function getDeleteErrorMessage(errorCode) {[m
+[32m+[m[32m      const code = String(errorCode || "").trim();[m
+[32m+[m[32m      if (code === "FORBIDDEN") return "삭제 권한이 없습니다. 관리자/조교 계정으로 로그인해 주세요.";[m
+[32m+[m[32m      if (code === "UNAUTHORIZED" || code === "NO_TOKEN") return "로그인 세션이 만료되었습니다. 다시 로그인 후 시도해 주세요.";[m
+[32m+[m[32m      if (code === "ATTEMPT_NOT_FOUND") return "삭제할 기록을 찾지 못했습니다.";[m
+[32m+[m[32m      if (code === "INVALID_ATTEMPT_ID") return "삭제 요청 값이 올바르지 않습니다.";[m
+[32m+[m[32m      if (code === "ATTEMPT_SOFT_DELETE_FAILED") return "삭제 처리 중 서버 오류가 발생했습니다.";[m
+[32m+[m[32m      if (!code) return "삭제 실패";[m
+[32m+[m[32m      if (code.startsWith("HTTP_")) return `삭제 실패 (서버 응답 ${code.replace("HTTP_", "")})`;[m
+[32m+[m[32m      return `삭제 실패: ${code}`;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    async function staffSoftDeleteAttempt(attemptId) {[m
+[32m+[m[32m      if (!state.canDeleteRecords) return { ok: false, error: "FORBIDDEN" };[m
+[32m+[m[32m      const id = Number(attemptId);[m
+[32m+[m[32m      if (!Number.isFinite(id) || id <= 0) return { ok: false, error: "INVALID_ATTEMPT_ID" };[m
+[32m+[m
+[32m+[m[32m      let token = String(currentSession?.access_token || "");[m
+[32m+[m[32m      if (!token) {[m
+[32m+[m[32m        const { data } = await sbClient.auth.getSession();[m
+[32m+[m[32m        currentSession = data?.session || null;[m
+[32m+[m[32m        token = String(currentSession?.access_token || "");[m
+[32m+[m[32m      }[m
+[32m+[m[32m      if (!token) return { ok: false, error: "NO_TOKEN" };[m
+[32m+[m
+[32m+[m[32m      const res = await fetch("/.netlify/functions/admin-soft-delete-attempt", {[m
+[32m+[m[32m        method: "POST",[m
+[32m+[m[32m        headers: {[m
+[32m+[m[32m          "Content-Type": "application/json; charset=utf-8",[m
+[32m+[m[32m          Authorization: `Bearer ${token}`,[m
+[32m+[m[32m        },[m
+[32m+[m[32m        body: JSON.stringify({ attempt_id: id }),[m
+[32m+[m[32m        cache: "no-store",[m
+[32m+[m[32m      });[m
+[32m+[m
+[32m+[m[32m      const data = await res.json().catch(() => ({}));[m
+[32m+[m[32m      if (!res.ok || !data?.ok) {[m
+[32m+[m[32m        return { ok: false, error: data?.error || data?.detail || `HTTP_${res.status}` };[m
+[32m+[m[32m      }[m
+[32m+[m[32m      return { ok: true };[m
+[32m+[m[32m    }[m
+[32m+[m
+     async function deleteAttempt(attemptId) {[m
+       if (!currentUser) return APP.openAuth("login");[m
+       if (!state.canDeleteRecords) return;[m
+[31m-      if (!confirm("이 기록을 삭제하면 복구할 수 없습니다. 정말 삭제할까요?")) return;[m
+[31m-[m
+[31m-      const { error } = await sbClient[m
+[31m-        .from("exam_attempts")[m
+[31m-        .update({ is_deleted: true, deleted_at: new Date().toISOString() })[m
+[31m-        .eq("id", attemptId)[m
+[31m-        .eq("user_id", currentUser.id);[m
+[31m-      if (error) {[m
+[31m-        showRecordsToast(error.message || "삭제 실패", "error");[m
+[32m+[m[32m      if (!confirm("이 기록을 삭제(soft) 처리할까요?")) return;[m
+[32m+[m
+[32m+[m[32m      const result = await staffSoftDeleteAttempt(attemptId);[m
+[32m+[m[32m      if (!result.ok) {[m
+[32m+[m[32m        showRecordsToast(getDeleteErrorMessage(result.error), "error");[m
+         return;[m
+       }[m
+[31m-      showRecordsToast("기록을 삭제했습니다.");[m
+[32m+[m[32m      showRecordsToast("삭제 완료");[m
+       await loadAttempts();[m
+     }[m
+ [m
+[1mdiff --git a/students.html b/students.html[m
+[1mindex 8e09da4..f2d3c9a 100644[m
+[1m--- a/students.html[m
+[1m+++ b/students.html[m
+[36m@@ -87,6 +87,103 @@[m
+         <button id="btnSearch" class="h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 hover:bg-slate-100" type="button">검색</button>[m
+       </div>[m
+ [m
+[32m+[m[32m      <div id="batchImportCard" class="mt-4 hidden rounded-2xl border border-blue-200 bg-blue-50 p-4">[m
+[32m+[m[32m        <div class="flex flex-wrap items-start justify-between gap-2">[m
+[32m+[m[32m          <div>[m
+[32m+[m[32m            <h2 class="text-base font-black text-blue-900">학생 대량 등록</h2>[m
+[32m+[m[32m            <p class="mt-1 text-xs font-bold text-blue-700">카톡/구글폼/엑셀 목록을 여러 줄로 붙여넣으면 일괄 검증/등록합니다.</p>[m
+[32m+[m[32m          </div>[m
+[32m+[m[32m          <span class="inline-flex rounded-full border border-blue-300 bg-white px-2 py-1 text-[11px] font-black text-blue-700">admin 전용</span>[m
+[32m+[m[32m        </div>[m
+[32m+[m
+[32m+[m[32m        <textarea id="batchInput" rows="8" class="mt-3 w-full rounded-xl border border-blue-200 bg-white p-3 text-sm font-bold text-slate-800 outline-none focus:border-blue-500" placeholder="예시 입력:[m
+[32m+[m[32m고등,3,김철수[m
+[32m+[m[32m중등	2	박영희[m
+[32m+[m[32m고등 | 1 | 최민수"></textarea>[m
+[32m+[m
+[32m+[m[32m        <div class="mt-3 flex flex-wrap items-center gap-3">[m
+[32m+[m[32m          <label class="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-black text-blue-800">[m
+[32m+[m[32m            <input id="batchSkipDuplicates" type="checkbox" class="h-4 w-4" checked />[m
+[32m+[m[32m            중복은 건너뛰기[m
+[32m+[m[32m          </label>[m
+[32m+[m[32m          <label class="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-black text-blue-800">[m
+[32m+[m[32m            <input id="batchDryRun" type="checkbox" class="h-4 w-4" />[m
+[32m+[m[32m            저장 없이 미리보기[m
+[32m+[m[32m          </label>[m
+[32m+[m[32m        </div>[m
+[32m+[m
+[32m+[m[32m        <div class="mt-3 flex flex-wrap gap-2">[m
+[32m+[m[32m          <button id="btnBatchPreview" class="rounded-xl border border-blue-300 bg-white px-3 py-2 text-sm font-black text-blue-700 hover:bg-blue-100" type="button">검증/미리보기</button>[m
+[32m+[m[32m          <button id="btnBatchImport" class="rounded-xl bg-blue-700 px-3 py-2 text-sm font-black text-white hover:bg-blue-800" type="button">일괄 등록</button>[m
+[32m+[m[32m        </div>[m
+[32m+[m
+[32m+[m[32m        <div id="batchStateCard" class="mt-3 hidden rounded-xl border p-3"></div>[m
+[32m+[m
+[32m+[m[32m        <div id="batchResultPanel" class="mt-3 hidden rounded-xl border border-blue-200 bg-white p-3">[m
+[32m+[m[32m          <div class="flex flex-wrap gap-2">[m
+[32m+[m[32m            <span class="rounded-full border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-black text-slate-700">총 <span id="batchSummaryTotal">0</span>줄</span>[m
+[32m+[m[32m            <span class="rounded-full border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">등록 <span id="batchSummaryInserted">0</span></span>[m
+[32m+[m[32m            <span class="rounded-full border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-black text-amber-700">중복스킵 <span id="batchSummarySkipped">0</span></span>[m
+[32m+[m[32m            <span class="rounded-full border border-rose-300 bg-rose-50 px-2 py-1 text-xs font-black text-rose-700">실패 <span id="batchSummaryFailed">0</span></span>[m
+[32m+[m[32m          </div>[m
+[32m+[m
+[32m+[m[32m          <div class="mt-3 overflow-x-auto rounded-xl border border-rose-200">[m
+[32m+[m[32m            <table class="min-w-full text-xs">[m
+[32m+[m[32m              <thead class="border-b border-rose-200 bg-rose-50">[m
+[32m+[m[32m                <tr class="font-black text-rose-700">[m
+[32m+[m[32m                  <th class="px-3 py-2 text-left w-[70px]">라인</th>[m
+[32m+[m[32m                  <th class="px-3 py-2 text-left">원문(일부)</th>[m
+[32m+[m[32m                  <th class="px-3 py-2 text-left w-[220px]">사유</th>[m
+[32m+[m[32m                </tr>[m
+[32m+[m[32m              </thead>[m
+[32m+[m[32m              <tbody id="batchFailedTbody" class="divide-y divide-rose-100">[m
+[32m+[m[32m                <tr><td colspan="3" class="px-3 py-3 text-xs font-black text-slate-500">실패 라인이 없습니다.</td></tr>[m
+[32m+[m[32m              </tbody>[m
+[32m+[m[32m            </table>[m
+[32m+[m[32m          </div>[m
+[32m+[m
+[32m+[m[32m          <details class="mt-3">[m
+[32m+[m[32m            <summary class="cursor-pointer text-xs font-black text-slate-700">등록/미리보기 라인 (<span id="batchInsertedCount">0</span>)</summary>[m
+[32m+[m[32m            <div class="mt-2 overflow-x-auto rounded-xl border border-emerald-200">[m
+[32m+[m[32m              <table class="min-w-full text-xs">[m
+[32m+[m[32m                <thead class="border-b border-emerald-200 bg-emerald-50">[m
+[32m+[m[32m                  <tr class="font-black text-emerald-700">[m
+[32m+[m[32m                    <th class="px-3 py-2 text-left w-[70px]">라인</th>[m
+[32m+[m[32m                    <th class="px-3 py-2 text-left">정규화</th>[m
+[32m+[m[32m                    <th class="px-3 py-2 text-left w-[120px]">결과</th>[m
+[32m+[m[32m                  </tr>[m
+[32m+[m[32m                </thead>[m
+[32m+[m[32m                <tbody id="batchInsertedTbody" class="divide-y divide-emerald-100">[m
+[32m+[m[32m                  <tr><td colspan="3" class="px-3 py-3 text-xs font-black text-slate-500">표시할 항목이 없습니다.</td></tr>[m
+[32m+[m[32m                </tbody>[m
+[32m+[m[32m              </table>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m          </details>[m
+[32m+[m
+[32m+[m[32m          <details class="mt-3">[m
+[32m+[m[32m            <summary class="cursor-pointer text-xs font-black text-slate-700">스킵 라인 (<span id="batchSkippedCount">0</span>)</summary>[m
+[32m+[m[32m            <div class="mt-2 overflow-x-auto rounded-xl border border-amber-200">[m
+[32m+[m[32m              <table class="min-w-full text-xs">[m
+[32m+[m[32m                <thead class="border-b border-amber-200 bg-amber-50">[m
+[32m+[m[32m                  <tr class="font-black text-amber-700">[m
+[32m+[m[32m                    <th class="px-3 py-2 text-left w-[70px]">라인</th>[m
+[32m+[m[32m                    <th class="px-3 py-2 text-left">원문/정규화</th>[m
+[32m+[m[32m                    <th class="px-3 py-2 text-left w-[220px]">사유</th>[m
+[32m+[m[32m                  </tr>[m
+[32m+[m[32m                </thead>[m
+[32m+[m[32m                <tbody id="batchSkippedTbody" class="divide-y divide-amber-100">[m
+[32m+[m[32m                  <tr><td colspan="3" class="px-3 py-3 text-xs font-black text-slate-500">표시할 항목이 없습니다.</td></tr>[m
+[32m+[m[32m                </tbody>[m
+[32m+[m[32m              </table>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m          </details>[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m      </div>[m
+[32m+[m
+[32m+[m[32m      <div id="batchImportBlocked" class="mt-4 hidden rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-black text-slate-600">[m
+[32m+[m[32m        학생 대량 등록은 관리자(admin) 계정에서만 사용할 수 있습니다.[m
+[32m+[m[32m      </div>[m
+[32m+[m
+       <div id="stateCard" class="mt-4 hidden rounded-2xl border p-4"></div>[m
+ [m
+       <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200">[m
+[36m@@ -232,12 +329,14 @@[m
+ [m
+     const state = {[m
+       role: "",[m
+[32m+[m[32m      isAdmin: false,[m
+       rows: [],[m
+       editingId: null,[m
+       linkTarget: null,[m
+       selectedProfileUserId: "",[m
+       managedStudentId: "",[m
+       managedAttempts: [],[m
+[32m+[m[32m      batchLoading: false,[m
+     };[m
+ [m
+     function escapeHtml(value) {[m
+[36m@@ -295,6 +394,170 @@[m
+       card.innerHTML = "";[m
+     }[m
+ [m
+[32m+[m[32m    function showBatchState(kind, message) {[m
+[32m+[m[32m      const card = $("batchStateCard");[m
+[32m+[m[32m      if (!card) return;[m
+[32m+[m[32m      card.className = "mt-3 rounded-xl border p-3";[m
+[32m+[m[32m      if (kind === "loading") card.classList.add("border-blue-200", "bg-blue-50", "text-blue-900");[m
+[32m+[m[32m      else if (kind === "error") card.classList.add("border-rose-200", "bg-rose-50", "text-rose-800");[m
+[32m+[m[32m      else card.classList.add("border-slate-200", "bg-slate-50", "text-slate-700");[m
+[32m+[m[32m      card.innerHTML = `<div class="text-xs font-black">${escapeHtml(message || "")}</div>`;[m
+[32m+[m[32m      card.classList.remove("hidden");[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    function hideBatchState() {[m
+[32m+[m[32m      const card = $("batchStateCard");[m
+[32m+[m[32m      if (!card) return;[m
+[32m+[m[32m      card.className = "mt-3 hidden rounded-xl border p-3";[m
+[32m+[m[32m      card.innerHTML = "";[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    function syncBatchImportAccess() {[m
+[32m+[m[32m      state.isAdmin = state.role === "admin";[m
+[32m+[m[32m      $("batchImportCard")?.classList.toggle("hidden", !state.isAdmin);[m
+[32m+[m[32m      $("batchImportBlocked")?.classList.toggle("hidden", state.isAdmin);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    function setBatchLoading(loading) {[m
+[32m+[m[32m      state.batchLoading = loading === true;[m
+[32m+[m[32m      const disabled = state.batchLoading;[m
+[32m+[m[32m      ["btnBatchPreview", "btnBatchImport", "batchInput", "batchSkipDuplicates", "batchDryRun"].forEach((id) => {[m
+[32m+[m[32m        const el = $(id);[m
+[32m+[m[32m        if (el) el.disabled = disabled;[m
+[32m+[m[32m      });[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    function translateBatchReason(reason) {[m
+[32m+[m[32m      const code = String(reason || "").trim();[m
+[32m+[m[32m      if (code === "MISSING_FIELDS") return "필수 항목(학교급, 학년, 이름)이 부족합니다.";[m
+[32m+[m[32m      if (code === "INVALID_GRADE_LEVEL") return "학교급은 중등/고등만 가능합니다.";[m
+[32m+[m[32m      if (code === "INVALID_GRADE_YEAR") return "학년은 1~3만 가능합니다.";[m
+[32m+[m[32m      if (code === "INVALID_NAME") return "이름 형식이 올바르지 않습니다. (1~40자)";[m
+[32m+[m[32m      if (code === "DUPLICATE_IN_INPUT") return "입력 목록 내부 중복입니다.";[m
+[32m+[m[32m      if (code === "DUPLICATE_IN_DB") return "이미 등록된 학생입니다.";[m
+[32m+[m[32m      if (code === "DRY_RUN") return "미리보기 모드(저장 안 함)";[m
+[32m+[m[32m      if (code === "STUDENT_INSERT_FAILED") return "저장 중 오류가 발생했습니다.";[m
+[32m+[m[32m      if (code === "FORBIDDEN") return "관리자 계정만 실행할 수 있습니다.";[m
+[32m+[m[32m      if (code === "BAD_REQUEST") return "요청 형식이 올바르지 않습니다.";[m
+[32m+[m[32m      if (code === "INTERNAL") return "서버 처리 중 오류가 발생했습니다.";[m
+[32m+[m[32m      if (code.startsWith("HTTP_")) return `서버 응답 오류 (${code.replace("HTTP_", "")})`;[m
+[32m+[m[32m      return code || "알 수 없는 오류";[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    function formatBatchNormalized(normalized) {[m
+[32m+[m[32m      if (!normalized || typeof normalized !== "object") return "-";[m
+[32m+[m[32m      const gradeLevel = escapeHtml(String(normalized.grade_level || "-"));[m
+[32m+[m[32m      const gradeYear = escapeHtml(String(normalized.grade_year || "-"));[m
+[32m+[m[32m      const name = escapeHtml(String(normalized.name || "-"));[m
+[32m+[m[32m      return `${gradeLevel} ${gradeYear}학년 ${name}`;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    function renderBatchRows(tbodyId, rows, emptyMessage, rowBuilder) {[m
+[32m+[m[32m      const tbody = $(tbodyId);[m
+[32m+[m[32m      if (!tbody) return;[m
+[32m+[m[32m      if (!rows.length) {[m
+[32m+[m[32m        tbody.innerHTML = `<tr><td colspan="3" class="px-3 py-3 text-xs font-black text-slate-500">${escapeHtml(emptyMessage)}</td></tr>`;[m
+[32m+[m[32m        return;[m
+[32m+[m[32m      }[m
+[32m+[m[32m      tbody.innerHTML = rows.map(rowBuilder).join("");[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    function renderBatchReport(payload, dryRun) {[m
+[32m+[m[32m      const summary = payload?.summary || {};[m
+[32m+[m[32m      const total = Number(summary.total_lines || 0);[m
+[32m+[m[32m      const inserted = Number(summary.inserted || 0);[m
+[32m+[m[32m      const skippedDb = Number(summary.skipped_duplicate_db || 0);[m
+[32m+[m[32m      const skippedInput = Number(summary.skipped_duplicate_input || 0);[m
+[32m+[m[32m      const failed = Number(summary.failed || 0);[m
+[32m+[m[32m      const totalSkipped = skippedDb + skippedInput;[m
+[32m+[m
+[32m+[m[32m      $("batchResultPanel")?.classList.remove("hidden");[m
+[32m+[m[32m      $("batchSummaryTotal").textContent = String(Number.isFinite(total) ? total : 0);[m
+[32m+[m[32m      $("batchSummaryInserted").textContent = String(Number.isFinite(inserted) ? inserted : 0);[m
+[32m+[m[32m      $("batchSummarySkipped").textContent = String(Number.isFinite(totalSkipped) ? totalSkipped : 0);[m
+[32m+[m[32m      $("batchSummaryFailed").textContent = String(Number.isFinite(failed) ? failed : 0);[m
+[32m+[m
+[32m+[m[32m      const results = Array.isArray(payload?.results) ? payload.results : [];[m
+[32m+[m[32m      const failedRows = results.filter((row) => row?.status === "failed");[m
+[32m+[m[32m      const skippedRows = results.filter((row) => row?.status === "skipped" && row?.reason !== "DRY_RUN");[m
+[32m+[m[32m      const insertedRows = results.filter((row) => row?.status === "inserted" || row?.reason === "DRY_RUN");[m
+[32m+[m
+[32m+[m[32m      $("batchInsertedCount").textContent = String(insertedRows.length);[m
+[32m+[m[32m      $("batchSkippedCount").textContent = String(skippedRows.length);[m
+[32m+[m
+[32m+[m[32m      renderBatchRows("batchFailedTbody", failedRows, "실패 라인이 없습니다.", (row) => `[m
+[32m+[m[32m        <tr>[m
+[32m+[m[32m          <td class="px-3 py-2 mono font-black text-slate-700">${escapeHtml(String(row.line_no ?? "-"))}</td>[m
+[32m+[m[32m          <td class="px-3 py-2 font-bold text-slate-700">${escapeHtml(String(row.raw || "-"))}</td>[m
+[32m+[m[32m          <td class="px-3 py-2 font-black text-rose-700">${escapeHtml(translateBatchReason(row.reason))}</td>[m
+[32m+[m[32m        </tr>[m
+[32m+[m[32m      `);[m
+[32m+[m
+[32m+[m[32m      renderBatchRows("batchInsertedTbody", insertedRows, "표시할 항목이 없습니다.", (row) => {[m
+[32m+[m[32m        const statusLabel = row?.reason === "DRY_RUN" || dryRun ? "미리보기" : "등록";[m
+[32m+[m[32m        return `[m
+[32m+[m[32m          <tr>[m
+[32m+[m[32m            <td class="px-3 py-2 mono font-black text-slate-700">${escapeHtml(String(row.line_no ?? "-"))}</td>[m
+[32m+[m[32m            <td class="px-3 py-2 font-bold text-slate-700">${formatBatchNormalized(row.normalized)}</td>[m
+[32m+[m[32m            <td class="px-3 py-2 font-black text-emerald-700">${escapeHtml(statusLabel)}</td>[m
+[32m+[m[32m          </tr>[m
+[32m+[m[32m        `;[m
+[32m+[m[32m      });[m
+[32m+[m
+[32m+[m[32m      renderBatchRows("batchSkippedTbody", skippedRows, "표시할 항목이 없습니다.", (row) => `[m
+[32m+[m[32m        <tr>[m
+[32m+[m[32m          <td class="px-3 py-2 mono font-black text-slate-700">${escapeHtml(String(row.line_no ?? "-"))}</td>[m
+[32m+[m[32m          <td class="px-3 py-2 font-bold text-slate-700">${row?.normalized ? formatBatchNormalized(row.normalized) : escapeHtml(String(row.raw || "-"))}</td>[m
+[32m+[m[32m          <td class="px-3 py-2 font-black text-amber-700">${escapeHtml(translateBatchReason(row.reason))}</td>[m
+[32m+[m[32m        </tr>[m
+[32m+[m[32m      `);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    async function runBatchCreateStudents(forceDryRun) {[m
+[32m+[m[32m      if (!state.isAdmin) {[m
+[32m+[m[32m        showToast("대량 등록은 관리자 계정만 사용할 수 있습니다.", "error");[m
+[32m+[m[32m        return;[m
+[32m+[m[32m      }[m
+[32m+[m[32m      if (state.batchLoading) return;[m
+[32m+[m
+[32m+[m[32m      const text = String($("batchInput")?.value || "");[m
+[32m+[m[32m      if (!text.trim()) {[m
+[32m+[m[32m        showToast("붙여넣기 내용을 입력하세요.", "error");[m
+[32m+[m[32m        return;[m
+[32m+[m[32m      }[m
+[32m+[m
+[32m+[m[32m      const mode = $("batchSkipDuplicates")?.checked === false ? "error_on_duplicates" : "skip_duplicates";[m
+[32m+[m[32m      const dryRun = forceDryRun === true ? true : $("batchDryRun")?.checked === true;[m
+[32m+[m[32m      if (forceDryRun !== true && dryRun !== true) {[m
+[32m+[m[32m        if (!confirm("유효한 학생은 즉시 등록됩니다. 계속할까요?")) return;[m
+[32m+[m[32m      }[m
+[32m+[m
+[32m+[m[32m      setBatchLoading(true);[m
+[32m+[m[32m      showBatchState("loading", dryRun ? "입력 내용을 검증하는 중..." : "대량 등록을 처리하는 중...");[m
+[32m+[m[32m      try {[m
+[32m+[m[32m        const payload = await callAdminApi("/.netlify/functions/admin-batch-create-students", {[m
+[32m+[m[32m          method: "POST",[m
+[32m+[m[32m          body: {[m
+[32m+[m[32m            text,[m
+[32m+[m[32m            mode,[m
+[32m+[m[32m            dry_run: dryRun,[m
+[32m+[m[32m          },[m
+[32m+[m[32m        });[m
+[32m+[m[32m        renderBatchReport(payload, dryRun);[m
+[32m+[m[32m        const summary = payload?.summary || {};[m
+[32m+[m[32m        const inserted = Number(summary.inserted || 0);[m
+[32m+[m[32m        if (!dryRun && Number.isFinite(inserted) && inserted > 0) {[m
+[32m+[m[32m          await loadStudents();[m
+[32m+[m[32m        }[m
+[32m+[m[32m        showBatchState("empty", dryRun ? "검증/미리보기가 완료되었습니다." : "일괄 등록 처리가 완료되었습니다.");[m
+[32m+[m[32m      } catch (error) {[m
+[32m+[m[32m        const code = String(error?.message || error || "");[m
+[32m+[m[32m        showBatchState("error", `대량 등록 실패: ${translateBatchReason(code)}`);[m
+[32m+[m[32m      } finally {[m
+[32m+[m[32m        setBatchLoading(false);[m
+[32m+[m[32m      }[m
+[32m+[m[32m    }[m
+[32m+[m
+     function normalizeRole(value) {[m
+       return String(value || "").trim().toLowerCase();[m
+     }[m
+[36m@@ -698,6 +961,7 @@[m
+       }[m
+       const role = await getMyRole(auth.user.id);[m
+       state.role = role;[m
+[32m+[m[32m      syncBatchImportAccess();[m
+       if (!STAFF_ROLES.has(role)) {[m
+         alert("학생관리 페이지는 관리자/조교만 접근할 수 있습니다.");[m
+         location.href = "/";[m
+[36m@@ -762,6 +1026,8 @@[m
+     $("btnLoadStudentAttempts").addEventListener("click", () => { void loadManagedAttempts(); });[m
+     $("attemptStudentSelect").addEventListener("change", () => { void loadManagedAttempts(); });[m
+     $("attemptIncludeDeleted").addEventListener("change", () => { void loadManagedAttempts(); });[m
+[32m+[m[32m    $("btnBatchPreview")?.addEventListener("click", () => { void runBatchCreateStudents(true); });[m
+[32m+[m[32m    $("btnBatchImport")?.addEventListener("click", () => { void runBatchCreateStudents(false); });[m
+     $("managedAttemptsTbody").addEventListener("click", (event) => {[m
+       const target = event.target;[m
+       if (!(target instanceof HTMLElement)) return;[m
+[36m@@ -799,6 +1065,8 @@[m
+           return;[m
+         }[m
+         const role = await getMyRole(session.user.id);[m
+[32m+[m[32m        state.role = role;[m
+[32m+[m[32m        syncBatchImportAccess();[m
+         if (!STAFF_ROLES.has(role)) {[m
+           alert("권한이 없습니다.");[m
+           location.href = "/";[m
