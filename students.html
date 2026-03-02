@@ -87,6 +87,103 @@
         <button id="btnSearch" class="h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 hover:bg-slate-100" type="button">검색</button>
       </div>
 
+      <div id="batchImportCard" class="mt-4 hidden rounded-2xl border border-blue-200 bg-blue-50 p-4">
+        <div class="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h2 class="text-base font-black text-blue-900">학생 대량 등록</h2>
+            <p class="mt-1 text-xs font-bold text-blue-700">카톡/구글폼/엑셀 목록을 여러 줄로 붙여넣으면 일괄 검증/등록합니다.</p>
+          </div>
+          <span class="inline-flex rounded-full border border-blue-300 bg-white px-2 py-1 text-[11px] font-black text-blue-700">admin 전용</span>
+        </div>
+
+        <textarea id="batchInput" rows="8" class="mt-3 w-full rounded-xl border border-blue-200 bg-white p-3 text-sm font-bold text-slate-800 outline-none focus:border-blue-500" placeholder="예시 입력:
+고등,3,김철수
+중등	2	박영희
+고등 | 1 | 최민수"></textarea>
+
+        <div class="mt-3 flex flex-wrap items-center gap-3">
+          <label class="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-black text-blue-800">
+            <input id="batchSkipDuplicates" type="checkbox" class="h-4 w-4" checked />
+            중복은 건너뛰기
+          </label>
+          <label class="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-black text-blue-800">
+            <input id="batchDryRun" type="checkbox" class="h-4 w-4" />
+            저장 없이 미리보기
+          </label>
+        </div>
+
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button id="btnBatchPreview" class="rounded-xl border border-blue-300 bg-white px-3 py-2 text-sm font-black text-blue-700 hover:bg-blue-100" type="button">검증/미리보기</button>
+          <button id="btnBatchImport" class="rounded-xl bg-blue-700 px-3 py-2 text-sm font-black text-white hover:bg-blue-800" type="button">일괄 등록</button>
+        </div>
+
+        <div id="batchStateCard" class="mt-3 hidden rounded-xl border p-3"></div>
+
+        <div id="batchResultPanel" class="mt-3 hidden rounded-xl border border-blue-200 bg-white p-3">
+          <div class="flex flex-wrap gap-2">
+            <span class="rounded-full border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-black text-slate-700">총 <span id="batchSummaryTotal">0</span>줄</span>
+            <span class="rounded-full border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">등록 <span id="batchSummaryInserted">0</span></span>
+            <span class="rounded-full border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-black text-amber-700">중복스킵 <span id="batchSummarySkipped">0</span></span>
+            <span class="rounded-full border border-rose-300 bg-rose-50 px-2 py-1 text-xs font-black text-rose-700">실패 <span id="batchSummaryFailed">0</span></span>
+          </div>
+
+          <div class="mt-3 overflow-x-auto rounded-xl border border-rose-200">
+            <table class="min-w-full text-xs">
+              <thead class="border-b border-rose-200 bg-rose-50">
+                <tr class="font-black text-rose-700">
+                  <th class="px-3 py-2 text-left w-[70px]">라인</th>
+                  <th class="px-3 py-2 text-left">원문(일부)</th>
+                  <th class="px-3 py-2 text-left w-[220px]">사유</th>
+                </tr>
+              </thead>
+              <tbody id="batchFailedTbody" class="divide-y divide-rose-100">
+                <tr><td colspan="3" class="px-3 py-3 text-xs font-black text-slate-500">실패 라인이 없습니다.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <details class="mt-3">
+            <summary class="cursor-pointer text-xs font-black text-slate-700">등록/미리보기 라인 (<span id="batchInsertedCount">0</span>)</summary>
+            <div class="mt-2 overflow-x-auto rounded-xl border border-emerald-200">
+              <table class="min-w-full text-xs">
+                <thead class="border-b border-emerald-200 bg-emerald-50">
+                  <tr class="font-black text-emerald-700">
+                    <th class="px-3 py-2 text-left w-[70px]">라인</th>
+                    <th class="px-3 py-2 text-left">정규화</th>
+                    <th class="px-3 py-2 text-left w-[120px]">결과</th>
+                  </tr>
+                </thead>
+                <tbody id="batchInsertedTbody" class="divide-y divide-emerald-100">
+                  <tr><td colspan="3" class="px-3 py-3 text-xs font-black text-slate-500">표시할 항목이 없습니다.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+
+          <details class="mt-3">
+            <summary class="cursor-pointer text-xs font-black text-slate-700">스킵 라인 (<span id="batchSkippedCount">0</span>)</summary>
+            <div class="mt-2 overflow-x-auto rounded-xl border border-amber-200">
+              <table class="min-w-full text-xs">
+                <thead class="border-b border-amber-200 bg-amber-50">
+                  <tr class="font-black text-amber-700">
+                    <th class="px-3 py-2 text-left w-[70px]">라인</th>
+                    <th class="px-3 py-2 text-left">원문/정규화</th>
+                    <th class="px-3 py-2 text-left w-[220px]">사유</th>
+                  </tr>
+                </thead>
+                <tbody id="batchSkippedTbody" class="divide-y divide-amber-100">
+                  <tr><td colspan="3" class="px-3 py-3 text-xs font-black text-slate-500">표시할 항목이 없습니다.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <div id="batchImportBlocked" class="mt-4 hidden rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-black text-slate-600">
+        학생 대량 등록은 관리자(admin) 계정에서만 사용할 수 있습니다.
+      </div>
+
       <div id="stateCard" class="mt-4 hidden rounded-2xl border p-4"></div>
 
       <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200">
@@ -232,12 +329,14 @@
 
     const state = {
       role: "",
+      isAdmin: false,
       rows: [],
       editingId: null,
       linkTarget: null,
       selectedProfileUserId: "",
       managedStudentId: "",
       managedAttempts: [],
+      batchLoading: false,
     };
 
     function escapeHtml(value) {
@@ -293,6 +392,170 @@
       if (!card) return;
       card.className = "mt-4 hidden rounded-2xl border p-4";
       card.innerHTML = "";
+    }
+
+    function showBatchState(kind, message) {
+      const card = $("batchStateCard");
+      if (!card) return;
+      card.className = "mt-3 rounded-xl border p-3";
+      if (kind === "loading") card.classList.add("border-blue-200", "bg-blue-50", "text-blue-900");
+      else if (kind === "error") card.classList.add("border-rose-200", "bg-rose-50", "text-rose-800");
+      else card.classList.add("border-slate-200", "bg-slate-50", "text-slate-700");
+      card.innerHTML = `<div class="text-xs font-black">${escapeHtml(message || "")}</div>`;
+      card.classList.remove("hidden");
+    }
+
+    function hideBatchState() {
+      const card = $("batchStateCard");
+      if (!card) return;
+      card.className = "mt-3 hidden rounded-xl border p-3";
+      card.innerHTML = "";
+    }
+
+    function syncBatchImportAccess() {
+      state.isAdmin = state.role === "admin";
+      $("batchImportCard")?.classList.toggle("hidden", !state.isAdmin);
+      $("batchImportBlocked")?.classList.toggle("hidden", state.isAdmin);
+    }
+
+    function setBatchLoading(loading) {
+      state.batchLoading = loading === true;
+      const disabled = state.batchLoading;
+      ["btnBatchPreview", "btnBatchImport", "batchInput", "batchSkipDuplicates", "batchDryRun"].forEach((id) => {
+        const el = $(id);
+        if (el) el.disabled = disabled;
+      });
+    }
+
+    function translateBatchReason(reason) {
+      const code = String(reason || "").trim();
+      if (code === "MISSING_FIELDS") return "필수 항목(학교급, 학년, 이름)이 부족합니다.";
+      if (code === "INVALID_GRADE_LEVEL") return "학교급은 중등/고등만 가능합니다.";
+      if (code === "INVALID_GRADE_YEAR") return "학년은 1~3만 가능합니다.";
+      if (code === "INVALID_NAME") return "이름 형식이 올바르지 않습니다. (1~40자)";
+      if (code === "DUPLICATE_IN_INPUT") return "입력 목록 내부 중복입니다.";
+      if (code === "DUPLICATE_IN_DB") return "이미 등록된 학생입니다.";
+      if (code === "DRY_RUN") return "미리보기 모드(저장 안 함)";
+      if (code === "STUDENT_INSERT_FAILED") return "저장 중 오류가 발생했습니다.";
+      if (code === "FORBIDDEN") return "관리자 계정만 실행할 수 있습니다.";
+      if (code === "BAD_REQUEST") return "요청 형식이 올바르지 않습니다.";
+      if (code === "INTERNAL") return "서버 처리 중 오류가 발생했습니다.";
+      if (code.startsWith("HTTP_")) return `서버 응답 오류 (${code.replace("HTTP_", "")})`;
+      return code || "알 수 없는 오류";
+    }
+
+    function formatBatchNormalized(normalized) {
+      if (!normalized || typeof normalized !== "object") return "-";
+      const gradeLevel = escapeHtml(String(normalized.grade_level || "-"));
+      const gradeYear = escapeHtml(String(normalized.grade_year || "-"));
+      const name = escapeHtml(String(normalized.name || "-"));
+      return `${gradeLevel} ${gradeYear}학년 ${name}`;
+    }
+
+    function renderBatchRows(tbodyId, rows, emptyMessage, rowBuilder) {
+      const tbody = $(tbodyId);
+      if (!tbody) return;
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="3" class="px-3 py-3 text-xs font-black text-slate-500">${escapeHtml(emptyMessage)}</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = rows.map(rowBuilder).join("");
+    }
+
+    function renderBatchReport(payload, dryRun) {
+      const summary = payload?.summary || {};
+      const total = Number(summary.total_lines || 0);
+      const inserted = Number(summary.inserted || 0);
+      const skippedDb = Number(summary.skipped_duplicate_db || 0);
+      const skippedInput = Number(summary.skipped_duplicate_input || 0);
+      const failed = Number(summary.failed || 0);
+      const totalSkipped = skippedDb + skippedInput;
+
+      $("batchResultPanel")?.classList.remove("hidden");
+      $("batchSummaryTotal").textContent = String(Number.isFinite(total) ? total : 0);
+      $("batchSummaryInserted").textContent = String(Number.isFinite(inserted) ? inserted : 0);
+      $("batchSummarySkipped").textContent = String(Number.isFinite(totalSkipped) ? totalSkipped : 0);
+      $("batchSummaryFailed").textContent = String(Number.isFinite(failed) ? failed : 0);
+
+      const results = Array.isArray(payload?.results) ? payload.results : [];
+      const failedRows = results.filter((row) => row?.status === "failed");
+      const skippedRows = results.filter((row) => row?.status === "skipped" && row?.reason !== "DRY_RUN");
+      const insertedRows = results.filter((row) => row?.status === "inserted" || row?.reason === "DRY_RUN");
+
+      $("batchInsertedCount").textContent = String(insertedRows.length);
+      $("batchSkippedCount").textContent = String(skippedRows.length);
+
+      renderBatchRows("batchFailedTbody", failedRows, "실패 라인이 없습니다.", (row) => `
+        <tr>
+          <td class="px-3 py-2 mono font-black text-slate-700">${escapeHtml(String(row.line_no ?? "-"))}</td>
+          <td class="px-3 py-2 font-bold text-slate-700">${escapeHtml(String(row.raw || "-"))}</td>
+          <td class="px-3 py-2 font-black text-rose-700">${escapeHtml(translateBatchReason(row.reason))}</td>
+        </tr>
+      `);
+
+      renderBatchRows("batchInsertedTbody", insertedRows, "표시할 항목이 없습니다.", (row) => {
+        const statusLabel = row?.reason === "DRY_RUN" || dryRun ? "미리보기" : "등록";
+        return `
+          <tr>
+            <td class="px-3 py-2 mono font-black text-slate-700">${escapeHtml(String(row.line_no ?? "-"))}</td>
+            <td class="px-3 py-2 font-bold text-slate-700">${formatBatchNormalized(row.normalized)}</td>
+            <td class="px-3 py-2 font-black text-emerald-700">${escapeHtml(statusLabel)}</td>
+          </tr>
+        `;
+      });
+
+      renderBatchRows("batchSkippedTbody", skippedRows, "표시할 항목이 없습니다.", (row) => `
+        <tr>
+          <td class="px-3 py-2 mono font-black text-slate-700">${escapeHtml(String(row.line_no ?? "-"))}</td>
+          <td class="px-3 py-2 font-bold text-slate-700">${row?.normalized ? formatBatchNormalized(row.normalized) : escapeHtml(String(row.raw || "-"))}</td>
+          <td class="px-3 py-2 font-black text-amber-700">${escapeHtml(translateBatchReason(row.reason))}</td>
+        </tr>
+      `);
+    }
+
+    async function runBatchCreateStudents(forceDryRun) {
+      if (!state.isAdmin) {
+        showToast("대량 등록은 관리자 계정만 사용할 수 있습니다.", "error");
+        return;
+      }
+      if (state.batchLoading) return;
+
+      const text = String($("batchInput")?.value || "");
+      if (!text.trim()) {
+        showToast("붙여넣기 내용을 입력하세요.", "error");
+        return;
+      }
+
+      const mode = $("batchSkipDuplicates")?.checked === false ? "error_on_duplicates" : "skip_duplicates";
+      const dryRun = forceDryRun === true ? true : $("batchDryRun")?.checked === true;
+      if (forceDryRun !== true && dryRun !== true) {
+        if (!confirm("유효한 학생은 즉시 등록됩니다. 계속할까요?")) return;
+      }
+
+      setBatchLoading(true);
+      showBatchState("loading", dryRun ? "입력 내용을 검증하는 중..." : "대량 등록을 처리하는 중...");
+      try {
+        const payload = await callAdminApi("/.netlify/functions/admin-batch-create-students", {
+          method: "POST",
+          body: {
+            text,
+            mode,
+            dry_run: dryRun,
+          },
+        });
+        renderBatchReport(payload, dryRun);
+        const summary = payload?.summary || {};
+        const inserted = Number(summary.inserted || 0);
+        if (!dryRun && Number.isFinite(inserted) && inserted > 0) {
+          await loadStudents();
+        }
+        showBatchState("empty", dryRun ? "검증/미리보기가 완료되었습니다." : "일괄 등록 처리가 완료되었습니다.");
+      } catch (error) {
+        const code = String(error?.message || error || "");
+        showBatchState("error", `대량 등록 실패: ${translateBatchReason(code)}`);
+      } finally {
+        setBatchLoading(false);
+      }
     }
 
     function normalizeRole(value) {
@@ -698,6 +961,7 @@
       }
       const role = await getMyRole(auth.user.id);
       state.role = role;
+      syncBatchImportAccess();
       if (!STAFF_ROLES.has(role)) {
         alert("학생관리 페이지는 관리자/조교만 접근할 수 있습니다.");
         location.href = "/";
@@ -762,6 +1026,8 @@
     $("btnLoadStudentAttempts").addEventListener("click", () => { void loadManagedAttempts(); });
     $("attemptStudentSelect").addEventListener("change", () => { void loadManagedAttempts(); });
     $("attemptIncludeDeleted").addEventListener("change", () => { void loadManagedAttempts(); });
+    $("btnBatchPreview")?.addEventListener("click", () => { void runBatchCreateStudents(true); });
+    $("btnBatchImport")?.addEventListener("click", () => { void runBatchCreateStudents(false); });
     $("managedAttemptsTbody").addEventListener("click", (event) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
@@ -799,6 +1065,8 @@
           return;
         }
         const role = await getMyRole(session.user.id);
+        state.role = role;
+        syncBatchImportAccess();
         if (!STAFF_ROLES.has(role)) {
           alert("권한이 없습니다.");
           location.href = "/";
