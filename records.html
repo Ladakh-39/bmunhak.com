@@ -280,6 +280,7 @@
     const STAFF_ROLES = new Set(["admin", "assistant"]);
 
     let currentUser = null;
+    let currentSession = null;
     let profileNickname = "";
     const state = {
       page: 1,
@@ -419,6 +420,7 @@
     }
 
     async function syncAuthUI(session) {
+      currentSession = session || null;
       currentUser = session?.user || null;
       const signedIn = Boolean(currentUser);
       $("welcomeText").classList.toggle("hidden", !signedIn);
@@ -788,21 +790,59 @@
       showRecordsToast("CSV 파일을 내보냈습니다.");
     }
 
+    function getDeleteErrorMessage(errorCode) {
+      const code = String(errorCode || "").trim();
+      if (code === "FORBIDDEN") return "삭제 권한이 없습니다. 관리자/조교 계정으로 로그인해 주세요.";
+      if (code === "UNAUTHORIZED" || code === "NO_TOKEN") return "로그인 세션이 만료되었습니다. 다시 로그인 후 시도해 주세요.";
+      if (code === "ATTEMPT_NOT_FOUND") return "삭제할 기록을 찾지 못했습니다.";
+      if (code === "INVALID_ATTEMPT_ID") return "삭제 요청 값이 올바르지 않습니다.";
+      if (code === "ATTEMPT_SOFT_DELETE_FAILED") return "삭제 처리 중 서버 오류가 발생했습니다.";
+      if (!code) return "삭제 실패";
+      if (code.startsWith("HTTP_")) return `삭제 실패 (서버 응답 ${code.replace("HTTP_", "")})`;
+      return `삭제 실패: ${code}`;
+    }
+
+    async function staffSoftDeleteAttempt(attemptId) {
+      if (!state.canDeleteRecords) return { ok: false, error: "FORBIDDEN" };
+      const id = Number(attemptId);
+      if (!Number.isFinite(id) || id <= 0) return { ok: false, error: "INVALID_ATTEMPT_ID" };
+
+      let token = String(currentSession?.access_token || "");
+      if (!token) {
+        const { data } = await sbClient.auth.getSession();
+        currentSession = data?.session || null;
+        token = String(currentSession?.access_token || "");
+      }
+      if (!token) return { ok: false, error: "NO_TOKEN" };
+
+      const res = await fetch("/.netlify/functions/admin-soft-delete-attempt", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ attempt_id: id }),
+        cache: "no-store",
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) {
+        return { ok: false, error: data?.error || data?.detail || `HTTP_${res.status}` };
+      }
+      return { ok: true };
+    }
+
     async function deleteAttempt(attemptId) {
       if (!currentUser) return APP.openAuth("login");
       if (!state.canDeleteRecords) return;
-      if (!confirm("이 기록을 삭제하면 복구할 수 없습니다. 정말 삭제할까요?")) return;
+      if (!confirm("이 기록을 삭제(soft) 처리할까요?")) return;
 
-      const { error } = await sbClient
-        .from("exam_attempts")
-        .update({ is_deleted: true, deleted_at: new Date().toISOString() })
-        .eq("id", attemptId)
-        .eq("user_id", currentUser.id);
-      if (error) {
-        showRecordsToast(error.message || "삭제 실패", "error");
+      const result = await staffSoftDeleteAttempt(attemptId);
+      if (!result.ok) {
+        showRecordsToast(getDeleteErrorMessage(result.error), "error");
         return;
       }
-      showRecordsToast("기록을 삭제했습니다.");
+      showRecordsToast("삭제 완료");
       await loadAttempts();
     }
 
