@@ -115,6 +115,7 @@
         <div class="mt-3 flex flex-wrap gap-2">
           <button id="btnBatchPreview" class="rounded-xl border border-blue-300 bg-white px-3 py-2 text-sm font-black text-blue-700 hover:bg-blue-100" type="button">검증/미리보기</button>
           <button id="btnBatchImport" class="rounded-xl bg-blue-700 px-3 py-2 text-sm font-black text-white hover:bg-blue-800" type="button">일괄 등록</button>
+          <button id="btnBatchUnlock" class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-black text-slate-700 hover:bg-slate-100" type="button">잠금 해제</button>
         </div>
 
         <div id="batchStateCard" class="mt-3 hidden rounded-xl border p-3"></div>
@@ -338,6 +339,7 @@
       managedAttempts: [],
       batchLoading: false,
     };
+    const BATCH_REQUEST_TIMEOUT_MS = 15000;
 
     function escapeHtml(value) {
       return String(value == null ? "" : value)
@@ -440,6 +442,7 @@
       if (code === "FORBIDDEN") return "관리자 계정만 실행할 수 있습니다.";
       if (code === "BAD_REQUEST") return "요청 형식이 올바르지 않습니다.";
       if (code === "INTERNAL") return "서버 처리 중 오류가 발생했습니다.";
+      if (code === "TIMEOUT") return "서버 응답이 지연되어 중단했습니다. 잠시 후 다시 시도해 주세요.";
       if (code.startsWith("HTTP_")) return `서버 응답 오류 (${code.replace("HTTP_", "")})`;
       return code || "알 수 없는 오류";
     }
@@ -542,19 +545,20 @@
             mode,
             dry_run: dryRun,
           },
+          timeoutMs: BATCH_REQUEST_TIMEOUT_MS,
         });
         renderBatchReport(payload, dryRun);
         const summary = payload?.summary || {};
         const inserted = Number(summary.inserted || 0);
         if (!dryRun && Number.isFinite(inserted) && inserted > 0) {
-          await loadStudents();
+          void loadStudents().catch(() => {});
         }
         showBatchState("empty", dryRun ? "검증/미리보기가 완료되었습니다." : "일괄 등록 처리가 완료되었습니다.");
       } catch (error) {
         const code = String(error?.message || error || "");
         showBatchState("error", `대량 등록 실패: ${translateBatchReason(code)}`);
       } finally {
-        setBatchLoading(false);
+        try { setBatchLoading(false); } catch (_) {}
       }
     }
 
@@ -622,24 +626,37 @@
       return normalizeRole(data?.role);
     }
 
-    async function callAdminApi(path, { method = "GET", query = null, body = null } = {}) {
+    async function callAdminApi(path, { method = "GET", query = null, body = null, timeoutMs = BATCH_REQUEST_TIMEOUT_MS } = {}) {
       const auth = await getAuthed();
       if (!auth?.accessToken) throw new Error("UNAUTHORIZED");
       const qs = query ? new URLSearchParams(query).toString() : "";
       const url = qs ? `${path}?${qs}` : path;
-      const res = await fetch(url, {
-        method,
-        headers: {
-          authorization: `Bearer ${auth.accessToken}`,
-          ...(body ? { "content-type": "application/json" } : {}),
-        },
-        ...(body ? { body: JSON.stringify(body) } : {}),
-      });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok || !payload?.ok) {
-        throw new Error(String(payload?.detail || payload?.error || `HTTP_${res.status}`));
+      const controller = new AbortController();
+      const timeout = setTimeout(() => {
+        controller.abort();
+      }, Math.max(1000, Number(timeoutMs) || BATCH_REQUEST_TIMEOUT_MS));
+
+      try {
+        const res = await fetch(url, {
+          method,
+          signal: controller.signal,
+          headers: {
+            authorization: `Bearer ${auth.accessToken}`,
+            ...(body ? { "content-type": "application/json" } : {}),
+          },
+          ...(body ? { body: JSON.stringify(body) } : {}),
+        });
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok || !payload?.ok) {
+          throw new Error(String(payload?.detail || payload?.error || `HTTP_${res.status}`));
+        }
+        return payload;
+      } catch (error) {
+        if (error?.name === "AbortError") throw new Error("TIMEOUT");
+        throw error;
+      } finally {
+        clearTimeout(timeout);
       }
-      return payload;
     }
 
     function renderRows() {
@@ -1028,6 +1045,10 @@
     $("attemptIncludeDeleted").addEventListener("change", () => { void loadManagedAttempts(); });
     $("btnBatchPreview")?.addEventListener("click", () => { void runBatchCreateStudents(true); });
     $("btnBatchImport")?.addEventListener("click", () => { void runBatchCreateStudents(false); });
+    $("btnBatchUnlock")?.addEventListener("click", () => {
+      try { setBatchLoading(false); } catch (_) {}
+      showBatchState("empty", "잠금을 해제했습니다.");
+    });
     $("managedAttemptsTbody").addEventListener("click", (event) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
