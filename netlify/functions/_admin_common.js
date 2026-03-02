@@ -94,7 +94,7 @@ export function parseJsonBody(event) {
   }
 }
 
-export async function requireStaff(event, allowedMethods = ["GET", "POST"]) {
+async function requireRole(event, allowedMethods, allowedRoles) {
   if (!allowedMethods.includes(event?.httpMethod)) {
     return { ok: false, response: json(405, { ok: false, error: "METHOD_NOT_ALLOWED" }) };
   }
@@ -126,14 +126,21 @@ export async function requireStaff(event, allowedMethods = ["GET", "POST"]) {
     .eq("user_id", actorUserId)
     .maybeSingle();
   if (perr) {
-    return { ok: false, response: json(500, { ok: false, error: "PROFILE_LOOKUP_FAILED", detail: perr.message }) };
+    return { ok: false, response: json(500, { ok: false, error: "INTERNAL" }) };
   }
 
   const role = normalizeRole(profile?.role);
-  if (!STAFF_ROLES.has(role)) {
+  if (!allowedRoles.has(role)) {
     return { ok: false, response: json(403, { ok: false, error: "FORBIDDEN" }) };
   }
 
   return { ok: true, admin, actorUserId, role };
 }
 
+export async function requireStaff(event, allowedMethods = ["GET", "POST"]) {
+  return requireRole(event, allowedMethods, STAFF_ROLES);
+}
+
+export async function requireAdmin(event, allowedMethods = ["GET", "POST"]) {
+  return requireRole(event, allowedMethods, new Set(["admin"]));
+}
