@@ -138,6 +138,7 @@
         <div class="flex items-center gap-2 text-sm font-black">
           <button id="btnTopLogout" class="hidden px-3 py-1 border border-slate-300 bg-white hover:bg-slate-100">로그아웃</button>
           <a href="/profile.html" id="btnEditProfile" class="hidden px-3 py-1 border border-slate-300 bg-white hover:bg-slate-100">개인정보수정</a>
+          <button id="btnStudentsAdmin" type="button" class="hidden px-3 py-1 border border-slate-300 bg-white hover:bg-slate-100">학생관리</button>
           <a href="/records.html" class="px-3 py-1 border border-slate-300 bg-white hover:bg-slate-100">기록</a>
         </div>
       </div>
@@ -322,6 +323,7 @@
     };
 
     let currentUser = null;
+    let currentUserRole = "";
     let profileNickname = "";
     let memoCryptoKey = null;
     let memoKeyB64 = "";
@@ -361,6 +363,13 @@
         return nick;
       }
       return "회원";
+    }
+
+    async function getMyRoleByUserId(uid) {
+      if (!uid) return "";
+      const { data, error } = await sbClient.from("profiles").select("role").eq("user_id", uid).maybeSingle();
+      if (error) return "";
+      return String(data?.role || "").trim().toLowerCase();
     }
 
     function showMemoEditor(visible) {
@@ -777,9 +786,13 @@
       $("btnSignupTop").classList.toggle("hidden", signedIn);
       $("btnTopLogout").classList.toggle("hidden", !signedIn);
       $("btnEditProfile").classList.toggle("hidden", !signedIn);
+      $("btnStudentsAdmin").classList.add("hidden");
+      currentUserRole = "";
 
       if (signedIn) {
         profileNickname = "";
+        currentUserRole = await getMyRoleByUserId(currentUser.id);
+        $("btnStudentsAdmin").classList.toggle("hidden", currentUserRole !== "admin");
         await getMyDisplayName();
       }
     }
@@ -912,6 +925,9 @@
 
     $("btnLogoutTop").addEventListener("click", signOutAll);
     $("btnTopLogout").addEventListener("click", signOutAll);
+    $("btnStudentsAdmin")?.addEventListener("click", () => {
+      location.href = "/students";
+    });
 
     $("btnNewMemo").addEventListener("click", () => {
       setMemoMsg("");

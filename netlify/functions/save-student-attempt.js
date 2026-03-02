@@ -12,6 +12,7 @@ const SUBJECTS = new Set([
   "mock1",
   "mock2",
 ]);
+const ASSISTANT_SUBJECTS = new Set(["korean", "math", "english"]);
 const TA_ROLES = new Set(["assistant", "admin"]);
 const ANSWER_CSV_PATH = path.join(process.cwd(), "netlify", "functions", "_private", "2027_mothertung_answers.csv");
 const ANSWER_CACHE = { bySubject: null };
@@ -69,6 +70,18 @@ function toSafeFloat(value) {
 
 function normalizeRole(value) {
   return String(value || "").trim().toLowerCase();
+}
+
+function normalizeAssistantSubject(value) {
+  const subject = String(value || "").trim().toLowerCase();
+  if (!ASSISTANT_SUBJECTS.has(subject)) return "";
+  return subject;
+}
+
+function resolveExamScopeSubject(section) {
+  const normalized = String(section || "").trim().toLowerCase();
+  if (SUBJECTS.has(normalized)) return "korean";
+  return "";
 }
 
 function normalizeAnswerMap(rawAnswers) {
@@ -220,17 +233,18 @@ export async function handler(event) {
 
     const { data: profile, error: perr } = await admin
       .from("profiles")
-      .select("role")
+      .select("role,assistant_subject")
       .eq("user_id", actorUserId)
       .maybeSingle();
 
-    if (perr) return json(500, { ok: false, error: "PROFILE_LOOKUP_FAILED", detail: perr.message });
+    if (perr) return json(500, { ok: false, error: "INTERNAL" });
     const role = normalizeRole(profile?.role);
     if (!TA_ROLES.has(role)) return json(403, { ok: false, error: "FORBIDDEN" });
+    const assistantSubject = normalizeAssistantSubject(profile?.assistant_subject);
 
     const body = JSON.parse(event.body || "{}");
     const year = toSafeInt(body?.year);
-    const subject = String(body?.subject || "").trim();
+    const subject = String(body?.subject || "").trim().toLowerCase();
     const startQ = toSafeInt(body?.startQ);
     const endQ = toSafeInt(body?.endQ);
     const targetStudentId = toSafeInt(body?.target_student_id);
@@ -242,6 +256,13 @@ export async function handler(event) {
     if (!SUBJECTS.has(subject)) return json(400, { ok: false, error: "INVALID_SUBJECT" });
     if (startQ <= 0 || endQ <= 0 || startQ > endQ) return json(400, { ok: false, error: "INVALID_RANGE" });
     if (targetStudentId <= 0) return json(400, { ok: false, error: "INVALID_TARGET_STUDENT" });
+    const examSubject = resolveExamScopeSubject(subject);
+    if (!examSubject) return json(400, { ok: false, error: "INVALID_SUBJECT" });
+
+    if (role === "assistant") {
+      if (!assistantSubject) return json(403, { ok: false, error: "FORBIDDEN" });
+      if (assistantSubject !== examSubject) return json(403, { ok: false, error: "FORBIDDEN" });
+    }
 
     const { data: student, error: serr } = await admin
       .from("students")
@@ -249,21 +270,15 @@ export async function handler(event) {
       .eq("id", targetStudentId)
       .maybeSingle();
 
-    if (serr) return json(500, { ok: false, error: "STUDENT_LOOKUP_FAILED", detail: serr.message });
+    if (serr) return json(500, { ok: false, error: "INTERNAL" });
     if (!student) return json(404, { ok: false, error: "STUDENT_NOT_FOUND" });
-    if (!student.user_id) {
-      return json(400, {
-        ok: false,
-        error: "STUDENT_USER_NOT_LINKED",
-        detail: "선택한 학생은 user_id가 연결되지 않았습니다.",
-      });
-    }
+    if (!student.user_id) return json(400, { ok: false, error: "STUDENT_USER_NOT_LINKED" });
 
     let rows = [];
     try {
       rows = getAnswerRowsFromCsv(subject, startQ, endQ);
     } catch (e) {
-      return json(500, { ok: false, error: "ANSWER_SOURCE_FAILED", detail: String(e?.message || e) });
+      return json(500, { ok: false, error: "ANSWER_SOURCE_FAILED" });
     }
     if (!rows?.length) return json(404, { ok: false, error: "ANSWER_NOT_FOUND" });
 
@@ -320,7 +335,7 @@ export async function handler(event) {
       .select("id")
       .single();
 
-    if (aerr) return json(500, { ok: false, error: "ATTEMPT_INSERT_FAILED", detail: aerr.message });
+    if (aerr) return json(500, { ok: false, error: "ATTEMPT_INSERT_FAILED" });
 
     const attemptId = attempt.id;
     const payloadItems = itemRows.map((it) => ({
@@ -334,7 +349,7 @@ export async function handler(event) {
 
     if (payloadItems.length) {
       const { error: ierr } = await admin.from("exam_attempt_items").insert(payloadItems);
-      if (ierr) return json(500, { ok: false, error: "ITEMS_INSERT_FAILED", detail: ierr.message });
+      if (ierr) return json(500, { ok: false, error: "ITEMS_INSERT_FAILED" });
     }
 
     const wrongDetails = itemRows
@@ -363,6 +378,6 @@ export async function handler(event) {
       saved_by: actorUserId,
     });
   } catch (e) {
-    return json(500, { ok: false, error: "UNEXPECTED", detail: String(e?.message || e) });
+    return json(500, { ok: false, error: "INTERNAL" });
   }
 }
